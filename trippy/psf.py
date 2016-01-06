@@ -27,7 +27,7 @@ import pylab as pyl
 from scipy import optimize as opti,interpolate as interp
 import scipy as sci
 import bgFinder
-import weightedMeanSTD
+#import weightedMeanSTD
 
 import imp
 try:
