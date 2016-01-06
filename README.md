@@ -61,6 +61,8 @@ and if the optional emcee package was installed
 
 NOTE: Currently no internal tests have been written. This will eventually change of course.
 
+
+
 Usage
 =====
 This section is yet to be written.
