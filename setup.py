@@ -16,7 +16,7 @@ dependencies = ['numpy >= 1.6.1',
 setup(
   name = 'trippy',
   packages = ['trippy'],
-  version = '0.1',
+  version = '0.2',
   description = 'Pill aperture photometry for trailed astronomical sources',
   author = 'Wesley Fraser',
   author_email = 'westhefras@gmail.com',
