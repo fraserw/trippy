@@ -1,6 +1,9 @@
 
 TRIPPy: Python based Trailed Source Photometry (to be published soon)
 
+This package is presented in a manuscript that will soon be submitted to ApJ's new code journal. But for now, you can
+see the draft science publication at this [authorea link.](https://www.authorea.com/users/44077/articles/93287/_show_article)
+
 1. Installation
 ===============
 
