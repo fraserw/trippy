@@ -1,5 +1,5 @@
-# trippy
-Python based Trailed Source Photometry (to be published soon)
+
+TRIPPy: Python based Trailed Source Photometry (to be published soon)
 
 1. Installation
 ===============
