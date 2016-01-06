@@ -55,6 +55,7 @@ class MCMCfitter:
     def __init__(self,psf,imageData):
         self.psf=psf
         self.imageData=num.copy(imageData)
+        self.fitted=False
 
     def fitWithModelPSF(self,x_in,y_in,m_in=-1.,fitWidth=20,
                         nWalkers=20,nBurn=10,nStep=20,
@@ -74,7 +75,8 @@ class MCMCfitter:
              the background measurement and apply that. Otherwise, it assumes you are dealing with
              background subtracted data already.
         useErrorMap - if true, a simple pixel uncertainty map is used in the fit. This is adopted as
-                      ue_ij=(imageData_ij+bg)**0.5, that is, the poisson noise estimate.
+                      ue_ij=(imageData_ij+bg)**0.5, that is, the poisson noise estimate. Note the fit confidence range
+                      is only honest if useErrorMap=True.
         useLinePSF - use the TSF? If not, use the PSF
         verbose - if set to true, lots of information printed to screen
         """
@@ -124,8 +126,22 @@ class MCMCfitter:
         self.samps=sampler.chain
         self.probs=sampler.lnprobability
         self.dat=num.copy(dat)
+        self.fitted=True
+
 
     def fitResults(self,confidenceRange=0.67):
+        """
+        Return the best point and confidence interval.
+
+        confidenceRange - the range for the returned confidence interval
+
+        Returns (bestPoint, confidenceArray) Will return None if a fit hasn't been run yet.
+        """
+
+        if not self.fitted:
+            print "You haven't actually run a fit yet!"
+            return None
+
         (Y,X,b)=self.samps.shape
         goodSamps=[]
         for ii in range(Y):
@@ -145,8 +161,6 @@ class MCMCfitter:
         if b==6:
             self.residual=self.psf.remove(bp[3],bp[4],bp[5],self.residual,useLinePSF=useLinePSF)
         self.fitFlux=num.sum(self.psf.model)*self.psf.fitFluxCorr
-
-        print num.sum(self.residual[ai:bi,ci:di]**2),'****'
 
         uncert=[]
         for ii in range(b):
@@ -175,7 +189,8 @@ class MCMCfitter:
              the background measurement and apply that. Otherwise, it assumes you are dealing with
              background subtracted data already.
         useErrorMap - if true, a simple pixel uncertainty map is used in the fit. This is adopted as
-                      ue_ij=(imageData_ij+bg)**0.5, that is, the poisson noise estimate.
+                      ue_ij=(imageData_ij+bg)**0.5, that is, the poisson noise estimate. Note the fit confidence range
+                      is only honest if useErrorMap=True.
         useLinePSF - use the TSF? If not, use the PSF
         verbose - if set to true, lots of information printed to screen
         """
@@ -224,3 +239,4 @@ class MCMCfitter:
         self.samps=sampler.chain
         self.probs=sampler.lnprobability
         self.dat=num.copy(dat)
+        self.fitted=True
