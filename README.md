@@ -63,6 +63,10 @@ NOTE: Currently no internal tests have been written. This will eventually change
 
 
 
-Usage
-=====
-This section is yet to be written.
+2. Usage
+========
+This section is yet to be completed.
+
+Let's generate a psf (Section 2a), perform some photometry (Section 2b), and finally fit a trailed source (Section 2c).
+
+But first, please download the following image for this tutorial: [Polonskaya.fits](http://www.canfar.phys.uvic.ca/vospace/nodes/fraserw/Polonskaya.fits?view=data)
