@@ -19,7 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), Academic email: wes.fraser@qub.ac.uk'
-__version__= '0.1'
 
 import numpy as num
 from scipy import signal
@@ -28,7 +27,6 @@ import pylab as pyl
 from scipy import optimize as opti,interpolate as interp
 import scipy as sci
 import bgFinder
-import emcee
 import weightedMeanSTD
 
 import imp
@@ -47,30 +45,6 @@ from pill import pillPhot
 from trippy_utils import *
 
 
-def lnprob(r,dat,lims,psf,ue,useLinePSF,verbose=False):
-    psf.nForFitting+=1
-    (x,y,amp)=r
-    (a,b)=dat.shape
-    if  amp<=0 or x>=b or x<=0 or y<=0 or y>=a: return -num.inf
-    diff=psf.remove(x,y,amp,dat,useLinePSF=useLinePSF)[lims[0]:lims[1],lims[2]:lims[3]]
-    chi=-0.5*num.sum(diff**2/ue**2)**0.5
-    if verbose: print psf.nForFitting,x,y,amp,chi
-    return chi
-
-
-def lnprobDouble(r,dat,psf,ue,useLinePSF,verbose=False):
-    psf.nForFitting+=1
-    (A,B)=dat.shape
-    (X,Y,AMP,x,y,amp)=r
-    if amp<=0 or AMP<=0 or X<0 or X>B or x<0 or x>B or Y<0 or Y>A or y<0 or y>A: return -num.inf
-
-    diff=psf.remove(X,Y,AMP,dat,useLinePSF=useLinePSF)
-    diff=psf.remove(x,y,amp,diff,useLinePSF=useLinePSF)
-    chi=-0.5*num.sum((diff**2/ue**2))#/(A*B-7)
-    #chi=-num.sum(diff**2)**0.5
-    if verbose:
-        print psf.nForFitting,x,y,amp,X,Y,AMP,chi
-    return chi
 
 
 
@@ -532,162 +506,6 @@ class modelPSF:
         mo=self.plant(x,y,amp,data,addNoise=False,returnModel=True,useLinePSF=useLinePSF)
         self.model=mo*1.
         return data-mo
-
-
-    def fitWithModelPSF(self,x_in,y_in,imageData,m_in=-1.,fitWidth=20,
-                        nWalkers=20,nBurn=10,nStep=20,
-                        confidenceRange=0.67,
-                        bg=None,
-                        useLinePSF=False,verbose=False):
-
-        self.nForFitting=0
-
-        if fitWidth>self.boxSize:
-            raise NotImplementedError('Need to keep the fitWidth <= boxSize.')
-
-        (A,B)=imageData.shape
-        ai=max(0,int(y_in)-fitWidth)
-        bi=min(A,int(y_in)+fitWidth+1)
-        ci=max(0,int(x_in)-fitWidth)
-        di=min(B,int(x_in)+fitWidth+1)
-        dat=num.copy(imageData)
-
-
-
-        if bg==None:
-            bgf=bgFinder.bgFinder(imageData)
-            bg=bgf.smartBackground()
-
-        dat-=bg
-        ue=(dat+bg)**0.5
-
-        if m_in==-1.:
-            if useLinePSF:
-                m_in=self.repFact*self.repFact*num.sum(dat)/num.sum(self.longPSF)
-            else:
-                m_in=self.repFact*self.repFact*num.sum(dat)/num.sum(self.fullPSF)
-
-        nDim=3
-        r0=[]
-        for ii in range(nWalkers):
-            r0.append(num.array([x_in,y_in,m_in])+sci.randn(3)*num.array([0.1,0.1,m_in*0.25]))
-        r0=num.array(r0)
-
-
-        sampler=emcee.EnsembleSampler(nWalkers,nDim,lnprob,args=[dat,(ai,bi,ci,di),self,ue,useLinePSF,verbose])
-        pos, prob, state=sampler.run_mcmc(r0,nBurn)
-        sampler.reset()
-        pos, prob, state = sampler.run_mcmc(pos, nStep, rstate0=state)
-        samps=sampler.chain
-        probs=sampler.lnprobability
-
-        (Y,X)=probs.shape
-        goodSamps=[]
-        for ii in range(Y):
-            for jj in range(X):
-                goodSamps.append([samps[ii,jj][0],samps[ii,jj][1],samps[ii,jj][2],probs[ii,jj]])
-        goodSamps=num.array(goodSamps)
-        args=num.argsort(goodSamps[:,3])
-        goodSamps=goodSamps[args]
-
-        (x_out,y_out,m_out,chi)=goodSamps[-1]
-        print 'Best point:',x_out,y_out,m_out,chi
-        self.residual=self.remove(x_out,y_out,m_out,dat,useLinePSF=True)
-        self.fitFlux=num.sum(self.model)*self.fitFluxCorr
-        bestFit=(x_out,y_out,m_out,chi)
-
-        uncert=[]
-        for ii in range(3):
-            args=num.argsort(goodSamps[:,ii])
-            x=goodSamps[args][:,ii]
-            uncert.append([x[int((confidenceRange/2)*len(x))],
-                           x[int((1-confidenceRange/2)*len(x))]])
-        return (bestFit,uncert)
-
-
-    def fitDoubleWithModelPSF(self,x_in,y_in,X_in,Y_in,bRat_in,imageData,m_in=-1.,bg=None,
-                              fitWidth=20,nWalkers=30,nBurn=50,nStep=100,
-                              confidenceWidth=0.95,
-                              useErrorMap=False,
-                              useLinePSF=False,verbose=False):
-        (A,B)=imageData.shape
-        ai=max(0,int((y_in+Y_in)/2)-fitWidth)
-        bi=min(A,int((y_in+Y_in)/2)+fitWidth)
-        ci=max(0,int((x_in+X_in)/2)-fitWidth)
-        di=min(B,int((x_in+X_in)/2)+fitWidth)
-        dat=imageData[ai:bi,ci:di]
-
-        if bg==None:
-
-            bgf=bgFinder.bgFinder(imageData)
-            bg=bgf.smartBackground()
-            dat-=bg
-        else:
-            dat-=bg
-
-
-        ue=(dat+bg)**0.5
-        if not useErrorMap:
-            ue*=0.0
-            ue+=1.0
-
-
-        if m_in==-1.:
-            if useLinePSF:
-                m_in=num.sum(dat)/num.sum(self.longPSF)
-            else:
-                m_in=num.sum(dat)/num.sum(self.fullPSF)
-
-        nDim=6
-        r0=[]
-        for ii in range(nWalkers):
-            r0.append(num.array([x_in-ci,y_in-ai,m_in,X_in-ci,Y_in-ai,m_in*bRat_in])+sci.randn(6)*num.array([1.,1.,
-                                                                                                          m_in*0.4,
-                                                                                                    1.,1.,
-                                                                                               m_in*0.4*bRat_in]))
-        r0=num.array(r0)
-
-        sampler=emcee.EnsembleSampler(nWalkers,nDim,lnprobDouble,args=[dat,self,ue,useLinePSF,verbose])
-        pos, prob, state=sampler.run_mcmc(r0,nBurn)
-        sampler.reset()
-        pos, prob, state = sampler.run_mcmc(pos, nStep, rstate0=state)
-        samps=sampler.chain
-        probs=sampler.lnprobability
-
-        (Y,X)=probs.shape
-        goodSamps=[]
-        for ii in range(Y):
-            for jj in range(X):
-                goodSamps.append([samps[ii,jj][0],samps[ii,jj][1],samps[ii,jj][2],samps[ii,jj][3],samps[ii,jj][4],
-                                  samps[ii,jj][5],probs[ii,jj]])
-        goodSamps=num.array(goodSamps)
-        args=num.argsort(goodSamps[:,6])
-        goodSamps=goodSamps[args]
-
-        A=len(goodSamps)
-        c=(1-confidenceWidth)/2.
-        limI=[int(A*c),int(A*(1-c))]
-        lims=[]
-        for i in range(6):
-            x=num.sort(goodSamps[:,i])
-            lims.append( [x[limI[0]],x[limI[1]]])
-
-        dx=num.sort(goodSamps[:,0]-goodSamps[:,3])
-        dy=num.sort(goodSamps[:,1]-goodSamps[:,4])
-        br=num.sort(goodSamps[:,2]/goodSamps[:,5])
-
-        lims.append([dx[limI[0]],dx[limI[1]]])
-        lims.append([dy[limI[0]],dy[limI[1]]])
-        lims.append([br[limI[0]],br[limI[1]]])
-        lims=num.array(lims)
-
-        (x_out,y_out,m_out,X_out,Y_out,M_out,chi)=num.median(goodSamps,axis=0)#[len(goodSamps)-1]
-        pars=[x_out+ci,y_out+ai,m_out,X_out+ci,Y_out+ai,M_out,x_out-X_out,y_out-Y_out,m_out/M_out]
-        lims[0]+=ci
-        lims[1]+=ai
-        lims[3]+=ci
-        lims[4]+=ai
-        return (pars,lims,chi,goodSamps)
 
 
     def writeto(self,name):
