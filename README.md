@@ -65,8 +65,6 @@ NOTE: Currently no internal tests have been written. This will eventually change
 
 2. Usage
 ========
-This section is yet to be completed.
 
-Let's generate a psf (Section 2a), perform some photometry (Section 2b), and finally fit a trailed source (Section 2c).
-
-But first, please download the following image for this tutorial: [Polonskaya.fits](http://www.canfar.phys.uvic.ca/vospace/nodes/fraserw/Polonskaya.fits?view=data)
+I have provided an ipython notebook which shows most of the functionality of the trippy package including PSF/TSF
+generation, photometry, and source fitting and removal. Please checkout the [notebook.](https://github.com/fraserw/trippy/blob/master/tutorial/trippytutorial.ipynb)
