@@ -27,8 +27,8 @@ installed (and maintained!) with an anaconda python installation. [Instructions 
 Once numpy, scipy, matplotlib, and astropy are installed, stsci-python (which provides stsci.numdisplay) can be
 installed by the two commands
 
-pip install stsci.distutils
-pip install stscipython
+   > pip install stsci.distutils
+   > pip install stscipython
 
 This will compile and install all of the bits required by stsci-python.
 
@@ -37,11 +37,11 @@ the MCMCfit module.
 
 Test that these modules are available by attempting to import each one:
 
-python -c "import numpy; import scipy; import matplotlib; import astropy; import stsci.numdisplay"
+   > python -c "import numpy; import scipy; import matplotlib; import astropy; import stsci.numdisplay"
 
 If the optional emcee was installed
 
-python -c "import emcee"
+   > python -c "import emcee"
 
 
 1b. TRIPPy installation
