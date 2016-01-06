@@ -20,7 +20,8 @@ __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>),
 __version__= '0.1'
 
 
-import pylab as pyl, numpy as num,psf,numdisplay
+import pylab as pyl, numpy as num,psf
+from stsci import numdisplay
 from astropy.visualization import interval
 
 
