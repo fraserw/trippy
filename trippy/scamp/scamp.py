@@ -20,7 +20,7 @@ __version__= '0.1'
 
 
 import commands
-from astLib import astWCS as WCS
+from astropy import wcs as WCS
 import numpy as num
 from os import path
 import os
@@ -273,7 +273,9 @@ def writeDS9Regions(sexCatalog,regionFile,wcsImage=None,radius=15,colour=None):
                 
 
         else: #using the wcs of the input image
-            wcs=WCS.WCS(wcsImage)
+            with pyf.open(wcsImage) as wcsHan:
+                wcsHeader=wcsHan[0].header
+            wcs=WCS.WCS(wcsHeader)
 
             k=-1
             for ii in header:
@@ -316,7 +318,7 @@ def writeDS9Regions(sexCatalog,regionFile,wcsImage=None,radius=15,colour=None):
                 x=float(s[4])
                 y=float(s[5])
                 """
-                (x,y)=wcs.wcs2pix(ra,dec)
+                (x,y)=wcs.wcs_world2pix(ra,dec)
                 x+=1
                 y+=1
                 
