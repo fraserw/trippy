@@ -10,7 +10,8 @@ if sys.version_info[0] > 2:
 dependencies = ['numpy >= 1.6.1',
                 'scipy',
                 'matplotlib',
-                'numdisplay']
+                'stsci.numdisplay',
+                'astropy']
 
 setup(
   name = 'trippy',
@@ -25,4 +26,7 @@ setup(
   license = 'GNU',
   install_requires=dependencies,
   classifiers = [],
+  extras_require = {
+      'MCMCfit': ['emcee']
+  }
 )
