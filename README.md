@@ -52,9 +52,6 @@ Once dependencies are installed, trippy can be installed with a simple pip invoc
 
     pip install trippy
     
-**for now, trippy is on the pypi test survery, so use
-      pip install -i https://testpypi.python.org/pypi trippy
-**
 
 Accesibility can be checked with a few import commands
 
