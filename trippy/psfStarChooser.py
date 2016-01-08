@@ -22,7 +22,7 @@ __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>),
 import pylab as pyl, numpy as num,psf
 from stsci import numdisplay
 from astropy.visualization import interval
-
+from trippy import bgFinder
 
 class starChooser:
     """
@@ -77,7 +77,7 @@ class starChooser:
         (self.z1,self.z2)=numdisplay.zscale.zscale(self.data,nsamples=zscaleNsamp,contrast=zscaleContrast)
         self.normer=interval.ManualInterval(self.z1,self.z2)
 
-    def __call__(self,moffatWidth,moffatSNR,initAlpha=5.,initBeta=2.,repFact=5,xWidth=50,yWidth=50,includeCheesySaturationCut=True,noVisualSelection=False,verbose=False):
+    def __call__(self,moffatWidth,moffatSNR,initAlpha=5.,initBeta=2.,repFact=5,xWidth=50,yWidth=50,includeCheesySaturationCut=True,autoTrim=False,noVisualSelection=False,verbose=False):
         self.moffatWidth=moffatWidth
         self.moffatSNR=moffatSNR
         self.initAlpha=initAlpha
@@ -131,6 +131,12 @@ class starChooser:
                     self.points.append([fwhm,mpsf.chi,mpsf.alpha,mpsf.beta,self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],mpsf.bg])
         self.points=num.array(self.points)
         self.goodStars=num.array(self.goodStars)
+
+        if autoTrim:
+            bg=bgFinder.bgFinder(self.points[:,0])
+            mode=bg('fraserMode')
+            w=num.where(num.abs(self.points[:,0]-mode)>0.5)
+            self.goodStars[w]=False
 
 
 
