@@ -77,7 +77,7 @@ class starChooser:
         (self.z1,self.z2)=numdisplay.zscale.zscale(self.data,nsamples=zscaleNsamp,contrast=zscaleContrast)
         self.normer=interval.ManualInterval(self.z1,self.z2)
 
-    def __call__(self,moffatWidth,moffatSNR,initAlpha=5.,initBeta=2.,repFact=5,xWidth=50,yWidth=50,includeCheesySaturationCut=True,autoTrim=False,noVisualSelection=False,verbose=False):
+    def __call__(self,moffatWidth,moffatSNR,initAlpha=5.,initBeta=2.,repFact=5,xWidth=51,yWidth=51,includeCheesySaturationCut=True,autoTrim=False,noVisualSelection=False,verbose=False):
         self.moffatWidth=moffatWidth
         self.moffatSNR=moffatSNR
         self.initAlpha=initAlpha

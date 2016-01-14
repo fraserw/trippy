@@ -190,8 +190,9 @@ class modelPSF:
         self.nForFitting=0
         self.imData=None
 
-        if len(x)%2==0 or len(y)%2==0:
-            raise Exception('Please use odd width PSFs. Even has not been tested yet.')
+        if not restore:
+            if (len(x)%2==0 or len(y)%2==0):
+                raise Exception('Please use odd width PSFs. Even has not been tested yet.')
 
         if restore:
             self._fitsReStore(restore)
@@ -661,6 +662,9 @@ class modelPSF:
 
         for ii in range(len(shiftIms)):
             shiftIms[ii]*=invFluxes[ii]
+
+        meanLUT=num.mean(shiftIms,axis=0)
+        stdLUT=num.std(shiftIms,axis=0)
 
         self.lookupTable=num.mean(shiftIms,axis=0)/self.maxFlux
         self.psfStar=num.array(self.psfStars)
