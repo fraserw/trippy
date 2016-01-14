@@ -50,12 +50,16 @@ def runScamp(scampFile,imageName):
     print commands.getoutput(comm)
     return
 
-def runSex(sexFile,imageName,options=None):
+def runSex(sexFile,imageName,options=None,verbose=False):
     """
     Execute sextractor using the input sextractor parameters file on the provided image name.
 
     Options should be a dictionary containing various command line options that sextractor takes. Example:
         scamp.runSex('my.sex','my.fits',options={'CATALOG_NAME': 'my.cat'})
+
+    Set verbose to True to see the full sextractor output.
+
+    The full sextractor output is returned.
     """
     
     comm='sex '+imageName+' -c '+sexFile
@@ -63,9 +67,12 @@ def runSex(sexFile,imageName,options=None):
     if options:
         for ii in options:
             comm+=' -'+ii+' '+options[ii]
-    print comm
-    print commands.getoutput(comm)
-    return
+    bigDump=commands.getoutput(comm).split('\n')
+    if verbose:
+        print comm
+        for ii in range(len(bigDump)):
+            print bigDump[ii]
+    return bigDump
 
 
 def getCatalog(catalogName,type='FITS_LDAC',paramFile=None):
