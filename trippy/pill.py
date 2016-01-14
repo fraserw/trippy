@@ -143,8 +143,8 @@ class pillPhot:
         
 
         ####add +0.5 to x.y coordinates to account for middle of pixel
-        image=self.__lp__(x=x+0.5,y=y+0.5,radius=radius,l=l,a=a,w=width)
-        if display:
+        image=self.__lp__(x=x+1.,y=y+1.,radius=radius,l=l,a=a,w=width)
+        if display and self.l0<>None:
             l0=self.l0
             l1=self.l1
             l2=self.l2
@@ -157,7 +157,7 @@ class pillPhot:
             skyImage=image*0.0
             bg=0.0
         else:
-            skyImage=self.__lp__(x=x+0.5,y=y+0.5,radius=skyRadius,l=l,a=a,w=width,
+            skyImage=self.__lp__(x=x+1.,y=y+1.,radius=skyRadius,l=l,a=a,w=width,
                                  retObj=False)
             bgmask=self.bgmask
 
