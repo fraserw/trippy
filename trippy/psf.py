@@ -190,6 +190,9 @@ class modelPSF:
         self.nForFitting=0
         self.imData=None
 
+        if len(x)%2==0 or len(y)%2==0:
+            raise Exception('Please use odd width PSFs. Even has not been tested yet.')
+
         if restore:
             self._fitsReStore(restore)
 
@@ -595,6 +598,9 @@ class modelPSF:
 
 
     def genLookupTable(self,imData,centXs,centYs,verbose=False,bpMask=None):
+        adjCentXs=centXs-0.5
+        adjCentYs=centYs-0.5
+
         self.verbose=verbose
 
         self.imData=imData*1.0
@@ -615,8 +621,8 @@ class modelPSF:
             self.psfStars.append([centXs[ii],centYs[ii]])
 
 
-            xint,yint=int(centXs[ii])-self.boxSize-2,int(centYs[ii])-self.boxSize-2
-            cx,cy=centXs[ii]-int(centXs[ii])+self.boxSize+2,centYs[ii]-int(centYs[ii])+self.boxSize+2
+            xint,yint=int(adjCentXs[ii])-self.boxSize-2,int(adjCentYs[ii])-self.boxSize-2
+            cx,cy=adjCentXs[ii]-int(adjCentXs[ii])+self.boxSize+2,adjCentYs[ii]-int(adjCentYs[ii])+self.boxSize+2
             cx+=0.5
             cy+=0.5
 
@@ -639,7 +645,7 @@ class modelPSF:
 
             repCut=expand2d(diff,self.repFact)
 
-            cx,cy=centXs[ii]-int(centXs[ii])+self.boxSize+2,centYs[ii]-int(centYs[ii])+self.boxSize+2
+            cx,cy=adjCentXs[ii]-int(adjCentXs[ii])+self.boxSize+2,adjCentYs[ii]-int(adjCentYs[ii])+self.boxSize+2
             kx,ky=int(round(cx*self.repFact)),int(round(cy*self.repFact))
 
 
