@@ -179,7 +179,7 @@ class pillPhot:
 
 
             if trimBGHighPix:
-                W=num.where(rebinnedSkyImage[w]<bg+trimBGHighPix*bg**0.5)
+                W=num.where(rebinnedSkyImage[w]<bg+trimBGHighPix*bgstd)
                 bgf=bgFinder.bgFinder(rebinnedSkyImage[w][W])
                 bg=bgf.smartBackground(display=display)
                 bgstd=num.std(rebinnedSkyImage[w][W])

@@ -598,7 +598,7 @@ class modelPSF:
 
 
 
-    def genLookupTable(self,imData,centXs,centYs,verbose=False,bpMask=None):
+    def genLookupTable(self,imData,centXs,centYs,verbose=False,bpMask=None,threeSigCut=True):
         adjCentXs=centXs-0.5
         adjCentYs=centYs-0.5
 
@@ -663,10 +663,16 @@ class modelPSF:
         for ii in range(len(shiftIms)):
             shiftIms[ii]*=invFluxes[ii]
 
-        meanLUT=num.mean(shiftIms,axis=0)
-        stdLUT=num.std(shiftIms,axis=0)
+        if threeSigCut:
+            meanLUT=num.median(shiftIms,axis=0)
+            stdLUT=num.std(shiftIms,axis=0)
 
-        self.lookupTable=num.mean(shiftIms,axis=0)/self.maxFlux
+            bigMean=num.repeat(num.array([meanLUT]),len(shiftIms),axis=0)
+            w=num.where( num.abs(bigMean-shiftIms)>3*stdLUT)
+            shiftIms[w]=num.nan
+            self.lookupTable=num.nanmean(shiftIms,axis=0)/self.maxFlux
+        else:
+            self.lookupTable=num.mean(shiftIms,axis=0)/self.maxFlux
         self.psfStar=num.array(self.psfStars)
 
         return None
