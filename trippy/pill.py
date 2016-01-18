@@ -119,7 +119,7 @@ class pillPhot:
 
     def __call__(self,x,y,radius=4.,l=5.,a=0.01,width=20.,skyRadius=8.,zpt=27.0,exptime=1.,
                  enableBGSelection=False, display=False,
-                 verbose=False,mode='median',trimBGHighPix=False):
+                 verbose=False,trimBGHighPix=False):
         """angle in degrees counterclockwise from +x
         Length in pixels.
         Coordinates are in iraf coordinates, not numpy.
