@@ -26,6 +26,9 @@ import pylab as pyl
 from scipy import interpolate as interp
 import bgFinder
 
+from astropy.visualization import interval
+from stsci import numdisplay
+
 from trippy_utils import expand2d,line
 
 
@@ -119,7 +122,7 @@ class pillPhot:
 
     def __call__(self,x,y,radius=4.,l=5.,a=0.01,width=20.,skyRadius=8.,zpt=27.0,exptime=1.,
                  enableBGSelection=False, display=False,
-                 verbose=False,trimBGHighPix=False):
+                 verbose=False,backupMode='fraserMode',trimBGHighPix=False):
         """angle in degrees counterclockwise from +x
         Length in pixels.
         Coordinates are in iraf coordinates, not numpy.
@@ -172,9 +175,9 @@ class pillPhot:
             w=num.where(rebinnedSkyImage<>0.0)
             bgf=bgFinder.bgFinder(rebinnedSkyImage[w])
             if not trimBGHighPix:
-                bg=bgf.smartBackground(display=display)
+                bg=bgf.smartBackground(display=display,backupMode=backupMode)
             else:
-                bg=bgf.smartBackground()
+                bg=bgf.smartBackground(backupMode=backupMode)
             bgstd=num.std(rebinnedSkyImage[w])
 
 
@@ -204,11 +207,10 @@ class pillPhot:
                 skyImage[w]=0
             im=skyImage+image
 
-            w=num.where(im==0.0)
-            im[w]+=self.bg*0.7/(self.repFact*self.repFact)
-            im=num.clip(im,num.min(im),num.max(image))
+            (z1,z2)=numdisplay.zscale.zscale(im)
+            norm=interval.ManualInterval(z1,z2)
 
-            pyl.imshow(im,interpolation='nearest',origin='lower')
+            pyl.imshow(norm(im),interpolation='nearest',origin='lower')
             if self.l0<>None:
 
                 pyl.plot(num.linspace(l0.xlim[0],l0.xlim[1],100),l0(num.linspace(l0.xlim[0],l0.xlim[1],100)),'w-',lw=2.)

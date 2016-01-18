@@ -23,6 +23,7 @@ import numpy as num,scipy as sci,pylab as pyl
 from scipy import stats
 from astropy.io import fits as pyf
 from scipy import optimize as opti
+from stsci import numdisplay
 
 class bgFinder:
     def __init__(self,data):
@@ -101,6 +102,9 @@ class bgFinder:
         
 
     def smartBackground(self,gaussStdLimit=1.1,backupMode='fraserMode',inp=None,verbose=False,display=False):
+        """
+        guassStdLimit=1.1 seemed the best compromise in my experience
+        """
         self._gaussFit()
         (g,s)=self.gauss
         #print s,g**0.5,'&&'
