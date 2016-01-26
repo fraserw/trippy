@@ -92,8 +92,8 @@ class modelPSF:
             lineAperCorrHDU=pyf.ImageHDU(num.array([self.lineAperCorrs,self.lineAperCorrRadii]))
         else:
             lineAperCorrHDU=pyf.ImageHDU(num.array([[-1],[-1]]))
-        distHDU=pyf.ImageHDU(num.array([self.rDist,self.fDist]))
-        list=pyf.HDUList([HDU,lookupHDU,lineHDU,hdu,aperCorrHDU,lineAperCorrHDU,distHDU])
+        #distHDU=pyf.ImageHDU(num.array([self.rDist,self.fDist]))
+        list=pyf.HDUList([HDU,lookupHDU,lineHDU,hdu,aperCorrHDU,lineAperCorrHDU])
 
 
         list[0].header.set('REPFACT',self.repFact)
@@ -123,8 +123,8 @@ class modelPSF:
             self.aperCorrRadii=inHan[4].data[1]
             self.lineAperCorrs=inHan[5].data[0]
             self.lineAperCorrRadii=inHan[5].data[1]
-            self.rDist=inHan[6].data[0]
-            self.fDist=inHan[6].data[1]
+            #self.rDist=inHan[6].data[0]
+            #self.fDist=inHan[6].data[1]
 
             self.psfStars=[]
 
@@ -260,8 +260,8 @@ class modelPSF:
             self.lookupTable=None
             self.lookupF=None
             self.lookupR=None
-            self.rDist=None
-            self.fDist=None
+            #self.rDist=None
+            #self.fDist=None
 
             self.line2d=None
             self.longPSF=None
@@ -357,7 +357,7 @@ class modelPSF:
         return (self.beta-1)*(num.pi*a2)*(1.+(rad/self.alpha)**2)**(-self.beta)
 
     def FWHM(self,fromMoffatProfile=False):
-        if not self.fitted or fromMoffatProfile:
+        if (not self.fitted) or fromMoffatProfile:
             r=num.linspace(0,(2*max(self.x.shape[0]/2.,self.y.shape[0]/2.)**2)**0.5,300)
             m=self.moffat(r)
             m/=num.max(m)
@@ -550,17 +550,18 @@ class modelPSF:
         self.verbose=verbose
 
         self.imData=imData*1.0
-        #self.centX=centX
-        #self.centY=centY
         self.boxSize=boxSize
 
         self._flatRadial(centX-0.5,centY-0.5)#set the radial distribution pixels
 
-        w=num.where(self.rDist>bgRadius)
-        bgf=bgFinder.bgFinder(self.fDist[w])
+        #w=num.where(self.rDist>bgRadius)
+        #bgf=bgFinder.bgFinder(self.fDist[w])
+        w=num.where(self.rads>bgRadius)
+        bgf=bgFinder.bgFinder(self.subSec[w])
         self.bg=bgf(method=mode)
 
-        peakGuess=(num.max(self.fDist)-self.bg)/(num.max(self.moffat(self.rDist)))
+        #peakGuess=(num.max(self.fDist)-self.bg)/(num.max(self.moffat(self.rDist)))
+        peakGuess=(num.max(self.subSec)-self.bg)/(num.max(self.moffat(self.rads)))
 
         if fitXY:
             self.verbose=False
@@ -573,7 +574,6 @@ class modelPSF:
                     self._flatRadial(centX+deltaX[ii],centY+deltaY[jj])
                     lsqf=opti.leastsq(self._residFAB,(peakGuess),args=(self.alpha,self.beta,fitMaxRadius),maxfev=1000)
                     res=num.sum(self._residFAB((lsqf[0][0]),self.alpha,self.beta,fitMaxRadius)**2)
-                    #print res,deltaX[ii],deltaY[jj],lsqf[0][0]
                     if best[0]>=res:
                         best=[res,lsqf[0],deltaX[ii],deltaY[jj]]
 
@@ -605,10 +605,11 @@ class modelPSF:
             fig=pyl.figure('Radial Profile')
             ax=fig.add_subplot(111)
             pyl.scatter(downSample2d(self.repRads,self.repFact),self.subSec)
-            r=num.linspace(0,num.max(self.rDist),100)
+            r=num.linspace(0,num.max(self.rads),100)
             pyl.plot(r,self.A*self.moffat(r)+self.bg,'r--')
-            print 'FWHM: %.3f'%(self.FWHM())
-            pyl.title('FWHM: %.3f alpha: %.3f beta: %.3f'%(self.FWHM(),self.alpha,self.beta))
+            fw=self.FWHM(fromMoffatProfile=True)
+            print 'FWHM: %.3f'%(fw)
+            pyl.title('FWHM: %.3f alpha: %.3f beta: %.3f'%(fw,self.alpha,self.beta))
             if logRadPlot: ax.set_xscale('log')
             pyl.show()
 
@@ -743,19 +744,20 @@ class modelPSF:
                 arrR[-1].append(D)
 
 
-        subSecFlat=self.subSec.reshape((b-a)*(c-d))
+        #subSecFlat=self.subSec.reshape((b-a)*(c-d))
+
         arrR=num.array(arrR)
         self.rads=num.copy(arrR)
-        arrR=arrR.reshape((b-a)*(d-c))
-        arg=num.argsort(arrR)
-        self.rDist=arrR[arg]*1.
-        self.fDist=subSecFlat[arg]*1.
+        #arrR=arrR.reshape((b-a)*(d-c))
+        #arg=num.argsort(arrR)
+        #self.rDist=arrR[arg]*1.
+        #self.fDist=subSecFlat[arg]*1.
 
     def _resid(self,p,maxRad):
         (A,alpha,beta)=p
         self.alpha=alpha
         self.beta=beta
-        err=(self.subSec-(self.bg+A*downSample2d(self.moffat(self.repRads),self.repFact))).reshape(len(self.fDist))
+        err=(self.subSec-(self.bg+A*downSample2d(self.moffat(self.repRads),self.repFact))).reshape(self.subSec.size)
         #if maxRad>0:
         #    w=num.where(self.rDist<=maxRad)
         #else:
@@ -765,30 +767,26 @@ class modelPSF:
         if self.alpha<0 or self.beta<0: return num.inf
 
 
-        if self.verbose: print A,alpha,beta,num.sqrt(num.sum(err**2)/(len(self.fDist)-1.))
+        if self.verbose: print A,alpha,beta,num.sqrt(num.sum(err**2)/(self.subSec.size-1.))
         return err
 
     def _residFAB(self,p,alpha,beta,maxRad):
         (A)=p
         self.alpha=alpha
         self.beta=beta
-        err=(self.subSec-(self.bg+A*downSample2d(self.moffat(self.repRads),self.repFact))).reshape(len(self.fDist))
+        err=(self.subSec-(self.bg+A*downSample2d(self.moffat(self.repRads),self.repFact))).reshape(self.subSec.size)
         #if maxRad>0:
         #    w=num.where(self.rDist<=maxRad)
         #else:
         #    w=num.arange(len(self.rDist))
         #err=self.fDist[w]-(self.bg+A*self.moffat(self.rDist[w]))
 
-        if self.verbose: print A,alpha,beta,num.sqrt(num.sum(err**2)/(len(self.fDist)-1.))
+        if self.verbose: print A,alpha,beta,num.sqrt(num.sum(err**2)/(self.subSec.size-1.))
         return err
 
 
         
-def bgselect(event):
-    global CA
-    print CA.get_xlim()
-    print CA.get_ylim()
-        
+
 
 
 if __name__=="__main__":
