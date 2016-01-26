@@ -192,6 +192,9 @@ class modelPSF:
         self.nForFitting=0
         self.imData=None
 
+        if repFact not in [5,10]:
+            raise Warning('This has only been robustly tested with repFact=5 or 10. I encourage you to stick with those.')
+
         if not restore:
             if (len(x)%2==0 or len(y)%2==0):
                 raise Exception('Please use odd width PSFs. Even has not been tested yet.')
