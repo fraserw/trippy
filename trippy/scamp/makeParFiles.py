@@ -63,6 +63,8 @@ def writeParam(fileName='def.param',numAps=1):
             'FLUX_AUTO',
             'FLUX_RADIUS',
             'FLUXERR_AUTO',
+            'FLUX_ISOCOR',
+            'FLUXERR_ISOCOR'
             '',
             'FLAGS',
             '#FLAGS_WEIGHT',
@@ -200,7 +202,7 @@ def writeScamp(fileName='def.scamp',distort=2):
 
 
 #write a modified sex file for astrometry purposes in the scampe_.py scripts
-def writeSex(fileName='def.sex',paramFileName='def.param',minArea=20, threshold=8, zpt=27.4, saturate=40000.,aperture=11,catalogType='ASCII',catalogName='def.cat',kron_factor=2.5,min_radius=3.5):
+def writeSex(fileName='def.sex',paramFileName='def.param',minArea=20, threshold=8, zpt=27.4, saturate=40000.,aperture=11,catalogType='FITS_LDAC',catalogName='def.cat',kron_factor=2.5,min_radius=3.5):
     """Write a modified sextractor file.
 
     Options - paramFileName -the name of the associated parameter
