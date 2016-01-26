@@ -77,7 +77,8 @@ class starChooser:
         (self.z1,self.z2)=numdisplay.zscale.zscale(self.data,nsamples=zscaleNsamp,contrast=zscaleContrast)
         self.normer=interval.ManualInterval(self.z1,self.z2)
 
-    def __call__(self,moffatWidth,moffatSNR,initAlpha=5.,initBeta=2.,repFact=5,xWidth=51,yWidth=51,includeCheesySaturationCut=True,autoTrim=False,noVisualSelection=False,verbose=False):
+    def __call__(self,moffatWidth,moffatSNR,initAlpha=5.,initBeta=2.,repFact=5,xWidth=51,yWidth=51,
+                 includeCheesySaturationCut=True,autoTrim=False,noVisualSelection=False,verbose=False):
         self.moffatWidth=moffatWidth
         self.moffatSNR=moffatSNR
         self.initAlpha=initAlpha
@@ -112,7 +113,7 @@ class starChooser:
 
                 #norm=Im.normalise(mpsf.subsec,[self.z1,self.z2])
                 norm=self.normer(mpsf.subSec)
-                if fwhm<>None:
+                if fwhm<>None and not (num.isnan(mpsf.beta) or num.isnan(mpsf.alpha)):
                     #print self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],mpsf.alpha,mpsf.beta,fwhm
                     print '{: 8.2f} {: 8.2f} {: 5.2f} {: 5.2f} {: 5.2f}'.format(self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],mpsf.alpha,mpsf.beta,fwhm)
 
@@ -121,8 +122,6 @@ class starChooser:
 
                     self.moffs.append(mpsf.moffat(self.moffr)*1.)
 
-                    #self.starsFlatR.append(mpsf.rDist*1.0)
-                    #self.starsFlatF.append((mpsf.fDist-mpsf.bg)/(mpsf.moffat(0)*mpsf.A))
                     self.starsFlatR.append(psf.downSample2d(mpsf.repRads,mpsf.repFact))
                     self.starsFlatF.append((mpsf.subSec-mpsf.bg)/(mpsf.moffat(0)*mpsf.A))
 
@@ -208,7 +207,7 @@ class starChooser:
                 self.moffPatchList[ii]=self.sp4.plot(self.moffr,self.moffs[ii])
         self.sp4.set_xlim(0,30)
         self.sp4.set_ylim(0,1.02)
-        #pyl.sca(ca)
+
         pyl.draw()
 
     def ScatterPSF(self,event):
