@@ -144,6 +144,8 @@ class modelPSF:
             self.pixScale=header['PIXSCALE']
 
 
+        self.boxSize=len(self.lookupTable)/self.repFact/2
+
         #now recompute the necessary parameters
         self.aperCorrFunc=interp.interp1d(self.aperCorrRadii*1.,self.aperCorrs*1.)
         self.lineAperCorrFunc=interp.interp1d(self.lineAperCorrRadii*1.,self.lineAperCorrs*1.)
@@ -354,16 +356,32 @@ class modelPSF:
         a2=self.alpha*self.alpha
         return (self.beta-1)*(num.pi*a2)*(1.+(rad/self.alpha)**2)**(-self.beta)
 
-    def FWHM(self):
-        if self.fitted:
-            r=num.linspace(0,num.max(self.rDist),300)
+    def FWHM(self,fromMoffatProfile=False):
+        if not self.fitted or fromMoffatProfile:
+            r=num.linspace(0,(2*max(self.x.shape[0]/2.,self.y.shape[0]/2.)**2)**0.5,300)
+            m=self.moffat(r)
+            m/=num.max(m)
+            k=num.sum(num.greater(m,0.5))
+            if k<0 or k>=len(m): return None
+            return r[k]*2.
         else:
-            r=num.linspace(0,100,500)
-        m=self.moffat(r)
-        m/=num.max(m)
-        k=num.sum(num.greater(m,0.5))
-        if k<0 or k>=len(m): return None
-        return r[k]*2.
+            a=self.y.shape[0]/2.
+            b=self.x.shape[0]/2.
+            rangeY=num.arange(-a*self.repFact,a*self.repFact)/float(self.repFact)
+            rangeX=num.arange(-b*self.repFact,b*self.repFact)/float(self.repFact)
+            dx2=(0.5/self.repFact-rangeX)**2
+            repRads=[]
+            for ii in range(len(rangeY)):
+                repRads.append((0.5/self.repFact-rangeY[ii])**2+dx2)
+            repRads=num.array(repRads)**0.5
+
+            r=0.
+
+            s=num.sum(self.fullPSF)
+            while r<num.max(repRads):
+                if num.sum(self.fullPSF[num.where(repRads<r)])>=s*0.5:
+                    return r*2.
+                r+=0.01
 
     
     def __getitem__(self,key):
@@ -637,10 +655,6 @@ class modelPSF:
             diff=cut-self.bg
             diff[2:-2,2:-2]-=moff
 
-            #pyl.imshow(diff)
-            #pyl.show()
-            #sys.exit()
-
             fluxes.append(self.A)
             self.psfStars[ii].append(self.A)
 
@@ -675,6 +689,7 @@ class modelPSF:
             self.lookupTable=num.mean(shiftIms,axis=0)/self.maxFlux
         self.psfStar=num.array(self.psfStars)
 
+        self.genPSF()
         return None
 
 
