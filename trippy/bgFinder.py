@@ -119,7 +119,7 @@ class bgFinder:
         if display:
             figHist=pyl.figure('backgroundHistogram')
             ax=figHist.add_subplot(111)
-            pyl.hist(self.data,bins=min(100,len(self.data/10.)))
+            pyl.hist(self.data,bins=min(100,len(self.data)/10))
             (y0,y1)=ax.get_ylim()
             pyl.plot([g,g],[y0,y1],'r-',lw=2)
             pyl.title('Background %s'%(g))
