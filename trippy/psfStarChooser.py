@@ -105,7 +105,7 @@ class starChooser:
                 mpsf=psf.modelPSF(num.arange(xWidth),num.arange(yWidth),alpha=self.initAlpha,beta=self.initBeta,repFact=self.repFact)
                 mpsf.fitMoffat(self.data,self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],boxSize=self.moffatWidth,verbose=verbose)
 
-                fwhm=mpsf.FWHM()
+                fwhm=mpsf.FWHM(fromMoffatProfile=True)
                 #if includeCheesySaturationCut:
                 #    if (mpsf.fDist[0]-mpsf.bg)/(mpsf.moffat(0)*mpsf.A)<0.9: #cheesy saturation cut
                 #        #print 'Saturated'
