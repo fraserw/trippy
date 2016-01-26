@@ -83,7 +83,7 @@ class pillPhot:
         self.radii=radii*1.
         self.aperMags=[]
         for ii in range(len(radii)):
-            self(x,y,radii[ii],l=0.,a=0.,width=width,skyRadius=skyRadius,mode=mode,display=displayAperture)
+            self(x,y,radii[ii],l=0.,a=0.,width=width,skyRadius=skyRadius,backupMode=mode,display=displayAperture)
             self.aperMags.append(self.magnitude)
         self.aperFunc=interp.interp1d(radii,self.aperMags)
 
@@ -122,7 +122,7 @@ class pillPhot:
 
     def __call__(self,x,y,radius=4.,l=5.,a=0.01,width=20.,skyRadius=8.,zpt=27.0,exptime=1.,
                  enableBGSelection=False, display=False,
-                 verbose=False,backupMode='fraserMode',trimBGHighPix=False):
+                 verbose=False,backupMode='fraserMode',trimBGHighPix=False,zscale=True):
         """angle in degrees counterclockwise from +x
         Length in pixels.
         Coordinates are in iraf coordinates, not numpy.
@@ -207,10 +207,16 @@ class pillPhot:
                 skyImage[w]=0
             im=skyImage+image
 
-            (z1,z2)=numdisplay.zscale.zscale(im)
-            norm=interval.ManualInterval(z1,z2)
+            if zscale:
+                (z1,z2)=numdisplay.zscale.zscale(im)
+                norm=interval.ManualInterval(z1,z2)
 
-            pyl.imshow(norm(im),interpolation='nearest',origin='lower')
+                pyl.imshow(norm(im),interpolation='nearest',origin='lower')
+            else:
+                w=num.where(im==0.0)
+                im[w]+=self.bg*0.7/(self.repFact*self.repFact)
+                im=num.clip(im,num.min(im),num.max(image))
+                pyl.imshow(im,interpolation='nearest',origin='lower')
             if self.l0<>None:
 
                 pyl.plot(num.linspace(l0.xlim[0],l0.xlim[1],100),l0(num.linspace(l0.xlim[0],l0.xlim[1],100)),'w-',lw=2.)
