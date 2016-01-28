@@ -280,7 +280,7 @@ class modelPSF:
             self.psfStars=None
 
 
-    def computeRoundAperCorrFromMoffat(self,radii,useLookupTable=True,display=True,displayAperture=True):
+    def computeRoundAperCorrFromPSF(self,radii,useLookupTable=True,display=True,displayAperture=True):
         """
         This computes the aperture correction between the provided aperture
         and the total sum of the psf.
@@ -296,7 +296,7 @@ class modelPSF:
         for iii in range(len(self.aperCorrRadii)):
             r=radii[iii]
             width=A/2#int(A/(r*self.repFact*2)+0.5)*0.75
-            phot(B/2.+0.5,A/2.+0.5,radius=r*self.repFact,l=0.,a=0.,skyRadius=None,zpt=0.0,width=width,display=displayAperture)
+            phot(B/2.,A/2.,radius=r*self.repFact,l=0.,a=0.,skyRadius=None,zpt=0.0,width=width,display=displayAperture)
             m=phot.magnitude
             aperCorrs.append(m)
         self.aperCorrs=num.array(aperCorrs)
@@ -318,7 +318,7 @@ class modelPSF:
             raise Exception('Must first fun computeRoundAperCorrFromMoffat before the aperture corrections can be evaluated here.')
 
 
-    def computeLineAperCorrFromMoffat(self,radii,l,a,display=True,displayAperture=True):
+    def computeLineAperCorrFromTSF(self,radii,l,a,display=True,displayAperture=True):
         """This computes the aperture correction between the linear aperture
         and the total sum of the psf.
         """
@@ -330,7 +330,7 @@ class modelPSF:
         for ii in range(len(self.lineAperCorrRadii)):
             r=self.lineAperCorrRadii[ii]
             width=A/2#int(A/(r*self.repFact*2))
-            phot(B/2.+0.5,A/2.+0.5,radius=r*self.repFact,l=l*self.repFact,a=a,skyRadius=None,zpt=0.0,width=width,display=displayAperture)
+            phot(B/2.,A/2.,radius=r*self.repFact,l=l*self.repFact,a=a,skyRadius=None,zpt=0.0,width=width,display=displayAperture)
             m=phot.magnitude
             print '   ',r,phot.sourceFlux,m
             self.lineAperCorrs.append(m)
@@ -361,7 +361,7 @@ class modelPSF:
 
     def FWHM(self,fromMoffatProfile=False):
         if (not self.fitted) or fromMoffatProfile:
-            r=num.linspace(0,(2*max(self.x.shape[0]/2.,self.y.shape[0]/2.)**2)**0.5,300)
+            r=num.arange(0,(2*max(self.x.shape[0]/2.,self.y.shape[0]/2.)**2)**0.5,0.005)
             m=self.moffat(r)
             m/=num.max(m)
             k=num.sum(num.greater(m,0.5))
