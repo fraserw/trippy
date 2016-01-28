@@ -120,7 +120,7 @@ class pillPhot:
             print "   Num Pixels : %s"%(self.nPix)
             print
 
-    def __call__(self,x,y,radius=4.,l=5.,a=0.01,width=20.,skyRadius=8.,zpt=27.0,exptime=1.,
+    def __call__(self,xi,yi,radius=4.,l=5.,a=0.01,width=20.,skyRadius=8.,zpt=27.0,exptime=1.,
                  enableBGSelection=False, display=False,
                  verbose=False,backupMode='fraserMode',trimBGHighPix=False,zscale=True):
         """angle in degrees counterclockwise from +x
@@ -137,7 +137,10 @@ class pillPhot:
         the bg estimate.
         -the bg is then restimated.
         """
-        
+
+        x=xi-0.5
+        y=yi-0.5
+
         #if l+radius<width or l+skyRadius<width:
         #    raise Exception("Width must be large enough to include both the full aperture, and the sky radius.")
 
@@ -145,8 +148,7 @@ class pillPhot:
             raise Exception('Keep the angle between -90 and +90 with positive rates please. If you ask me nicely, I may include code to handle this.')
         
 
-        ####add +0.5 to x.y coordinates to account for middle of pixel
-        image=self.__lp__(x=x+1.,y=y+1.,radius=radius,l=l,a=a,w=width)
+        image=self.__lp__(x=x+1.,y=y+1.,radius=radius,l=l,a=a,w=int(width))
         if display and self.l0<>None:
             l0=self.l0
             l1=self.l1
@@ -160,7 +162,7 @@ class pillPhot:
             skyImage=image*0.0
             bg=0.0
         else:
-            skyImage=self.__lp__(x=x+1.,y=y+1.,radius=skyRadius,l=l,a=a,w=width,
+            skyImage=self.__lp__(x=x+1.,y=y+1.,radius=skyRadius,l=l,a=a,w=int(width),
                                  retObj=False)
             bgmask=self.bgmask
 
@@ -218,6 +220,7 @@ class pillPhot:
                 im=num.clip(im,num.min(im),num.max(image))
                 pyl.imshow(im,interpolation='nearest',origin='lower')
             if self.l0<>None:
+
 
                 pyl.plot(num.linspace(l0.xlim[0],l0.xlim[1],100),l0(num.linspace(l0.xlim[0],l0.xlim[1],100)),'w-',lw=2.)
                 pyl.plot(num.linspace(l2.xlim[0],l2.xlim[1],100),l2(num.linspace(l2.xlim[0],l2.xlim[1],100)),'w-',lw=2.)
@@ -291,7 +294,6 @@ class pillPhot:
 
     def __lp__(self,x,y,radius,l,a,w,retObj=True):
         ang=a*num.pi/180.
-            
 
         (A,B)=self.data.shape
 
@@ -315,9 +317,10 @@ class pillPhot:
         x2=cx+num.array([num.cos(ang+beta+num.pi),num.sin(beta+ang+num.pi)])*h
         x3=cx+num.array([num.cos(ang-beta),num.sin(ang-beta)])*h
 
+
         map=num.zeros((A,B)).astype('float')
         #draw the box
-        if abs(ang)%num.pi in [0,num.pi/2,num.pi]:
+        if abs(ang)%num.pi in [0,num.pi/2,num.pi,-num.pi/2,-num.pi]:
             corners=num.concatenate([[x0],[x1],[x2],[x3]])
             map[num.min(corners[:,1]):num.max(corners[:,1]),num.min(corners[:,0]):num.max(corners[:,0])]=1.
         else:
