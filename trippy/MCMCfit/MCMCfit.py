@@ -170,8 +170,10 @@ class MCMCfitter:
         for ii in range(b):
             args=num.argsort(goodSamps[:,ii])
             x=goodSamps[args][:,ii]
-            uncert.append([x[int((1-confidenceRange)/2*len(x))],
-                           x[int((1-confidenceRange/2)*len(x))]])
+            a=len(x)*(1-confidenceRange)/2
+            b=1-a
+            uncert.append([x[int(a)],
+                           x[int(b)]])
         return (bp,uncert)
 
 
