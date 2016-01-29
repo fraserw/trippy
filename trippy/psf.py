@@ -78,12 +78,17 @@ class modelPSF:
     """
 
     def psfStore(self,fn):
+        """
+        Store the psf into a fits file that you can view and reopen at a later point. The only option is the fits file
+        name.
+        """
         name=fn.split('.fits')[0]
 
         HDU=pyf.PrimaryHDU(self.PSF)
         hdu=pyf.ImageHDU(self.psf)
         lookupHDU=pyf.ImageHDU(self.lookupTable)
         lineHDU=pyf.ImageHDU(self.longPSF)
+
         if self.aperCorrs<>None:
             aperCorrHDU=pyf.ImageHDU(num.array([self.aperCorrs,self.aperCorrRadii]))
         else:
@@ -110,6 +115,9 @@ class modelPSF:
         list.writeto(name+'.fits',clobber=True)
 
     def _fitsReStore(self,fn):
+        """
+        Hidden convenience function to restore a psf file.
+        """
         print '\nRestoring PSF...'
         name=fn.split('.fits')[0]
         with pyf.open(name+'.fits') as inHan:
@@ -147,8 +155,10 @@ class modelPSF:
         self.boxSize=len(self.lookupTable)/self.repFact/2
 
         #now recompute the necessary parameters
-        self.aperCorrFunc=interp.interp1d(self.aperCorrRadii*1.,self.aperCorrs*1.)
-        self.lineAperCorrFunc=interp.interp1d(self.lineAperCorrRadii*1.,self.lineAperCorrs*1.)
+        if len(self.aperCorrs)<>1:
+            self.aperCorrFunc=interp.interp1d(self.aperCorrRadii*1.,self.aperCorrs*1.)
+        if len(self.lineAperCorrs)<>1:
+            self.lineAperCorrFunc=interp.interp1d(self.lineAperCorrRadii*1.,self.lineAperCorrs*1.)
 
         self.shape=self.psf.shape
         self.x=num.arange(self.shape[0])+0.5
@@ -158,13 +168,13 @@ class modelPSF:
         self.centx=self.cent[0]
         self.centy=self.cent[1]
 
-        self.psf=num.ones([len(y),len(x)]).astype('float')
+        self.psf=num.ones([len(self.y),len(self.x)]).astype('float')
 
-        self.inds=num.zeros((len(y),len(x),2)).astype('int')
-        for ii in range(len(y)):
-            self.inds[ii,:,1]=num.arange(len(x))
-        for ii in range(len(x)):
-            self.inds[:,ii,0]=num.arange(len(y))
+        self.inds=num.zeros((len(self.y),len(self.x),2)).astype('int')
+        for ii in range(len(self.y)):
+            self.inds[ii,:,1]=num.arange(len(self.x))
+        for ii in range(len(self.x)):
+            self.inds[:,ii,0]=num.arange(len(self.y))
 
         self.coords=self.inds+num.array([0.5,0.5])
         self.r=num.sqrt(num.sum((self.coords-self.cent)**2,axis=2))
@@ -189,6 +199,16 @@ class modelPSF:
 
 
     def __init__(self,x=-1,y=-1,alpha=-1,beta=-1,repFact=10,verbose=False,restore=False):
+        """
+        Initialize the PSF.
+
+        x,y are the size of the PSF (width, height) in pixels. Can either be an integer value or a numpy.arange(x) array.
+        alpha, beta are the initial moffat parameters
+        repfact=5,10 is the supersampling factor. Only 5 and 10 are well tested!
+        verbose to see a bunch of unnecessary, but informative output.
+        restore=filename to restore a psf having the filename provided.
+        """
+
         self.nForFitting=0
         self.imData=None
 
@@ -196,8 +216,15 @@ class modelPSF:
             raise Warning('This has only been robustly tested with repFact=5 or 10. I encourage you to stick with those.')
 
         if not restore:
-            if (len(x)%2==0 or len(y)%2==0):
-                raise Exception('Please use odd width PSFs. Even has not been tested yet.')
+            if type(x)==type(num.ones(1.)):
+                if len(x)==1:
+                    if x[0]%2==0 or x[0]%2==0:
+                        raise Exception('Please use odd width PSFs. Even has not been tested yet.')
+                elif (len(x)%2==0 or len(y)%2==0):
+                    raise Exception('Please use odd width PSFs. Even has not been tested yet.')
+            else:
+                if (x%2==0 or y%2==0):
+                    raise Exception('Please use odd width PSFs. Even has not been tested yet.')
 
         if restore:
             self._fitsReStore(restore)
@@ -208,33 +235,39 @@ class modelPSF:
             self.beta=beta
             self.chi=None
 
-
-            self.x=x*1.0+0.5
-            self.y=y*1.0+0.5
-            self.cent=num.array([len(y)/2.,len(x)/2.])
+            if type(x)<>type(num.ones(1.0)):
+                self.x=num.arange(x)+0.5
+                self.y=num.arange(y)+0.5
+            elif len(x)==1:
+                self.x=num.arange(x)+0.5
+                self.y=num.arange(y)+0.5
+            else:
+                self.x=x*1.0+0.5
+                self.y=y*1.0+0.5
+            self.cent=num.array([len(self.y)/2.,len(self.x)/2.])
             self.centx=self.cent[0]
             self.centy=self.cent[1]
             self.repFact=repFact
 
-            self.psf=num.ones([len(y),len(x)]).astype('float')
+            self.psf=num.ones([len(self.y),len(self.x)]).astype('float')
 
-            self.inds=num.zeros((len(y),len(x),2)).astype('int')
-            for ii in range(len(y)):
-                self.inds[ii,:,1]=num.arange(len(x))
-            for ii in range(len(x)):
-                self.inds[:,ii,0]=num.arange(len(y))
+            self.inds=num.zeros((len(self.y),len(self.x),2)).astype('int')
+            for ii in range(len(self.y)):
+                self.inds[ii,:,1]=num.arange(len(self.x))
+            for ii in range(len(self.x)):
+                self.inds[:,ii,0]=num.arange(len(self.y))
 
             self.coords=self.inds+num.array([0.5,0.5])
             self.r=num.sqrt(num.sum((self.coords-self.cent)**2,axis=2))
 
 
-            self.X=num.arange(len(x)*self.repFact)/float(self.repFact)+0.5/self.repFact
-            self.Y=num.arange(len(y)*self.repFact)/float(self.repFact)+0.5/self.repFact
-            self.Inds=num.zeros((len(y)*self.repFact,len(x)*self.repFact,2)).astype('int')
-            for ii in range(len(y)*self.repFact):
-                self.Inds[ii,:,1]=num.arange(len(x)*self.repFact)
-            for ii in range(len(x)*self.repFact):
-                self.Inds[:,ii,0]=num.arange(len(y)*self.repFact)
+            self.X=num.arange(len(self.x)*self.repFact)/float(self.repFact)+0.5/self.repFact
+            self.Y=num.arange(len(self.y)*self.repFact)/float(self.repFact)+0.5/self.repFact
+            self.Inds=num.zeros((len(self.y)*self.repFact,len(self.x)*self.repFact,2)).astype('int')
+            for ii in range(len(self.y)*self.repFact):
+                self.Inds[ii,:,1]=num.arange(len(self.x)*self.repFact)
+            for ii in range(len(self.x)*self.repFact):
+                self.Inds[:,ii,0]=num.arange(len(self.y)*self.repFact)
             self.Coords=(self.Inds+num.array([0.5,0.5]))/float(self.repFact)
 
             self.R=num.sqrt(num.sum((self.Coords-self.cent)**2,axis=2))
@@ -282,9 +315,17 @@ class modelPSF:
 
     def computeRoundAperCorrFromPSF(self,radii,useLookupTable=True,display=True,displayAperture=True):
         """
-        This computes the aperture correction between the provided aperture
-        and the total sum of the psf.
+        This computes the aperture correction directly from the PSF. These vaules will be used for interpolation to
+        other values. The aperture correction is with respect tothe largest aperture provided in radii. I recommend
+        4*FWHM.
+
+        radii is an array of radii on which to calculate the aperture corrections. I recommend at least 10 values
+        between 1 and 4 FWHM.
+        useLookupTable=True/False to calculate either with just the moffat profile, or with lookuptable included.
+        display=True to show you some plots.
+        displayAperture=True to show you the aperture at each radius.
         """
+
         self.aperCorrRadii=radii*1.0
         aperCorrs=[]
 
@@ -312,16 +353,31 @@ class modelPSF:
 
 
     def roundAperCorr(self,r):
+        """
+        Return an aperture correction at given radius. Linear interpolation between values found in
+        computeRoundAperCorrFromPSF is used.
+        """
+
         if self.aperCorrFunc<>None:
             return self.aperCorrFunc(r)-num.min(self.aperCorrs)
         else:
-            raise Exception('Must first fun computeRoundAperCorrFromMoffat before the aperture corrections can be evaluated here.')
+            raise Exception('Must first fun computeRoundAperCorrFromPSF before the aperture corrections can be evaluated here.')
 
 
     def computeLineAperCorrFromTSF(self,radii,l,a,display=True,displayAperture=True):
-        """This computes the aperture correction between the linear aperture
-        and the total sum of the psf.
         """
+        This computes the aperture correction directly from the TSF. These vaules will be used for interpolation to
+        other values. The aperture correction is with respect tothe largest aperture provided in radii. I recommend
+        4*FWHM.
+
+        radii is an array of radii on which to calculate the aperture corrections. I recommend at least 10 values
+        between 1 and 4 FWHM.
+        l and a are the length (in pixels) and angle of the pill aperture
+        useLookupTable=True/False to calculate either with just the moffat profile, or with lookuptable included.
+        display=True to show you some plots.
+        displayAperture=True to show you the aperture at each radius.
+        """
+
         self.lineAperCorrRadii=radii*1.0
         self.lineAperCorrs=[]
 
@@ -347,6 +403,10 @@ class modelPSF:
 
 
     def lineAperCorr(self,r):
+        """
+        Return an aperture correction at given radius. Linear interpolation between values found in
+        computeRoundAperCorrFromTSF is used.
+        """
 
         if self.lineAperCorrFunc<>None:
             return self.lineAperCorrFunc(r)-num.min(self.lineAperCorrs)
@@ -355,11 +415,20 @@ class modelPSF:
 
 
     def moffat(self,rad):
+        """
+        Return a moffat profile evaluated at the radii in the input numpy array.
+        """
+
         #normalized flux profile return 1.-(1.+(rad/self.alpha)**2)**(1.-self.beta)
         a2=self.alpha*self.alpha
         return (self.beta-1)*(num.pi*a2)*(1.+(rad/self.alpha)**2)**(-self.beta)
 
     def FWHM(self,fromMoffatProfile=False):
+        """
+        Return the moffat profile of the PSF. If fromMoffatProfile=True, or if the lookupTable is not yet calculated,
+        the FWHM from a pure moffat profile is returned. Otherwise the lookup table is used.
+        """
+
         if (not self.fitted) or fromMoffatProfile:
             r=num.arange(0,(2*max(self.x.shape[0]/2.,self.y.shape[0]/2.)**2)**0.5,0.005)
             m=self.moffat(r)
@@ -391,10 +460,15 @@ class modelPSF:
         return self.psf[key]
 
     def line(self,rate,angle,dt,pixScale=0.2,display=False,useLookupTable=True):
-        """give the angle in degrees,
-        rate in arcsec/time unit
-        dt in same time unit as used in the rate
-        -pixel scale in arcsec/pix
+        """
+        Compute the TSF given input rate of motion, angle of motion, length of exposure, and pixelScale.
+
+        Units choice is irrelevant, as long as they are all the same! eg. rate in "/hr, and dt in hr.
+        Angle is in degrees +-90 from horizontal.
+
+        display=True to see the TSF
+
+        useLookupTable=True to use the lookupTable. OTherwise pure moffat is used.
         """
 
         self.rate=rate
@@ -442,7 +516,13 @@ class modelPSF:
 
     def plant(self,x,y,amp,indata,addNoise=True,useLinePSF=False,returnModel=False):
         """
-        plant a star at coordinates x,y
+        Plant a star at coordinates x,y with amplitude amp.
+
+        indata is the array in which you want to plant the source.
+        addNoise=True to add gaussian noise.
+        useLinePSF=True to use the TSF rather than the circular PSF.
+        returnModel=True to not actually plant in the data, but return an array of the same size containing the TSF or
+        PSF without noise added.
 
         """
 
@@ -528,12 +608,21 @@ class modelPSF:
 
 
     def remove(self,x,y,amp,data,useLinePSF=False):
+        """
+        The opposite of plant.
+        """
+
         mo=self.plant(x,y,amp,data,addNoise=False,returnModel=True,useLinePSF=useLinePSF)
         self.model=mo*1.
         return data-mo
 
 
     def writeto(self,name):
+        """
+        Convenient file saving function to save the round PSF. Probably not necessary.
+
+        """
+
         try:
             os.remove(name)
         except: pass
@@ -544,8 +633,16 @@ class modelPSF:
     def fitMoffat(self,imData,centX,centY,boxSize=25,bgRadius=20,verbose=False,mode='smart',fixAB=False,fitXY=False,fitMaxRadius=-1.,logRadPlot=False):
 
         """
-        input coordinates are in numpy coordiantes, not iraf.
-        and do not need the extra +0.5 added to them!
+        Fit a moffat profile to the input data, imData, at point centX,centY.
+
+        boxSize is the width around the centre used in the fitting.
+        bgRadius is the radius beyond which the background is estimated.
+        verbose=True to see a lot of fittnig output and a radial plot of each fit.
+        logRadPlot=True to see the plot in log radius.
+        mode='smart' is the background determination method used. See bgFinder for details.
+        fixAB=True to fit only the amplitude.
+        fitXY=False *** this is currently not implemented***
+        fitMaxRadius ***not currently implemented***
         """
 
 
@@ -621,6 +718,14 @@ class modelPSF:
 
 
     def genLookupTable(self,imData,centXs,centYs,verbose=False,bpMask=None,threeSigCut=True):
+        """
+        Generate the lookup table from input imData and x/y coordinates in the numpy arrays centX,centY.
+
+        verbose=True to see a lot of fitting output.
+        bpMask=array to provide a bad pixel mask.
+        threeSigCut=True to apply a 3 sigma cut before reporting the mean lookupTable. Only useful for ~5 or more stars.
+        """
+
         adjCentXs=centXs-0.5
         adjCentYs=centYs-0.5
 
@@ -700,7 +805,7 @@ class modelPSF:
 
     def genPSF(self,A=1.):
         """
-        generate the psf with lookup table
+        generate the psf with lookup table. Convenience function only.
         """
         self.moffProf=self.moffat(self.R-num.min(self.R))
         self.fullPSF=(self.moffProf+self.lookupTable)*A
@@ -708,6 +813,10 @@ class modelPSF:
 
 
     def _flatRadial(self,centX,centY):
+        """
+        Convenience function for the fitMoffat routines.
+        """
+
         if type(centX)<>type(1.) and type(centX)<>type(num.float64(1.)):
             centX=centX[0]
             centY=centY[0]
