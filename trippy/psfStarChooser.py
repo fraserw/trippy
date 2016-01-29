@@ -180,6 +180,10 @@ class starChooser:
         return (goodFits,goodMeds,goodSTDs)
 
     def PSFrange(self,junkAx):
+        """
+        Display function that you shouldn't call directly.
+        """
+
         #ca=pyl.gca()
         pyl.sca(self.sp1)
 
@@ -211,6 +215,10 @@ class starChooser:
         pyl.draw()
 
     def ScatterPSF(self,event):
+        """
+        Display function that you shouldn't call directly.
+        """
+
         ca=pyl.gca()
         me=event.mouseevent
 
