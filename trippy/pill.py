@@ -300,7 +300,14 @@ class pillPhot:
         repData=expand2d(data,self.repFact)
         (A,B)=repData.shape
 
-        cx=num.array([(x-int(x)+w)*self.repFact, (y-int(y)+w)*self.repFact])
+         if ((x<w) and (y<w)):
+           cx=num.array([x*self.repFact, y*self.repFact])
+         elif (x<w):
+           cx=num.array([x*self.repFact, (y-int(y)+w)*self.repFact])
+         elif (y<w):
+           cx=num.array([(x-int(x)+w)*self.repFact, y*self.repFact])
+         else: 
+           cx=num.array([(x-int(x)+w)*self.repFact, (y-int(y)+w)*self.repFact])
         h=self.repFact*(radius**2+(l/2.)**2)**0.5
         beta=num.arctan2(num.array(radius),num.array(l/2.))
         
@@ -338,10 +345,10 @@ class pillPhot:
             perimeter=num.array(perimeter).astype('int')
             ux=num.unique(perimeter[:,0])
             for ii in range(len(ux)):
-                if ux[ii]==len(map[0,:]): continue
+                if (ux[ii]>=len(map[0,:])) or (ux[ii]<0): continue
                 ww=num.where(perimeter[:,0]==ux[ii])
                 y=perimeter[ww][:,1]
-                map[num.min(y):num.max(y)+1,ux[ii]]=1.
+                map[num.max([0,num.min(y)]):num.max([0,num.max(y)+1]),ux[ii]]=1.
                 #ADDIN double check for pixels beyond 1 of the lines.
 
         p0=cx+self.repFact*(l/2.)*num.array([num.cos(ang),num.sin(ang)])
@@ -354,7 +361,9 @@ class pillPhot:
             y=val**0.5
             y0=-y+p0[1]+0.5
             y1=y+p0[1]+0.5
-            if y0==y1: y1+=1
+            if (y0<0) and (y1<0): continue
+            if (y0<0): y0=0
+            if int(y0)==int(y1): y1+=1
             map[y0:y1,xeval[ii]+0.5]=1.
 
         xeval=num.linspace(max(0.,p1[0]-radius*self.repFact),min(p1[0]+radius*self.repFact,B-1),radius*100*2)
@@ -364,7 +373,9 @@ class pillPhot:
             y=val**0.5
             y0=-y+p1[1]+0.5
             y1=y+p1[1]+0.5
-            if y0==y1: y1+=1
+            if (y0<0) and (y1<0): continue
+            if (y0<0): y0=0
+            if int(y0)==int(y1): y1+=1
             map[y0:y1,xeval[ii]+0.5]=1.
 
 
