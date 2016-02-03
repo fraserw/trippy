@@ -81,6 +81,8 @@ class MCMCfitter:
         verbose - if set to true, lots of information printed to screen
         """
 
+        print "Initializing sampler"
+
         self.nForFitting=0
         self.useLinePSF=useLinePSF
 
@@ -120,8 +122,10 @@ class MCMCfitter:
 
 
         sampler=emcee.EnsembleSampler(nWalkers,nDim,lnprob,args=[dat,(ai,bi,ci,di),self.psf,ue,useLinePSF,verbose])
+        print "Executing burn-in... this may take a while."
         pos, prob, state=sampler.run_mcmc(r0,nBurn)
         sampler.reset()
+        print "Executing production run... this will also take a while."
         pos, prob, state = sampler.run_mcmc(pos, nStep, rstate0=state)
         self.samps=sampler.chain
         self.probs=sampler.lnprobability
@@ -166,8 +170,10 @@ class MCMCfitter:
         for ii in range(b):
             args=num.argsort(goodSamps[:,ii])
             x=goodSamps[args][:,ii]
-            uncert.append([x[int((confidenceRange/2)*len(x))],
-                           x[int((1-confidenceRange/2)*len(x))]])
+            a=len(x)*(1-confidenceRange)/2
+            b=1-a
+            uncert.append([x[int(a)],
+                           x[int(b)]])
         return (bp,uncert)
 
 

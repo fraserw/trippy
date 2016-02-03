@@ -26,6 +26,27 @@ from scipy import optimize as opti
 from stsci import numdisplay
 
 class bgFinder:
+    """
+    Get the background estimate of the inputted data. eg.
+
+    bgf=trippy.bgFinder.bgFinder(dataNumpyArray)
+
+    Best to call it as
+    bgf(mode,n)
+    where n is optional and not called for every mode
+
+    where mode can be
+    median - simple median of the values
+    histMode [n] - uses a histogram to estimate the mode, n is the number of bins in the histogram
+    mean - simple mean of the values
+    fraserMode [n] - the background modal estimate described in Fraser et al. (2016) TRIPPy paper. n=0.1 to 0.2 seems
+                     to work best. This is the method most robust to background sources in the data. Also works well
+                     in pure background data. This is probably the most robust method.
+    gaussFit - perform a approximate gaussian fit to the data, returning the mean fit value
+    smart [n] - this first does a gaussFit. If the condition standard Deviation/mean**0.5 > n (where n is the # of
+                standard deviations, ~3) is satisfied, it means you have contamination, in which case it reverts to
+                fraserMode. Otherwise, the gaussian mean is returned.
+    """
     def __init__(self,data):
         
         self.data=num.ravel(data)
@@ -119,7 +140,7 @@ class bgFinder:
         if display:
             figHist=pyl.figure('backgroundHistogram')
             ax=figHist.add_subplot(111)
-            pyl.hist(self.data,bins=min(100,len(self.data/10.)))
+            pyl.hist(self.data,bins=min(100,len(self.data)/10))
             (y0,y1)=ax.get_ylim()
             pyl.plot([g,g],[y0,y1],'r-',lw=2)
             pyl.title('Background %s'%(g))

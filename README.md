@@ -1,7 +1,6 @@
 
-TRIPPy: Python based Trailed Source Photometry (to be published soon)
+TRIPPy: Python based Trailed Source Photometry (submitted to the Astrophysical Journal)
 
-**NOTE: currrenty trippy is only in the test pypi server. In the next day or so, we expect to launch on the full server with the latest version. We are just testing installation bugs atm.**
 
 1. Installation
 ===============

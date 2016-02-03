@@ -64,15 +64,23 @@ class pillPhot:
 
 
     def roundAperCorr(self,r):
+        """
+        Return round aperture correction at radius r interpolated from values computed in computeRoundAperCorrFromSource.
+        """
         if self.aperFunc<>None:
             return self.aperFunc(r)-num.min(self.aperMags)
         else:
             raise Exception('Need to call computeRoundAperCorrFromSource first')
 
-    def computeRoundAperCorrFromSource(self,x,y,radii,skyRadius,width=20.,mode='mode',displayAperture=False,display=False):
+    def computeRoundAperCorrFromSource(self,x,y,radii,skyRadius,width=20.,mode='smart',displayAperture=False,display=False):
         """
-        Compute apeture corrections at the specified star coordinates (iraf coordinates!)
-        and the specified radii
+        Compute apeture corrections at the specified star coordinates and the specified radii numpy array.
+
+        skyRadius is the radius outside of which the background is estimated.
+        mode is the method by which the background is estimated.
+        width is the width of the cutout. Make this bigger than skyRadius!
+        displayAperture=True to see the aperture at each radius.
+        display=True to see a radial aperture correction plot.
         """
 
         #if radii[0]*width<=skyRadius:
@@ -83,7 +91,7 @@ class pillPhot:
         self.radii=radii*1.
         self.aperMags=[]
         for ii in range(len(radii)):
-            self(x,y,radii[ii],l=0.,a=0.,width=width,skyRadius=skyRadius,mode=mode,display=displayAperture)
+            self(x,y,radii[ii],l=0.,a=0.,width=width,skyRadius=skyRadius,backupMode=mode,display=displayAperture)
             self.aperMags.append(self.magnitude)
         self.aperFunc=interp.interp1d(radii,self.aperMags)
 
@@ -97,6 +105,8 @@ class pillPhot:
 
     def SNR(self,gain=1.64,readNoise=3.82,useBGstd=False,nImStacked=1,verbose=False):
         """
+        Compute the SNR and uncertainty of the flux measurement.
+
         Switch useBGstd to true to use the measured standard deviation of
         background pixel values as a measure of the background+readnoise
         uncertainty instead of the background flux. Better for IR data. This
@@ -120,10 +130,13 @@ class pillPhot:
             print "   Num Pixels : %s"%(self.nPix)
             print
 
-    def __call__(self,x,y,radius=4.,l=5.,a=0.01,width=20.,skyRadius=8.,zpt=27.0,exptime=1.,
+    def __call__(self,xi,yi,radius=4.,l=5.,a=0.01,width=20.,skyRadius=8.,zpt=27.0,exptime=1.,
                  enableBGSelection=False, display=False,
-                 verbose=False,backupMode='fraserMode',trimBGHighPix=False):
-        """angle in degrees counterclockwise from +x
+                 verbose=False,backupMode='fraserMode',trimBGHighPix=False,zscale=True):
+        """
+        Perform the actual photometry.
+
+        angle in degrees clockwise +-90 degrees from +x
         Length in pixels.
         Coordinates are in iraf coordinates, not numpy.
 
@@ -137,7 +150,10 @@ class pillPhot:
         the bg estimate.
         -the bg is then restimated.
         """
-        
+
+        x=xi-0.5
+        y=yi-0.5
+
         #if l+radius<width or l+skyRadius<width:
         #    raise Exception("Width must be large enough to include both the full aperture, and the sky radius.")
 
@@ -145,8 +161,7 @@ class pillPhot:
             raise Exception('Keep the angle between -90 and +90 with positive rates please. If you ask me nicely, I may include code to handle this.')
         
 
-        ####add +0.5 to x.y coordinates to account for middle of pixel
-        image=self.__lp__(x=x+1.,y=y+1.,radius=radius,l=l,a=a,w=width)
+        image=self.__lp__(x=x+1.,y=y+1.,radius=radius,l=l,a=a,w=int(width))
         if display and self.l0<>None:
             l0=self.l0
             l1=self.l1
@@ -160,7 +175,7 @@ class pillPhot:
             skyImage=image*0.0
             bg=0.0
         else:
-            skyImage=self.__lp__(x=x+1.,y=y+1.,radius=skyRadius,l=l,a=a,w=width,
+            skyImage=self.__lp__(x=x+1.,y=y+1.,radius=skyRadius,l=l,a=a,w=int(width),
                                  retObj=False)
             bgmask=self.bgmask
 
@@ -207,11 +222,18 @@ class pillPhot:
                 skyImage[w]=0
             im=skyImage+image
 
-            (z1,z2)=numdisplay.zscale.zscale(im)
-            norm=interval.ManualInterval(z1,z2)
+            if zscale:
+                (z1,z2)=numdisplay.zscale.zscale(im)
+                norm=interval.ManualInterval(z1,z2)
 
-            pyl.imshow(norm(im),interpolation='nearest',origin='lower')
+                pyl.imshow(norm(im),interpolation='nearest',origin='lower')
+            else:
+                w=num.where(im==0.0)
+                im[w]+=self.bg*0.7/(self.repFact*self.repFact)
+                im=num.clip(im,num.min(im),num.max(image))
+                pyl.imshow(im,interpolation='nearest',origin='lower')
             if self.l0<>None:
+
 
                 pyl.plot(num.linspace(l0.xlim[0],l0.xlim[1],100),l0(num.linspace(l0.xlim[0],l0.xlim[1],100)),'w-',lw=2.)
                 pyl.plot(num.linspace(l2.xlim[0],l2.xlim[1],100),l2(num.linspace(l2.xlim[0],l2.xlim[1],100)),'w-',lw=2.)
@@ -285,7 +307,6 @@ class pillPhot:
 
     def __lp__(self,x,y,radius,l,a,w,retObj=True):
         ang=a*num.pi/180.
-            
 
         (A,B)=self.data.shape
 
@@ -309,9 +330,10 @@ class pillPhot:
         x2=cx+num.array([num.cos(ang+beta+num.pi),num.sin(beta+ang+num.pi)])*h
         x3=cx+num.array([num.cos(ang-beta),num.sin(ang-beta)])*h
 
+
         map=num.zeros((A,B)).astype('float')
         #draw the box
-        if abs(ang)%num.pi in [0,num.pi/2,num.pi]:
+        if abs(ang)%num.pi in [0,num.pi/2,num.pi,-num.pi/2,-num.pi]:
             corners=num.concatenate([[x0],[x1],[x2],[x3]])
             map[num.min(corners[:,1]):num.max(corners[:,1]),num.min(corners[:,0]):num.max(corners[:,0])]=1.
         else:
@@ -391,6 +413,9 @@ class pillPhot:
 
         
 def bgselect(event):
+    """
+    I don't think this is actually used. Haven't confirmed yet.
+    """
     global CA
     print CA.get_xlim()
     print CA.get_ylim()
