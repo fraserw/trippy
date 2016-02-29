@@ -201,16 +201,16 @@ class MCMCfitter:
         verbose - if set to true, lots of information printed to screen
         """
 
-        print "\n\n\nTHIS HASN'T BEEN FULLY TESTED YET!!!\n\n\n"
 
         self.useLinePSF=useLinePSF
 
         (A,B)=self.imageData.shape
         ai=max(0,int((y_in+Y_in)/2)-fitWidth)
-        bi=min(A,int((y_in+Y_in)/2)+fitWidth)
+        bi=min(A,int((y_in+Y_in)/2)+fitWidth+1)
         ci=max(0,int((x_in+X_in)/2)-fitWidth)
-        di=min(B,int((x_in+X_in)/2)+fitWidth)
+        di=min(B,int((x_in+X_in)/2)+fitWidth+1)
         dat=num.copy(self.imageData)
+
 
         if bg==None:
             bgf=bgFinder.bgFinder(self.imageData)
