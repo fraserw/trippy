@@ -154,6 +154,9 @@ class MCMCfitter:
         confidenceRange - the range for the returned confidence interval
 
         Returns (bestPoint, confidenceArray) Will return None if a fit hasn't been run yet.
+
+        If the fit is a binary fit (6 parameters) fitRange will have a 7th element which is the range of uncertain on
+        the brightness ratio.
         """
 
         if not self.fitted:
@@ -184,6 +187,13 @@ class MCMCfitter:
         for ii in range(b):
             args=num.argsort(goodSamps[:,ii])
             x=goodSamps[args][:,ii]
+            a=len(x)*(1-confidenceRange)/2
+            b=1-a
+            uncert.append([x[int(a)],
+                           x[int(b)]])
+
+        if len(uncert)==6:
+            x=num.sort(goodSamps[:,5]/goodSamps[:,2])
             a=len(x)*(1-confidenceRange)/2
             b=1-a
             uncert.append([x[int(a)],
