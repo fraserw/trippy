@@ -22,6 +22,7 @@ __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>),
 
 import numpy as num, scipy as sci,emcee
 from trippy import bgFinder
+import pickle
 
 def lnprob(r,dat,lims,psf,ue,useLinePSF,verbose=False):
     psf.nForFitting+=1
@@ -52,10 +53,23 @@ def lnprobDouble(r,dat,lims,psf,ue,useLinePSF,verbose=False):
 
 class MCMCfitter:
 
-    def __init__(self,psf,imageData):
+    def __init__(self,psf,imageData,restore=False):
+        """
+        Initialize a fitter object which essentially wraps convenience around the already convenient emcee code.
+
+        Input:
+        psf is the trippy model psf object
+        imageData is the data on which the fit will be performed.
+
+        Use restore=fileName to import a dump fit file saved by saveState.
+
+        """
         self.psf=psf
         self.imageData=num.copy(imageData)
         self.fitted=False
+
+        if restore:
+            self._restoreState(restore)
 
     def fitWithModelPSF(self,x_in,y_in,m_in=-1.,fitWidth=20,
                         nWalkers=20,nBurn=10,nStep=20,
@@ -247,4 +261,17 @@ class MCMCfitter:
         self.samps=sampler.chain
         self.probs=sampler.lnprobability
         self.dat=num.copy(dat)
+        self.fitted=True
+
+    def saveState(self,fn='MCState.pickle'):
+        """
+        Save the fitted state to the provided filename.
+        """
+        if not self.fitted: raise Exception('You must run a fit before you can save the fit results.')
+        with open(fn,'w+') as han:
+            pickle.dump([self.samps,self.probs,self.dat,self.useLinePSF],han)
+
+    def _restoreState(self,fn='MCState.pickle'):
+        with open(fn) as han:
+            (self.samps,self.probs,self.dat,self.useLinePSF)=pickle.load(han)
         self.fitted=True
