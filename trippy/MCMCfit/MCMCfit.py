@@ -146,8 +146,7 @@ class MCMCfitter:
         self.dat=num.copy(dat)
         self.fitted=True
 
-
-    def fitResults(self,confidenceRange=0.67):
+    def fitResults(self, confidenceRange=0.67, returnSamples=False):
         """
         Return the best point and confidence interval.
 
@@ -198,7 +197,8 @@ class MCMCfitter:
             b=1-a
             uncert.append([x[int(a)],
                            x[int(b)]])
-        return (bp,uncert)
+        if not returnSamples: return (bp, uncert)
+        return (bp, uncert, goodSamps)
 
 
     def fitDoubleWithModelPSF(self,x_in,y_in,X_in,Y_in,bRat_in,m_in=-1.,bg=None,
