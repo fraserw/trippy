@@ -160,7 +160,7 @@ class starChooser:
             self.showing.append(1)
         self.sp4.set_xlim(0,30)
         self.sp4.set_ylim(0,1.02)
-        self.sp5=pyl.subplot2grid((4,4),(3,3))
+        self.sp5=pyl.subplot2grid((4,4),(3,1))
         self.sp5.set_aspect('equal')
         self.psfPlotLimits=[self.sp1.get_xlim(),self.sp1.get_ylim()]
         self.conn1=self.sp1.callbacks.connect('ylim_changed',self.PSFrange)
