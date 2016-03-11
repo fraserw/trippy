@@ -154,8 +154,8 @@ class MCMCfitter:
 
         Returns (bestPoint, confidenceArray) Will return None if a fit hasn't been run yet.
 
-        If the fit is a binary fit (6 parameters) fitRange will have a 7th element which is the range of uncertain on
-        the brightness ratio.
+        If the fit is a binary fit (6 parameters) fitRange will have a 9 elements which is the range of uncertain on
+        the brightness ratio, and the Primary-Secondary separation in x/y (in pixels).
         """
 
         if not self.fitted:
@@ -195,6 +195,12 @@ class MCMCfitter:
             x=num.sort(goodSamps[:,5]/goodSamps[:,2])
             a=len(x)*(1-confidenceRange)/2
             b=1-a
+            uncert.append([x[int(a)],
+                           x[int(b)]])
+            x = num.sort(goodSamps[:, 0] - goodSamps[:, 3])
+            uncert.append([x[int(a)],
+                           x[int(b)]])
+            x = num.sort(goodSamps[:, 1] - goodSamps[:, 4])
             uncert.append([x[int(a)],
                            x[int(b)]])
         if not returnSamples: return (bp, uncert)
