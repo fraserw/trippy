@@ -40,37 +40,37 @@ class TestBGFinder(TestCase):
         mock_mean.assert_called_once_with(b.data)
         self.assertEqual(mock_mean(), r)
 
-    @patch.object(bgFinder, '_stats')
-    def test_call_histMode(self, mock_stats):
+    @patch.object(bgFinder, 'histMode')
+    def test_call_histMode(self, mock_histMode):
         'Test the ``histMode`` parameter of the ``__call__`` method'
         b = self.create_finder()
-        mock_stats.return_value = ["I'm a lumberjack"]
+        mock_histMode.return_value = "I'm a lumberjack"
         r = b('histMode')
 
-        mock_stats.assert_called_once_with(50)
-        self.assertEqual(mock_stats()[0], r)
+        mock_histMode.assert_called_once_with()
+        self.assertEqual("I'm a lumberjack", r)
 
-    @patch.object(bgFinder, '_stats')
-    def test_call_histMode_imp(self, mock_stats):
+    @patch.object(bgFinder, 'histMode')
+    def test_call_histMode_imp(self, mock_histMode):
         'Test the ``histMode`` parameter of the ``__call__`` method with ``inp`` set'
         b = self.create_finder()
-        mock_stats.return_value = ["I'm a lumberjack"]
+        mock_histMode.return_value = "I'm a lumberjack"
         r = b('histMode', 9)
 
-        mock_stats.assert_called_once_with(9)
-        self.assertEqual(mock_stats()[0], r)
+        mock_histMode.assert_called_once_with(9)
+        self.assertEqual("I'm a lumberjack", r)
 
-    @patch.object(bgFinder, '_fraserMode')
+    @patch.object(bgFinder, 'fraserMode')
     def test_call_fraser(self, mock_fraser):
         'Test the ``fraserMode`` parameter of the ``__call__`` method'
         b = self.create_finder()
         mock_fraser.return_value = "I'm a lumberjack"
         r = b('fraserMode')
 
-        mock_fraser.assert_called_once_with(0.1)
+        mock_fraser.assert_called_once_with()
         self.assertEqual(mock_fraser(), r)
 
-    @patch.object(bgFinder, '_fraserMode')
+    @patch.object(bgFinder, 'fraserMode')
     def test_call_fraserInp(self, mock_fraser):
         'Test the ``fraserMode`` parameter of the ``__call__`` method with ``imp`` set'
         b = self.create_finder()
@@ -108,10 +108,40 @@ class TestBGFinder(TestCase):
 
     @patch.object(bgFinder, '_stats')
     def test_histMode(self, mock_stats):
-        'Test the ``bgFinder.histMode`` method'
+        'Test the default arguments to the ``bgFinder.histMode`` method'
         mock_stats.return_value = ["I'm a lumberjack"]
         b = self.create_finder()
         r = b.histMode()
 
         mock_stats.assert_called_once_with(50)
         self.assertEqual(mock_stats()[0], r)
+
+    @patch.object(bgFinder, '_stats')
+    def test_histMode_val(self, mock_stats):
+        'Test the ``bgFinder.histMode`` method with the parameter set'
+        b = self.create_finder()
+        mock_stats.return_value = ["I'm a lumberjack"]
+        r = b.histMode(9)
+
+        mock_stats.assert_called_once_with(9)
+        self.assertEqual(mock_stats()[0], r)
+
+    @patch.object(bgFinder, '_fraserMode')
+    def test_fraserMode(self, mock_fraser):
+        'Test the ``bgFinder.fraserMode`` method '
+        b = self.create_finder()
+        mock_fraser.return_value = "I'm a lumberjack"
+        r = b.fraserMode()
+
+        mock_fraser.assert_called_once_with(0.1)
+        self.assertEqual(mock_fraser(), r)
+
+    @patch.object(bgFinder, '_fraserMode')
+    def test_fraserMode_val(self, mock_fraser):
+        'Test the ``bgFinder.fraserMode`` method with the parameter set'
+        b = self.create_finder()
+        mock_fraser.return_value = "I'm a lumberjack"
+        r = b.fraserMode(0.2)
+
+        mock_fraser.assert_called_once_with(0.2)
+        self.assertEqual(mock_fraser(), r)
