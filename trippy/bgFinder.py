@@ -18,12 +18,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 __author__ = ('Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), '
               'Academic email: wes.fraser@qub.ac.uk')
-
+from collections import namedtuple
 import numpy as num
 import pylab as pyl
 from scipy import stats
 from astropy.io import fits as pyf
 from scipy import optimize as opti
+
+#: The class for the return-value of :meth:`bgFinder._stats`
+Stats = namedtuple('Stats', ('mode', 'stddev'))
 
 
 class bgFinder(object):
@@ -105,14 +108,14 @@ class bgFinder(object):
         retval = (n[1:] - n[:-1], w, mn)
         return retval
 
-    def _stats(self, nbins=50.0):
+    def _stats(self, nbins=50):
         # returns mode, std of mode
         (b, w, l) = self._ahist(nbins)
         b[len(b) - 1] = 0
         b[0] = 0
         am = num.argmax(b)
         c = b[b > (b[am] / 2)]
-        retval = (am * w + l, (len(c) * w / 2.0) / 1.41)
+        retval = Stats(am * w + l, (len(c) * w / 2.0) / 1.41)
         return retval
 
     def _fraserMode(self, multi=0.1):
