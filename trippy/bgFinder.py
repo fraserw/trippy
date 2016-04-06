@@ -16,15 +16,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-__author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), Academic email: wes.fraser@qub.ac.uk'
+__author__ = ('Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), '
+              'Academic email: wes.fraser@qub.ac.uk')
 
 import numpy as num
-import scipy as sci
 import pylab as pyl
 from scipy import stats
 from astropy.io import fits as pyf
 from scipy import optimize as opti
-from stsci import numdisplay
+
 
 class bgFinder(object):
     """
@@ -40,31 +40,33 @@ class bgFinder(object):
     median - simple median of the values
     histMode [n] - uses a histogram to estimate the mode, n is the number of bins in the histogram
     mean - simple mean of the values
-    fraserMode [n] - the background modal estimate described in Fraser et al. (2016) TRIPPy paper. n=0.1 to 0.2 seems
-                     to work best. This is the method most robust to background sources in the data. Also works well
-                     in pure background data. This is probably the most robust method.
+    fraserMode [n] - the background modal estimate described in Fraser et al. (2016) TRIPPy paper.
+                     n=0.1 to 0.2 seems to work best. This is the method most robust to background
+                     sources in the data. Also works well in pure background data. This is probably
+                     the most robust method.
     gaussFit - perform a approximate gaussian fit to the data, returning the mean fit value
-    smart [n] - this first does a gaussFit. If the condition standard Deviation/mean**0.5 > n (where n is the # of
-                standard deviations, ~3) is satisfied, it means you have contamination, in which case it reverts to
-                fraserMode. Otherwise, the gaussian mean is returned.
+    smart [n] - this first does a gaussFit. If the condition standard Deviation/mean**0.5 > n
+                (where n is the # of standard deviations, ~3) is satisfied, it means you have
+                contamination, in which case it reverts to fraserMode. Otherwise, the gaussian
+                mean is returned.
     """
-    def __init__(self,data):
-        self.data=num.ravel(data)
+    def __init__(self, data):
+        self.data = num.ravel(data)
 
-    def __call__(self,method='median',inp=None):
-        if method=='median':
+    def __call__(self, method='median', inp=None):
+        if method == 'median':
             return num.median(self.data)
-        if method=='mean':
+        if method == 'mean':
             return num.mean(self.data)
-        elif method=='histMode':
+        elif method == 'histMode':
             if inp==None: inp=50.
             return self._stats(inp)[0]
-        elif method=='fraserMode':
+        elif method == 'fraserMode':
             if inp==None: inp=0.1
             return self._fraserMode(inp)
-        elif method=='gaussFit':
+        elif method == 'gaussFit':
             return self._gaussFit()
-        elif method=='smart':
+        elif method == 'smart':
             return self.smartBackground()
 
     def histMode(self,nbins=50):
