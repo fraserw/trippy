@@ -101,6 +101,17 @@ class TestBGFinder(TestCase):
         self.assertEqual(mock_smart(), r)
 
     def test_call_unknown(self):
+        'Ensure we raise an error if a weird method is passed in'
         b = self.create_finder()
         with self.assertRaises(ValueError):
             b("I'm a lumberjack'")
+
+    @patch.object(bgFinder, '_stats')
+    def test_histMode(self, mock_stats):
+        'Test the ``bgFinder.histMode`` method'
+        mock_stats.return_value = ["I'm a lumberjack"]
+        b = self.create_finder()
+        r = b.histMode()
+
+        mock_stats.assert_called_once_with(50)
+        self.assertEqual(mock_stats()[0], r)
