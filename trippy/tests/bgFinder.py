@@ -99,3 +99,8 @@ class TestBGFinder(TestCase):
 
         mock_smart.assert_called_once_with()
         self.assertEqual(mock_smart(), r)
+
+    def test_call_unknown(self):
+        b = self.create_finder()
+        with self.assertRaises(ValueError):
+            b("I'm a lumberjack'")

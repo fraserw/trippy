@@ -56,18 +56,20 @@ class bgFinder(object):
     def __call__(self, method='median', inp=None):
         if method == 'median':
             return num.median(self.data)
-        if method == 'mean':
+        elif method == 'mean':
             return num.mean(self.data)
         elif method == 'histMode':
-            if inp==None: inp=50.
-            return self._stats(inp)[0]
+            bins = 50.0 if inp is None else inp
+            return self._stats(bins)[0]
         elif method == 'fraserMode':
-            if inp==None: inp=0.1
-            return self._fraserMode(inp)
+            n = 0.1 if inp is None else inp
+            return self._fraserMode(n)
         elif method == 'gaussFit':
             return self._gaussFit()
         elif method == 'smart':
             return self.smartBackground()
+        else:
+            raise ValueError('Unknown method {}'.format(method))
 
     def histMode(self,nbins=50):
         return self._stats(nbins)[0]
