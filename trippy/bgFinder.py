@@ -92,43 +92,45 @@ class bgFinder(object):
     def gaussFit(self):
         return self._gaussFit()
 
-    #ahist and stats generously donated by JJ Kavelaars from jjkmode.py
-    def _ahist(self,nbins=50):
+    def _ahist(self, nbins=50):
+        # ahist and stats generously donated by JJ Kavelaars from jjkmode.py
         b = num.sort(self.data)
         ## use the top and bottom octile to set the histogram bounds
-        mx = b[len(b)-max(1,len(b)/100)]
-        mn = b[len(b)-99*len(b)/100]
-        w = ((mx-mn)/nbins)
+        mx = b[len(b) - max(1, len(b) / 100)]
+        mn = b[len(b) - 99 * len(b) / 100]
+        w = ((mx - mn) / nbins)
 
-        n = num.searchsorted(b,num.arange(mn,mx,w))
+        n = num.searchsorted(b, num.arange(mn, mx, w))
         n = num.concatenate([n, [len(b)]])
-        return n[1:]-n[:-1],w,mn
+        retval = (n[1:] - n[:-1], w, mn)
+        return retval
 
-    def _stats(self,nbins=50.):
-        #returns mode, std of mode
-        (b, w, l)=self._ahist(nbins)
-        b[len(b)-1]=0
-        b[0]=0
+    def _stats(self, nbins=50.0):
+        # returns mode, std of mode
+        (b, w, l) = self._ahist(nbins)
+        b[len(b) - 1] = 0
+        b[0] = 0
         am = num.argmax(b)
-        c=b[b>(b[am]/2)]
-        return am*w+l,(len(c)*w/2.0)/1.41
+        c = b[b > (b[am] / 2)]
+        retval = (am * w + l, (len(c) * w / 2.0) / 1.41)
+        return retval
 
-    def _fraserMode(self,multi=0.1):
-        y=num.array(self.data*multi).astype(int)
-        mode=stats.mode(y)[0]
-        w=num.where(y==mode)
+    def _fraserMode(self, multi=0.1):
+        y = num.array(self.data * multi).astype(int)
+        mode = stats.mode(y)[0]
+        w = num.where(y == mode)
         return num.median(self.data[w[0]])
 
     def _gaussFit(self):
-        med=num.median(self.data)
-        std=num.std(self.data)
+        med = num.median(self.data)
+        std = num.std(self.data)
 
-        res=opti.fmin(self._gaussLike,[med,std],disp=False)
-        self.gauss=res
+        res = opti.fmin(self._gaussLike, [med, std], disp=False)
+        self.gauss = res
         return res[0]
 
-    def _gaussLike(self,x):
-        [m,s]=x[:]
+    def _gaussLike(self, x):
+        [m, s] = x[:]
 
         X=-num.sum((self.data-m)**2)/(2*s*s)
         X-=len(self.data)*num.log((2*num.pi*s*s)**0.5)
