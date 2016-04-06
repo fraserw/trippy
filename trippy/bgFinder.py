@@ -55,17 +55,23 @@ class bgFinder(object):
 
     def __call__(self, method='median', inp=None):
         if method == 'median':
-            return num.median(self.data)
+            return self.median()
         elif method == 'mean':
-            return num.mean(self.data)
+            return self.mean()
         elif method == 'histMode':
-            bins = 50.0 if inp is None else inp
-            return self._stats(bins)[0]
+            if inp is None:
+                retval = self.histMode()
+            else:
+                retval = self.histMode(inp)
+            return retval
         elif method == 'fraserMode':
-            n = 0.1 if inp is None else inp
-            return self._fraserMode(n)
+            if inp is None:
+                retval = self.fraserMode()
+            else:
+                retval = self.fraserMode(inp)
+            return retval
         elif method == 'gaussFit':
-            return self._gaussFit()
+            return self.gaussFit()
         elif method == 'smart':
             return self.smartBackground()
         else:
@@ -76,10 +82,13 @@ class bgFinder(object):
 
     def median(self):
         return num.median(self.data)
+
     def mean(self):
         return num.mean(self.data)
-    def fraserMode(self,multi=0.1):
+
+    def fraserMode(self, multi=0.1):
         return self._fraserMode(multi)
+
     def gaussFit(self):
         return self._gaussFit()
 
