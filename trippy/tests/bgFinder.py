@@ -148,9 +148,9 @@ class TestBGFinder(TestCase):
         self.assertEqual(mock_fraser(), r)
 
     def test_ahist(self):
+        b = self.create_finder()
         data = array(range(0, 255), int)
-        b = bgFinder(data)
-        r = b._ahist()
+        r = b._ahist(data, 50)
 
         self.assertEqual(50, len(r[0]))
         self.assertEqual(5, r[1])

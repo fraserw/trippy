@@ -95,9 +95,10 @@ class bgFinder(object):
     def gaussFit(self):
         return self._gaussFit()
 
-    def _ahist(self, nbins=50):
+    @staticmethod
+    def _ahist(data, nbins):
         # ahist and stats generously donated by JJ Kavelaars from jjkmode.py
-        b = num.sort(self.data)
+        b = num.sort(data)
         ## use the top and bottom octile to set the histogram bounds
         mx = b[len(b) - max(1, len(b) / 100)]
         mn = b[len(b) - 99 * len(b) / 100]
@@ -110,7 +111,7 @@ class bgFinder(object):
 
     def _stats(self, nbins=50):
         # returns mode, std of mode
-        (b, w, l) = self._ahist(nbins)
+        (b, w, l) = self._ahist(self.data, nbins)
         b[len(b) - 1] = 0
         b[0] = 0
         am = num.argmax(b)
