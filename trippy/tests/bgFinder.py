@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, unicode_literals
-from unittest import TestCase
+from __future__ import absolute_import, unicode_literals, print_function
 from mock import (MagicMock, patch, )
+from unittest import TestCase
+from numpy import array
 from trippy.bgFinder import bgFinder
 
 
@@ -145,3 +146,20 @@ class TestBGFinder(TestCase):
 
         mock_fraser.assert_called_once_with(0.2)
         self.assertEqual(mock_fraser(), r)
+
+    def test_ahist(self):
+        data = array(range(0, 255), int)
+        b = bgFinder(data)
+        r = b._ahist()
+
+        self.assertEqual(50, len(r[0]))
+        self.assertEqual(5, r[1])
+        self.assertEqual(3, r[2])
+
+    def test_stats(self):
+        data = array(range(0, 255), int)
+        b = bgFinder(data)
+        r = b._stats()
+
+        self.assertEqual(8, r[0])
+        self.assertAlmostEqual(85.1, r[1], places=1)
