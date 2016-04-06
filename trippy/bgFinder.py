@@ -71,8 +71,9 @@ class bgFinder(object):
         else:
             raise ValueError('Unknown method {}'.format(method))
 
-    def histMode(self,nbins=50):
+    def histMode(self, nbins=50):
         return self._stats(nbins)[0]
+
     def median(self):
         return num.median(self.data)
     def mean(self):
