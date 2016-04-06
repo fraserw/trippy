@@ -136,34 +136,36 @@ class bgFinder(object):
     def _gaussLike(self, x):
         [m, s] = x[:]
 
-        X=-num.sum((self.data-m)**2)/(2*s*s)
-        X-=len(self.data)*num.log((2*num.pi*s*s)**0.5)
+        X = -num.sum((self.data - m)**2) / (2 * s * s)
+        X -= len(self.data) * num.log((2 * num.pi * s * s)**0.5)
         #print X,m,s
         return -X
 
-
-    def smartBackground(self,gaussStdLimit=1.1,backupMode='fraserMode',inp=None,verbose=False,display=False):
+    def smartBackground(self, gaussStdLimit=1.1, backupMode='fraserMode', inp=None, verbose=False,
+                        display=False):
         """
         guassStdLimit=1.1 seemed the best compromise in my experience
         """
         self._gaussFit()
-        (g,s)=self.gauss
+        (g, s) = self.gauss
         #print s,g**0.5,'&&'
         #print
-        if (s/g**0.5)>gaussStdLimit:
-            if inp<>None:
-                if verbose: print '\nUsing backup mode %s with parameter %s.\n'%(backupMode,inp)
-                g=self(backupMode,inp)
-            if verbose: print '\nUsing backup mode %s.\n'%(backupMode)
-            g=self(backupMode)
+        if (s / g**0.5) > gaussStdLimit:
+            if inp is not None:
+                if verbose:
+                    print '\nUsing backup mode %s with parameter %s.\n' % (backupMode, inp)
+                g = self(backupMode, inp)
+            if verbose:
+                print '\nUsing backup mode %s.\n' % (backupMode)
+            g = self(backupMode)
 
         if display:
-            figHist=pyl.figure('backgroundHistogram')
-            ax=figHist.add_subplot(111)
-            pyl.hist(self.data,bins=min(100,len(self.data)/10))
-            (y0,y1)=ax.get_ylim()
-            pyl.plot([g,g],[y0,y1],'r-',lw=2)
-            pyl.title('Background %s'%(g))
+            figHist = pyl.figure('backgroundHistogram')
+            ax = figHist.add_subplot(111)
+            pyl.hist(self.data, bins=min(100, len(self.data) / 10))
+            (y0, y1) = ax.get_ylim()
+            pyl.plot([g, g], [y0, y1], 'r-', lw=2)
+            pyl.title('Background %s' % (g))
             pyl.show()
         return g
     """
@@ -183,49 +185,47 @@ class bgFinder(object):
         return x[args[2]]
     """
 
-if __name__=="__main__":
+if __name__ == "__main__":
 
     with pyf.open('junk.fits') as han:
-        data=han[1].data
+        data = han[1].data
 
     #near source
-    x,y=3275,2266
+    x, y = 3275, 2266
     #cosmic ray
-    x,y=3179,2314
+    x, y = 3179, 2314
     #out of source
-    x,y=3205,2260
+    x, y = 3205, 2260
     #funny place
-    x,y= 3093,2422
+    x, y = 3093, 2422
 
-    w=15
+    w = 15
 
-    data=data[y-w:y+w+1,x-w:x+w+1].reshape((2*w+1)**2)
+    data = data[y - w: y + w + 1, x - w: x + w + 1].reshape((2 * w + 1)**2)
 
-    bg=bgFinder(data)
-    mean=bg.mean()
-    median=bg.median()
-    histo=bg.histMode()
-    fmode=bg.fraserMode(0.1)
-    gauss=bg.gaussFit()
-    smart=bg.smartBackground(inp=0.1)
+    bg = bgFinder(data)
+    mean = bg.mean()
+    median = bg.median()
+    histo = bg.histMode()
+    fmode = bg.fraserMode(0.1)
+    gauss = bg.gaussFit()
+    smart = bg.smartBackground(inp=0.1)
 
+    print 'Mean', mean
+    print 'Median', median
+    print 'JJKMode', histo
+    print 'FraserMode', fmode
+    print 'Gauss Fit', gauss
+    print 'Smart Background', smart
 
-    print 'Mean',mean
-    print 'Median',median
-    print 'JJKMode',histo
-    print 'FraserMode',fmode
-    print 'Gauss Fit',gauss
-    print 'Smart Background',smart
-
-
-    fig=pyl.figure(1)
-    ax=fig.add_subplot(111)
-    pyl.hist(data,bins=w*20)
-    (y0,y1)=ax.get_ylim()
-    pyl.plot([mean,mean],[0,y1],label='mean',lw=2)
-    pyl.plot([median,median],[0,y1],label='median',lw=2)
-    pyl.plot([histo,histo],[0,y1],label='JJKMode',lw=2)
-    pyl.plot([fmode,fmode],[0,y1],label='Fraser Mode',lw=2)
-    pyl.plot([gauss,gauss],[0,y1],label='Gauss Fit',lw=2)
+    fig = pyl.figure(1)
+    ax = fig.add_subplot(111)
+    pyl.hist(data, bins=w * 20)
+    (y0, y1) = ax.get_ylim()
+    pyl.plot([mean, mean], [0, y1], label='mean', lw=2)
+    pyl.plot([median, median], [0, y1], label='median', lw=2)
+    pyl.plot([histo, histo], [0, y1], label='JJKMode', lw=2)
+    pyl.plot([fmode, fmode], [0, y1], label='Fraser Mode', lw=2)
+    pyl.plot([gauss, gauss], [0, y1], label='Gauss Fit', lw=2)
     pyl.legend()
     pyl.show()
