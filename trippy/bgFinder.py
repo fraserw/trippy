@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8 -*-
 """
 Copyright (C) 2016  Wesley Fraser
 
@@ -16,16 +16,17 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-
 __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), Academic email: wes.fraser@qub.ac.uk'
 
-import numpy as num,scipy as sci,pylab as pyl
+import numpy as num
+import scipy as sci
+import pylab as pyl
 from scipy import stats
 from astropy.io import fits as pyf
 from scipy import optimize as opti
 from stsci import numdisplay
 
-class bgFinder:
+class bgFinder(object):
     """
     Get the background estimate of the inputted data. eg.
 
@@ -48,7 +49,6 @@ class bgFinder:
                 fraserMode. Otherwise, the gaussian mean is returned.
     """
     def __init__(self,data):
-        
         self.data=num.ravel(data)
 
     def __call__(self,method='median',inp=None):
@@ -115,12 +115,12 @@ class bgFinder:
 
     def _gaussLike(self,x):
         [m,s]=x[:]
-        
+
         X=-num.sum((self.data-m)**2)/(2*s*s)
         X-=len(self.data)*num.log((2*num.pi*s*s)**0.5)
         #print X,m,s
         return -X
-        
+
 
     def smartBackground(self,gaussStdLimit=1.1,backupMode='fraserMode',inp=None,verbose=False,display=False):
         """
@@ -146,7 +146,7 @@ class bgFinder:
             pyl.title('Background %s'%(g))
             pyl.show()
         return g
-    """    
+    """
     def midBackground(self):
         x=num.array([self._gaussFit(),self.median(),self.mean(),self.fraserMode(),self.histMode()])
         args=num.argsort(x)
@@ -162,7 +162,7 @@ class bgFinder:
             print 'Adopting the JJK mode.'
         return x[args[2]]
     """
-        
+
 if __name__=="__main__":
 
     with pyf.open('junk.fits') as han:
@@ -176,11 +176,11 @@ if __name__=="__main__":
     x,y=3205,2260
     #funny place
     x,y= 3093,2422
-    
+
     w=15
-    
+
     data=data[y-w:y+w+1,x-w:x+w+1].reshape((2*w+1)**2)
-    
+
     bg=bgFinder(data)
     mean=bg.mean()
     median=bg.median()
@@ -188,16 +188,16 @@ if __name__=="__main__":
     fmode=bg.fraserMode(0.1)
     gauss=bg.gaussFit()
     smart=bg.smartBackground(inp=0.1)
-    
-    
+
+
     print 'Mean',mean
     print 'Median',median
     print 'JJKMode',histo
     print 'FraserMode',fmode
     print 'Gauss Fit',gauss
     print 'Smart Background',smart
-    
-    
+
+
     fig=pyl.figure(1)
     ax=fig.add_subplot(111)
     pyl.hist(data,bins=w*20)
