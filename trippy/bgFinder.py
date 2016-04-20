@@ -153,9 +153,10 @@ class bgFinder(object):
                 if verbose:
                     print('\nUsing backup mode %s with parameter %s.\n' % (backupMode, inp))
                 g = self(backupMode, inp)
-            if verbose:
-                print('\nUsing backup mode %s.\n' % (backupMode))
-            g = self(backupMode)
+            else:
+                if verbose:
+                    print('\nUsing backup mode %s.\n' % (backupMode))
+                g = self(backupMode)
 
         if display:
             self.smartBackground_display(g)
