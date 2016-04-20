@@ -163,3 +163,27 @@ class TestBGFinder(TestCase):
 
         self.assertEqual(8, r[0])
         self.assertAlmostEqual(85.1, r[1], places=1)
+
+    def test_under_fraserMode(self):
+        'Test ``bgFinder._fraserMode``'
+        data = array(range(0, 255), int)
+        b = bgFinder(data)
+        r = b._fraserMode()
+
+        self.assertAlmostEqual(4.5, r, places=1)
+
+    def test_gaussFit(self):
+        data = array(range(0, 255), int)
+        b = bgFinder(data)
+        r = b._gaussFit()
+
+        self.assertAlmostEqual(127.0, r, places=1)
+        self.assertAlmostEqual(r, b.gauss[0], places=1)
+        self.assertAlmostEqual(73.61159329, b.gauss[1], places=1)
+
+    def test_gaussLike(self):
+        data = array(range(0, 255), int)
+        b = bgFinder(data)
+        r = b._gaussLike([1.0, 2.0])
+
+        self.assertAlmostEqual(679178.581857, r, places=1)
