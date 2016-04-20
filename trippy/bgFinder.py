@@ -15,7 +15,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-
+from __future__ import print_function
 __author__ = ('Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), '
               'Academic email: wes.fraser@qub.ac.uk')
 from collections import namedtuple
@@ -110,13 +110,14 @@ class bgFinder(object):
         return retval
 
     def _stats(self, nbins=50):
-        # returns mode, std of mode
         (b, w, l) = self._ahist(self.data, nbins)
         b[len(b) - 1] = 0
         b[0] = 0
         am = num.argmax(b)
         c = b[b > (b[am] / 2)]
-        retval = Stats(am * w + l, (len(c) * w / 2.0) / 1.41)
+        mode = (am * w) + l
+        stddev = (len(c) * w / 2.0) / 1.41
+        retval = Stats(mode, stddev)
         return retval
 
     def _fraserMode(self, multi=0.1):
@@ -138,7 +139,6 @@ class bgFinder(object):
 
         X = -num.sum((self.data - m)**2) / (2 * s * s)
         X -= len(self.data) * num.log((2 * num.pi * s * s)**0.5)
-        #print X,m,s
         return -X
 
     def smartBackground(self, gaussStdLimit=1.1, backupMode='fraserMode', inp=None, verbose=False,
@@ -147,27 +147,29 @@ class bgFinder(object):
         guassStdLimit=1.1 seemed the best compromise in my experience
         """
         self._gaussFit()
-        (g, s) = self.gauss
-        #print s,g**0.5,'&&'
-        #print
+        g, s = self.gauss
         if (s / g**0.5) > gaussStdLimit:
             if inp is not None:
                 if verbose:
-                    print '\nUsing backup mode %s with parameter %s.\n' % (backupMode, inp)
+                    print('\nUsing backup mode %s with parameter %s.\n' % (backupMode, inp))
                 g = self(backupMode, inp)
             if verbose:
-                print '\nUsing backup mode %s.\n' % (backupMode)
+                print('\nUsing backup mode %s.\n' % (backupMode))
             g = self(backupMode)
 
         if display:
-            figHist = pyl.figure('backgroundHistogram')
-            ax = figHist.add_subplot(111)
-            pyl.hist(self.data, bins=min(100, len(self.data) / 10))
-            (y0, y1) = ax.get_ylim()
-            pyl.plot([g, g], [y0, y1], 'r-', lw=2)
-            pyl.title('Background %s' % (g))
-            pyl.show()
+            self.smartBackground_display(g)
         return g
+
+    def smartBackground_display(self, g):
+        figHist = pyl.figure('backgroundHistogram')
+        ax = figHist.add_subplot(111)
+        pyl.hist(self.data, bins=min(100, len(self.data) / 10))
+        (y0, y1) = ax.get_ylim()
+        pyl.plot([g, g], [y0, y1], 'r-', lw=2)
+        pyl.title('Background %s' % (g))
+        pyl.show()
+
     """
     def midBackground(self):
         x=num.array([self._gaussFit(),self.median(),self.mean(),self.fraserMode(),self.histMode()])
@@ -211,12 +213,12 @@ if __name__ == "__main__":
     gauss = bg.gaussFit()
     smart = bg.smartBackground(inp=0.1)
 
-    print 'Mean', mean
-    print 'Median', median
-    print 'JJKMode', histo
-    print 'FraserMode', fmode
-    print 'Gauss Fit', gauss
-    print 'Smart Background', smart
+    print('Mean', mean)
+    print('Median', median)
+    print('JJKMode', histo)
+    print('FraserMode', fmode)
+    print('Gauss Fit', gauss)
+    print('Smart Background', smart)
 
     fig = pyl.figure(1)
     ax = fig.add_subplot(111)
