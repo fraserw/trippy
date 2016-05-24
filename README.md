@@ -1,6 +1,9 @@
 
 TRIPPy: Python based Trailed Source Photometry (submitted to the Astrophysical Journal)
 
+Citation: If you use TRIPPy in your science works, please cite Fraser, W. et al., 2016, To appear in AJ. 
+DOI at Zenodo: http://dx.doi.org/10.5281/zenodo.48694
+
 
 1. Installation
 ===============
