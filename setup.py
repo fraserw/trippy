@@ -28,5 +28,7 @@ setup(
   classifiers = [],
   extras_require = {
       'MCMCfit': ['emcee']
-  }
+  },
+  test_suite="trippy.tests",
+  tests_require=['mock', ],
 )
