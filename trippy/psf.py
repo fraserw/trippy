@@ -717,7 +717,7 @@ class modelPSF:
 
 
 
-    def genLookupTable(self,imData,centXs,centYs,verbose=False,bpMask=None,threeSigCut=True):
+    def genLookupTable(self,imData,centXs,centYs,verbose=False,bpMask=None,threeSigCut=True,bgRadius=20.):
         """
         Generate the lookup table from input imData and x/y coordinates in the numpy arrays centX,centY.
 
@@ -756,7 +756,7 @@ class modelPSF:
 
             cut=imData[yint:yint+2*self.boxSize+5,xint:xint+2*self.boxSize+5]
 
-            self.fitMoffat(cut,num.array([cx]),num.array([cy]),self.boxSize,verbose=verbose,fixAB=True,fitXY=False,fitMaxRadius=3.)
+            self.fitMoffat(cut,num.array([cx]),num.array([cy]),self.boxSize,verbose=verbose,fixAB=True,fitXY=False,fitMaxRadius=3.,bgRadius=bgRadius)
             self.imData=num.copy(imData) #this is necessary because the imdata gets set to the shifted image subsection
             moff=downSample2d(self.moffat(self.repRads),self.repFact)*self.A
 
