@@ -187,3 +187,42 @@ class TestBGFinder(TestCase):
         r = b._gaussLike([1.0, 2.0])
 
         self.assertAlmostEqual(679178.581857, r, places=1)
+
+    @patch.object(bgFinder, '_gaussFit')
+    def test_smartBackground_high_limit(self, mock_gaussFit):
+        g = (1, 0.2)  # The Gauss value
+        mock_gaussFit.return_value = g
+        b = self.create_finder()
+        b.gauss = g
+        r = b.smartBackground()
+
+        self.assertEqual(g[0], r)
+
+    @patch.object(bgFinder, '_gaussFit')
+    @patch.object(bgFinder, '__call__')
+    def test_smartBackground_low_limit_inp_none(self, mock_call, mock_gaussFit):
+        g = (1, 2)  # The Gauss value
+        mock_gaussFit.return_value = g
+        mock_call.return_value = 2
+
+        b = self.create_finder()
+        b.gauss = g
+        r = b.smartBackground()
+
+        self.assertEqual(r, 2)
+        mock_call.assert_called_once_with('fraserMode')
+
+    @patch.object(bgFinder, '_gaussFit')
+    @patch.object(bgFinder, '__call__')
+    def test_smartBackground_low_limit_inp_not_none(self, mock_call, mock_gaussFit):
+        g = (1, 2)  # The Gauss value
+        mock_gaussFit.return_value = g
+        mock_call.return_value = 2
+
+        b = self.create_finder()
+        b.gauss = g
+        r = b.smartBackground(inp=7)
+
+        self.assertEqual(r, 2)
+        mock_call.assert_called_once_with('fraserMode', 7)
+
