@@ -334,15 +334,26 @@ class modelPSF:
             phot=pillPhot(self.fullPSF,repFact=1)
         else:
             phot=pillPhot(self.PSF,repFact=1)
+
+        """
+        #old individual radii call version
         for iii in range(len(self.aperCorrRadii)):
             r=radii[iii]
             width=A/2#int(A/(r*self.repFact*2)+0.5)*0.75
             phot(B/2.,A/2.,radius=r*self.repFact,l=0.,a=0.,skyRadius=None,zpt=0.0,width=width,display=displayAperture)
             m=phot.magnitude
             aperCorrs.append(m)
+        """
+
+        #more efficient version with all radii passed at once.
+        width=A/2
+        phot(B / 2., A / 2., radius=radii * self.repFact, l=0., a=0., skyRadius=None, zpt=0.0, width=width,
+             display=displayAperture)
+        aperCorrs = phot.magnitude
+
         self.aperCorrs=num.array(aperCorrs)
         self.aperCorrFunc=interp.interp1d(self.aperCorrRadii*1.,self.aperCorrs*1.)
-        
+
         if display:
             fig=pyl.figure('psf')
             pyl.plot(self.aperCorrRadii,self.aperCorrs,'k-o')
@@ -383,6 +394,9 @@ class modelPSF:
 
         (A,B)=self.PSF.shape
         phot=pillPhot(self.longPSF,repFact=1)
+
+        """
+        #old version where all radii are passed individually
         for ii in range(len(self.lineAperCorrRadii)):
             r=self.lineAperCorrRadii[ii]
             width=A/2#int(A/(r*self.repFact*2))
@@ -390,9 +404,21 @@ class modelPSF:
             m=phot.magnitude
             print '   ',r,phot.sourceFlux,m
             self.lineAperCorrs.append(m)
+        """
+
+        #new version where all radii are passed at once
+        width = A / 2
+        phot(B / 2., A / 2., radius=radii * self.repFact, l=l * self.repFact, a=a, skyRadius=None, zpt=0.0, width=width,
+             display=displayAperture)
+        fluxes = phot.sourceFlux
+        self.lineAperCorrs = phot.magnitude
+        print "    Radius  Flux      Magnitude"
+        for ii in range(len(self.lineAperCorrRadii)):
+            print '    {:6.2f} {:10.3f}  {:8.3f}'.format(radii[ii],phot.sourceFlux[ii],phot.magnitude[ii])
+
         self.lineAperCorrs=num.array(self.lineAperCorrs)
         self.lineAperCorrFunc=interp.interp1d(self.lineAperCorrRadii,self.lineAperCorrs)
-        
+
         if display:
             fig=pyl.figure('psf')
             pyl.plot(self.lineAperCorrRadii,self.lineAperCorrs,'k-o')
@@ -455,7 +481,7 @@ class modelPSF:
                     return r*2.
                 r+=0.01
 
-    
+
     def __getitem__(self,key):
         return self.psf[key]
 
@@ -496,7 +522,7 @@ class modelPSF:
 
         else:
             self.line2d=num.array([[1.0]])
-        
+
         if useLookupTable:
             print 'Using the lookup table when generating the long PSF.'
             self.longPSF=signal.convolve2d(self.moffProf+self.lookupTable*self.repFact*self.repFact, self.line2d,mode='same')
@@ -506,7 +532,7 @@ class modelPSF:
             self.longPSF=signal.convolve2d(self.moffProf,self.line2d,mode='same')
             self.longPSF*=num.sum(self.moffProf)/num.sum(self.longPSF)
         self.psf=downSample2d(self.longPSF,self.repFact)
-        
+
         if display:
             fig=pyl.figure('Line PSF')
             pyl.imshow(self.longPSF,interpolation='nearest',origin='lower')
@@ -590,7 +616,7 @@ class modelPSF:
 
             w=num.where(psf<0)
             psf[w]=0.0 #this is a cheat to handle the outer edges of the lookup table that can get negative values when convolved
-            self.fitFluxCorr=1. #HACK! Could get rid of this in the future...
+        self.fitFluxCorr=1. #HACK! Could get rid of this in the future...
 
         (a,b)=psf.shape
         if addNoise:
@@ -630,84 +656,88 @@ class modelPSF:
         List=pyf.HDUList([HDU])
         List.writeto(name)
 
-    def fitMoffat(self,imData,centX,centY,boxSize=25,bgRadius=20,verbose=False,mode='smart',fixAB=False,fitXY=False,fitMaxRadius=-1.,logRadPlot=False):
+    def fitMoffat(self,imData,centX,centY,
+                  boxSize=25,bgRadius=20,
+                  verbose=False,mode='smart',fixAB=False,
+                  fitXY=False,fitMaxRadius=-1.,logRadPlot=False):
 
         """
         Fit a moffat profile to the input data, imData, at point centX,centY.
 
-        boxSize is the width around the centre used in the fitting.
-        bgRadius is the radius beyond which the background is estimated.
-        verbose=True to see a lot of fittnig output and a radial plot of each fit.
-        logRadPlot=True to see the plot in log radius.
-        mode='smart' is the background determination method used. See bgFinder for details.
-        fixAB=True to fit only the amplitude.
-        fitXY=False *** this is currently not implemented***
-        fitMaxRadius ***not currently implemented***
+        - boxSize is the width around the centre used in the fitting.
+        - bgRadius is the radius beyond which the background is estimated.
+        - verbose=True to see a lot of fittnig output and a radial plot of each fit.
+        - logRadPlot=True to see the plot in log radius.
+        - mode='smart' is the background determination method used. See bgFinder for details.
+        - fixAB=True to fit only the amplitude.
+        - fitXY=False *** this is currently not implemented***
+        - fitMaxRadius ***not currently implemented***
         """
 
 
 
-        self.verbose=verbose
+        self.verbose = verbose
 
-        self.imData=imData*1.0
-        self.boxSize=boxSize
+        self.imData = imData*1.0
+        self.boxSize = boxSize
 
         self._flatRadial(centX-0.5,centY-0.5)#set the radial distribution pixels
 
-        #w=num.where(self.rDist>bgRadius)
-        #bgf=bgFinder.bgFinder(self.fDist[w])
-        w=num.where(self.rads>bgRadius)
-        bgf=bgFinder.bgFinder(self.subSec[w])
-        self.bg=bgf(method=mode)
+        #w = num.where(self.rDist>bgRadius)
+        #bgf = bgFinder.bgFinder(self.fDist[w])
+        w = num.where(self.rads>bgRadius)
+        bgf = bgFinder.bgFinder(self.subSec[w])
+        self.bg = bgf(method=mode)
 
-        #peakGuess=(num.max(self.fDist)-self.bg)/(num.max(self.moffat(self.rDist)))
-        peakGuess=(num.max(self.subSec)-self.bg)/(num.max(self.moffat(self.rads)))
+        #peakGuess = (num.max(self.fDist)-self.bg)/(num.max(self.moffat(self.rDist)))
+        peakGuess = (num.max(self.subSec)-self.bg)/(num.max(self.moffat(self.rads)))
 
         if fitXY:
-            self.verbose=False
-            best=[1.e8,-1.,-1.,-1.]
+            print 'This is hacky and really slow. Not really meant for production.'
+            self.verbose = False
+            best = [1.e8,-1.,-1.,-1.]
             print 'Fitting XYA'
-            deltaX=num.arange(-0.2,0.2+1./self.repFact,1./self.repFact/2.)
-            deltaY=num.arange(-0.2,0.2+1./self.repFact,1./self.repFact/2.)
+            deltaX = num.arange(-0.2,0.2+1./self.repFact,1./self.repFact/2.)
+            deltaY = num.arange(-0.2,0.2+1./self.repFact,1./self.repFact/2.)
             for ii in range(len(deltaX)):
                 for jj in range(len(deltaY)):
                     self._flatRadial(centX+deltaX[ii],centY+deltaY[jj])
-                    lsqf=opti.leastsq(self._residFAB,(peakGuess),args=(self.alpha,self.beta,fitMaxRadius),maxfev=1000)
-                    res=num.sum(self._residFAB((lsqf[0][0]),self.alpha,self.beta,fitMaxRadius)**2)
-                    if best[0]>=res:
-                        best=[res,lsqf[0],deltaX[ii],deltaY[jj]]
+                    lsqf = opti.leastsq(self._residFAB,(peakGuess),args=(self.alpha,self.beta,fitMaxRadius),maxfev=1000)
+                    res = num.sum(self._residFAB((lsqf[0][0]),self.alpha,self.beta,fitMaxRadius)**2)
+                    if best[0]>= res:
+                        best = [res,lsqf[0],deltaX[ii],deltaY[jj]]
 
             return (best[2],best[3])
 
         elif fixAB:
-            lsqf=opti.leastsq(self._residFAB,(peakGuess),args=(self.alpha,self.beta,fitMaxRadius),maxfev=200)
+            lsqf = opti.leastsq(self._residFAB,(peakGuess),args=(self.alpha,self.beta,fitMaxRadius),maxfev=200)
         else:
-            lsqf=opti.leastsq(self._resid,(peakGuess,self.alpha,self.beta),args=(fitMaxRadius),maxfev=250)
+            lsqf = opti.leastsq(self._resid,(peakGuess,self.alpha,self.beta),args=(fitMaxRadius),maxfev=250)
         if self.verbose: print lsqf
-        self.A=lsqf[0][0]
+        self.A = lsqf[0][0]
         if not fixAB:
-            self.alpha=lsqf[0][1]
-            self.beta=lsqf[0][2]
+            self.alpha = lsqf[0][1]
+            self.beta = lsqf[0][2]
         if fixAB:
             res=self._residFAB((self.A),self.alpha,self.beta,fitMaxRadius)
         else:
             res=self._resid((self.A,self.alpha,self.beta),fitMaxRadius)
-        self.chi=num.sqrt(num.sum(res**2)/(len(res)-1))
-        self.fitted=True
+        self.chi = num.sqrt(num.sum(res**2)/(len(res)-1))
+        self.fitted = True
 
-        self.PSF=self.moffat(self.R)
-        self.PSF/=num.sum(self.PSF)
-        self.psf=downSample2d(self.PSF,self.repFact)
+        self.PSF = self.moffat(self.R)
+        self.PSF /= num.sum(self.PSF)
+        self.psf = downSample2d(self.PSF,self.repFact)
 
 
         if self.verbose:
             print '   A:%s, alpha:%s, beta:%s'%(self.A,self.alpha,self.beta)
-            fig=pyl.figure('Radial Profile')
-            ax=fig.add_subplot(111)
+            fig = pyl.figure('Radial Profile')
+            ax = fig.add_subplot(111)
             pyl.scatter(downSample2d(self.repRads,self.repFact),self.subSec)
-            r=num.linspace(0,num.max(self.rads),100)
+            r = num.linspace(0,num.max(self.rads),100)
             pyl.plot(r,self.A*self.moffat(r)+self.bg,'r--')
-            fw=self.FWHM(fromMoffatProfile=True)
+            fw = self.FWHM(fromMoffatProfile=True)
             print 'FWHM: %.3f'%(fw)
             pyl.title('FWHM: %.3f alpha: %.3f beta: %.3f'%(fw,self.alpha,self.beta))
             if logRadPlot: ax.set_xscale('log')
@@ -897,7 +927,7 @@ class modelPSF:
         return err
 
 
-        
+
 
 
 
