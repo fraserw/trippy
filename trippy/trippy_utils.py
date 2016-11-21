@@ -1,4 +1,5 @@
 import numpy as num
+import imp
 
 def extent(r1,r2,n):
     lr1=num.log10(r1)
@@ -22,11 +23,28 @@ def expand2d(a, repFact):
                 out[i*repFact+j,:]=r
         return out/(float(repFact)*float(repFact))
 
-def downSample2d(a,sampFact):
-    (A,B)=a.shape
-    A/=sampFact
-    B/=sampFact
-    return num.array([num.sum(a[i:i+sampFact,j:j+sampFact]) for i in range(0,sampFact*A,sampFact) for j in range(0,sampFact*B,sampFact)]).reshape(A,B)/(sampFact*sampFact)
+try:
+    from numba import jit
+
+    @jit
+    def downSample2d(a, sampFact):
+        (A, B) = a.shape
+        o = num.zeros((A/sampFact,B/sampFact)).astype('float64')
+        for i in range(0,A,sampFact):
+            for j in range(0,B,sampFact):
+                s = 0.0
+                for k in range(sampFact):
+                    for l in range(sampFact):
+                        s += a[i+k,j+l]
+                o[i/sampFact,j/sampFact] = s
+        return o/(sampFact*sampFact)
+
+except:
+    def downSample2d(a,sampFact):
+        (A,B)=a.shape
+        A/=sampFact
+        B/=sampFact
+        return num.array([num.sum(a[i:i+sampFact,j:j+sampFact]) for i in range(0,sampFact*A,sampFact) for j in range(0,sampFact*B,sampFact)]).reshape(A,B)/(sampFact*sampFact)
 
 
 class line:
