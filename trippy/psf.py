@@ -614,8 +614,10 @@ class modelPSF:
                 lpsf[:sy,:]=sec
             psf=downSample2d(lpsf,self.repFact)*amp
 
+            #this is a cheat to handle the outer edges that can go negative after convolution
             w=num.where(psf<0)
-            psf[w]=0.0 #this is a cheat to handle the outer edges of the lookup table that can get negative values when convolved
+            psf[w]=0.0
+
         self.fitFluxCorr=1. #HACK! Could get rid of this in the future...
 
         (a,b)=psf.shape
@@ -629,7 +631,7 @@ class modelPSF:
         if returnModel:
             return bigOut[self.boxSize:A+self.boxSize,self.boxSize:B+self.boxSize]
 
-        indata+=bigOut[self.boxSize:A+self.boxSize,self.boxSize:B+self.boxSize]
+        indata+=bigOut[self.boxSize:A+self.boxSize, self.boxSize:B+self.boxSize]
         return indata
 
 
@@ -638,8 +640,8 @@ class modelPSF:
         The opposite of plant.
         """
 
-        mo=self.plant(x,y,amp,data,addNoise=False,returnModel=True,useLinePSF=useLinePSF)
-        self.model=mo*1.
+        mo = self.plant(x,y,amp,data,addNoise=False,returnModel=True,useLinePSF=useLinePSF)
+        self.model = mo*1.
         return data-mo
 
 

@@ -24,15 +24,23 @@ import numpy as num, scipy as sci,emcee
 from trippy import bgFinder
 import pickle
 
-def lnprob(r,dat,lims,psf,ue,useLinePSF,verbose=False):
+def lnprob(r,dat,lims,psf,ue,useLinePSF, verbose=False, other=None):
     psf.nForFitting+=1
-    (x,y,amp)=r
+    if other <> None:
+        (x,y,amp) = other[:]
+    if len(r)==3:
+        (x, y, amp) = r
+    elif len(r)==2:
+        (x,y) = r
+    elif len(r)==1:
+        amp = r[0]
     (a,b)=dat.shape
     if  amp<=0 or x>=b or x<=0 or y<=0 or y>=a: return -num.inf
     diff=psf.remove(x,y,amp,dat,useLinePSF=useLinePSF)[lims[0]:lims[1],lims[2]:lims[3]]
     chi=-0.5*num.sum(diff**2/ue[lims[0]:lims[1],lims[2]:lims[3]]**2)
-    if verbose: print '{:6d} {: 8.3f} {: 8.3f} {: 8.3f} {: 10.3f}'.format(psf.nForFitting,x,y,amp,chi)
+    if verbose: print '{:6d} {:8.3f} {:8.3f} {:8.3f} {:10.3f}'.format(psf.nForFitting,x,y,amp,chi)
     return chi
+
 
 
 def lnprobDouble(r,dat,lims,psf,ue,useLinePSF,verbose=False):
@@ -128,18 +136,69 @@ class MCMCfitter:
             else:
                 m_in=self.psf.repFact*self.psf.repFact*num.sum(dat)/num.sum(self.psf.fullPSF)
 
+
+        nDim=2
+        r0=[]
+        for ii in range(nWalkers):
+            r0.append(num.array([x_in,y_in])+sci.randn(2)*num.array([0.1,0.1]))
+        r0=num.array(r0)
+
+        #fit first using input best guess amplitude
+        sampler=emcee.EnsembleSampler(nWalkers,nDim,lnprob,args=[dat,(ai,bi,ci,di),self.psf,ue,useLinePSF,verbose,(-1,-1,m_in)])
+        print "Executing xy burn-in... this may take a while."
+        pos, prob, state=sampler.run_mcmc(r0, nBurn, 10)
+        sampler.reset()
+        print "Executing xy production run... this will also take a while."
+        pos, prob, state = sampler.run_mcmc(pos, nStep, rstate0=state)
+        self.samps=sampler.chain
+        self.probs=sampler.lnprobability
+        self.dat=num.copy(dat)
+        self.fitted=True
+
+        out = self.fitResults()
+        (x,y,junk) = out[0]
+        dx = (out[1][0][1] - out[1][0][0])/2.0
+        dy = (out[1][1][1] - out[1][1][0])/2.0
+
+        nDim = 1 # need to put two here rather than one because the fitresults code does a residual subtraction
+        r0 = []
+        for ii in range(nWalkers):
+            r0.append(num.array([m_in]) + sci.randn(1) * num.array([m_in*0.25]))
+        r0 = num.array(r0)
+
+
+        #now fit the amplitude using the best-fit x,y from above
+        #could probably cut the nBurn and nStep numbers down by a factor of 2
+        sampler = emcee.EnsembleSampler(nWalkers, nDim, lnprob,
+                                        args=[dat, (ai, bi, ci, di), self.psf, ue, useLinePSF, verbose, (x, y, -1)])
+        print "Executing amplitude burn-in... this may take a while."
+        pos, prob, state = sampler.run_mcmc(r0, max(nBurn/2,10))
+        sampler.reset()
+        print "Executing amplitude production run... this will also take a while."
+        pos, prob, state = sampler.run_mcmc(pos, max(nStep/2,10), rstate0=state)
+        self.samps = sampler.chain
+        self.probs = sampler.lnprobability
+        self.dat = num.copy(dat)
+        self.fitted = True
+
+        out = self.fitResults()
+        amp = out[0][0]
+        damp = (out[1][0][1]-out[1][0][0])/2.0
+
+
+        #now do a full 3D fit using a small number of burn and steps.
         nDim=3
         r0=[]
         for ii in range(nWalkers):
-            r0.append(num.array([x_in,y_in,m_in])+sci.randn(3)*num.array([0.1,0.1,m_in*0.25]))
+            r0.append(num.array([x,y,amp])+sci.randn(3)*num.array([dx,dy,damp]))
         r0=num.array(r0)
 
 
         sampler=emcee.EnsembleSampler(nWalkers,nDim,lnprob,args=[dat,(ai,bi,ci,di),self.psf,ue,useLinePSF,verbose])
-        print "Executing burn-in... this may take a while."
+        print "Executing xy-amp burn-in... this may take a while."
         pos, prob, state=sampler.run_mcmc(r0,nBurn)
         sampler.reset()
-        print "Executing production run... this will also take a while."
+        print "Executing xy-amp production run... this will also take a while."
         pos, prob, state = sampler.run_mcmc(pos, nStep, rstate0=state)
         self.samps=sampler.chain
         self.probs=sampler.lnprobability
@@ -177,9 +236,12 @@ class MCMCfitter:
 
         bp=goodSamps[-1]
         print 'Best point:',bp
-        self.residual=self.psf.remove(bp[0],bp[1],bp[2],self.dat,useLinePSF=self.useLinePSF)
-        if b==6:
+        if b == 3:
+            self.residual=self.psf.remove(bp[0],bp[1],bp[2],self.dat,useLinePSF=self.useLinePSF)
+        elif b==6:
             self.residual=self.psf.remove(bp[3],bp[4],bp[5],self.residual,useLinePSF=self.useLinePSF)
+        elif b == 1:
+            self.residual = None
         self.fitFlux=num.sum(self.psf.model)*self.psf.fitFluxCorr
 
         uncert=[]
