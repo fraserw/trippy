@@ -80,19 +80,39 @@ class bgFinder(object):
         else:
             raise ValueError('Unknown method {}'.format(method))
 
-    def histMode(self, nbins=50):
+    def histMode(self, nbins=50 , display = False):
+        if display:
+            g = self._stats(nbins)[0]
+            self.background_display(g)
+            return g
         return self._stats(nbins)[0]
 
-    def median(self):
+    def median(self, display = False):
+        if display:
+            g = num.median(nbins)
+            self.background_display(g)
+            return g
         return num.median(self.data)
 
-    def mean(self):
+    def mean(self, display = False):
+        if display:
+            g = num.mean(self.data)
+            self.background_display(g)
+            return g
         return num.mean(self.data)
 
-    def fraserMode(self, multi=0.1):
+    def fraserMode(self, multi=0.1, display = False):
+        if display:
+            g = self._fraserMode(multi)
+            self.background_display(g)
+            return g
         return self._fraserMode(multi)
 
-    def gaussFit(self):
+    def gaussFit(self, display = False):
+        if display:
+            g = self._gaussFit()
+            self.background_display(g)
+            return g
         return self._gaussFit()
 
     @staticmethod
@@ -142,13 +162,15 @@ class bgFinder(object):
         return -X
 
     def smartBackground(self, gaussStdLimit=1.1, backupMode='fraserMode', inp=None, verbose=False,
-                        display=False):
+                        display=False, forceBackupMode = False):
         """
         guassStdLimit=1.1 seemed the best compromise in my experience
+
+        If we want to use a backup mode only here, then set the backupmode of choice, and set forceBackgroundMode = True
         """
         self._gaussFit()
         g, s = self.gauss
-        if (s / g**0.5) > gaussStdLimit:
+        if (s / g**0.5) > gaussStdLimit or forceBackupMode:
             if inp is not None:
                 if verbose:
                     print('\nUsing backup mode %s with parameter %s.\n' % (backupMode, inp))
@@ -159,10 +181,10 @@ class bgFinder(object):
                 g = self(backupMode)
 
         if display:
-            self.smartBackground_display(g)
+            self.background_display(g)
         return g
 
-    def smartBackground_display(self, g):
+    def background_display(self, g):
         figHist = pyl.figure('backgroundHistogram')
         ax = figHist.add_subplot(111)
         pyl.hist(self.data, bins=min(100, len(self.data) / 10))
