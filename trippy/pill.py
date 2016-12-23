@@ -89,14 +89,22 @@ class pillPhot:
             raise Exception('Must use a width that is larger than the skyRadius')
 
         self.radii=radii*1.
+
+        """
+        #individual apertures
         self.aperMags=[]
         for ii in range(len(radii)):
             self(x,y,radii[ii],l=0.,a=0.,width=width,skyRadius=skyRadius,backupMode=mode,display=displayAperture)
             self.aperMags.append(self.magnitude)
+        """
+        #more efficient version where apertures are all passed as an array
+        self(x, y, radii, l=0., a=0., width=width, skyRadius=skyRadius, backupMode=mode, display=displayAperture)
+        self.aperMags = self.magnitude
+
+
         self.aperFunc=interp.interp1d(radii,self.aperMags)
 
         if display:
-            #print 'displkat'
             aperFig=pyl.figure('Aperture Corrections')
             pyl.plot(radii,self.aperMags)
             pyl.show()
@@ -132,7 +140,8 @@ class pillPhot:
 
     def __call__(self,xi,yi,radius=4.,l=5.,a=0.01,width=20.,skyRadius=8.,zpt=27.0,exptime=1.,
                  enableBGSelection=False, display=False,
-                 verbose=False,backupMode='fraserMode',trimBGHighPix=False,zscale=True):
+                 verbose=False, backupMode='fraserMode', forceBackupMode = False,
+                 trimBGHighPix=False, zscale=True):
         """
         Perform the actual photometry.
 
@@ -151,86 +160,104 @@ class pillPhot:
         -the bg is then restimated.
         """
 
-        x=xi-0.5
-        y=yi-0.5
+        x = xi-0.5
+        y = yi-0.5
 
         #if l+radius<width or l+skyRadius<width:
         #    raise Exception("Width must be large enough to include both the full aperture, and the sky radius.")
 
-        if a>90 or a<-90 or l<0 or radius<0:
+        if a>90 or a<-90 or l<0 or num.min(radius)<0:
             raise Exception('Keep the angle between -90 and +90 with positive rates please. If you ask me nicely, I may include code to handle this.')
         
 
-        image=self.__lp__(x=x+1.,y=y+1.,radius=radius,l=l,a=a,w=int(width))
+        if type(radius) == type(1.0) or type(radius) == num.float64:
+            image = self.__lp__(x=x+1.,y=y+1.,radius=radius,l=l,a=a,w=int(width))
+            mask = self.mask
+        elif type(radius) == type(num.array([1.0])) or type(radius) == type(num.array([1])):
+            image = []
+            mask = []
+            for jj in range(len(radius)):
+                image.append(self.__lp__(x=x+1.,y=y+1.,radius=radius[jj],l=l,a=a,w=int(width)))
+                mask.append(self.mask)
+
         if display and self.l0<>None:
-            l0=self.l0
-            l1=self.l1
-            l2=self.l2
-            l3=self.l3
+            l0 = self.l0
+            l1 = self.l1
+            l2 = self.l2
+            l3 = self.l3
 
-        bgstd=-1.
-        mask=self.mask
+        bgstd = -1.
 
-        if skyRadius==None:
-            skyImage=image*0.0
+        if skyRadius == None:
+            if type(radius) == type(1.0) or type(radius) == num.float64:
+                skyImage = image*0.0
+            elif type(radius) == type(num.array([1.0])) or type(radius) == type(num.array([1])):
+                skyImage = image[0]*0.0
             bg=0.0
         else:
-            skyImage=self.__lp__(x=x+1.,y=y+1.,radius=skyRadius,l=l,a=a,w=int(width),
+            skyImage = self.__lp__(x=x+1.,y=y+1.,radius=skyRadius,l=l,a=a,w=int(width),
                                  retObj=False)
-            bgmask=self.bgmask
+            bgmask = self.bgmask
 
-            rebinnedSkyImage=num.zeros(num.array(skyImage.shape)/self.repFact)
-            (aa,bb)=skyImage.shape
+            rebinnedSkyImage = num.zeros(num.array(skyImage.shape)/self.repFact)
+            (aa,bb) = skyImage.shape
             for ii in range(0,aa,self.repFact):
                 for jj in range(0,bb,self.repFact):
-                    n=num.sum(bgmask[ii:ii+self.repFact,jj:jj+self.repFact])
+                    n = num.sum(bgmask[ii:ii+self.repFact,jj:jj+self.repFact])
                     if n==self.repFact*self.repFact:
-                        rebinnedSkyImage[ii/self.repFact,jj/self.repFact]=num.sum(skyImage[ii:ii+self.repFact,jj:jj+self.repFact])
+                        rebinnedSkyImage[ii/self.repFact,jj/self.repFact] = num.sum(skyImage[ii:ii+self.repFact, jj:jj+self.repFact])
 
-            w=num.where(rebinnedSkyImage<>0.0)
-            bgf=bgFinder.bgFinder(rebinnedSkyImage[w])
+            w = num.where(rebinnedSkyImage<>0.0)
+            bgf = bgFinder.bgFinder(rebinnedSkyImage[w])
             if not trimBGHighPix:
-                bg=bgf.smartBackground(display=display,backupMode=backupMode)
+                bg = bgf.smartBackground(display=display,backupMode=backupMode, forceBackupMode = forceBackupMode)
             else:
-                bg=bgf.smartBackground(backupMode=backupMode)
-            bgstd=num.std(rebinnedSkyImage[w])
+                bg = bgf.smartBackground(backupMode=backupMode, forceBackupMode = forceBackupMode)
+            bgstd = num.std(rebinnedSkyImage[w])
 
 
             if trimBGHighPix:
-                W=num.where(rebinnedSkyImage[w]<bg+trimBGHighPix*bgstd)
-                bgf=bgFinder.bgFinder(rebinnedSkyImage[w][W])
-                bg=bgf.smartBackground(display=display)
-                bgstd=num.std(rebinnedSkyImage[w][W])
+                W = num.where(rebinnedSkyImage[w]<bg+trimBGHighPix*bgstd)
+                bgf = bgFinder.bgFinder(rebinnedSkyImage[w][W])
+                bg = bgf.smartBackground(display=display, backupMode=backupMode, forceBackupMode = forceBackupMode)
+                bgstd = num.std(rebinnedSkyImage[w][W])
 
 
-        W=num.where(mask<>0.0)
-        flux=num.sum(image)-len(W[0])*bg/(self.repFact*self.repFact)
+        if type(radius) == type(1.0) or type(radius) == num.float64:
+            W = num.where(mask <> 0.0)
+            flux = num.sum(image)-len(W[0])*bg/(self.repFact*self.repFact)
+        elif type(radius) == type(num.array([1.0])) or type(radius) == type(num.array([1])):
+            flux = []
+            for jj in range(len(radius)):
+                W = num.where(mask[jj] <> 0.0)
+                flux.append(num.sum(image[jj])-len(W[0])*bg/(self.repFact*self.repFact))
+            flux = num.array(flux)
 
-        self.nPix=num.sum(mask)/(self.repFact*self.repFact)
+        self.nPix = num.sum(mask)/(self.repFact*self.repFact)
 
-        self.sourceFlux=flux
-        self.bg=bg
-        self.bgstd=bgstd
-        self.exptime=exptime
-        self.magnitude=zpt-2.5*num.log10(self.sourceFlux/self.exptime)
+        self.sourceFlux = flux
+        self.bg = bg
+        self.bgstd = bgstd
+        self.exptime = exptime
+        self.magnitude = zpt-2.5*num.log10(self.sourceFlux/self.exptime)
 
 
 
         if display:
             if trimBGHighPix:
-                w=num.where(skyImage>(bg+trimBGHighPix*bgstd)/(self.repFact*self.repFact))
-                skyImage[w]=0
-            im=skyImage+image
+                w = num.where(skyImage>(bg+trimBGHighPix*bgstd)/(self.repFact*self.repFact))
+                skyImage[w] = 0
+            im = skyImage+image
 
             if zscale:
-                (z1,z2)=numdisplay.zscale.zscale(im)
-                norm=interval.ManualInterval(z1,z2)
+                (z1,z2) = numdisplay.zscale.zscale(im)
+                norm = interval.ManualInterval(z1,z2)
 
                 pyl.imshow(norm(im),interpolation='nearest',origin='lower')
             else:
-                w=num.where(im==0.0)
+                w = num.where(im==0.0)
                 im[w]+=self.bg*0.7/(self.repFact*self.repFact)
-                im=num.clip(im,num.min(im),num.max(image))
+                im = num.clip(im,num.min(im),num.max(image))
                 pyl.imshow(im,interpolation='nearest',origin='lower')
             if self.l0<>None:
 
@@ -241,64 +268,64 @@ class pillPhot:
 
                 #pyl.plot([l0.xlim[0],l0.xlim[0]+50],[l0(l0.xlim[0]),l0(l0.xlim[0])],'k--')
 
-                mx0=(l0.xlim[0]+l2.xlim[0])/2
-                my0=(l0(l0.xlim[0])+l2(l2.xlim[0]))/2
-                a0=num.arctan2(l0(l0.xlim[0])-my0,l0.xlim[0]-mx0)
-                a1=num.arctan2(l2(l2.xlim[0])-my0,l2.xlim[0]-mx0)
-                a=num.linspace(a0,a1,25)
-                xxx=mx0-num.cos(a)*radius*self.repFact
-                yyy=my0-num.sin(a)*radius*self.repFact
+                mx0 = (l0.xlim[0]+l2.xlim[0])/2
+                my0 = (l0(l0.xlim[0])+l2(l2.xlim[0]))/2
+                a0 = num.arctan2(l0(l0.xlim[0])-my0,l0.xlim[0]-mx0)
+                a1 = num.arctan2(l2(l2.xlim[0])-my0,l2.xlim[0]-mx0)
+                a = num.linspace(a0,a1,25)
+                xxx = mx0-num.cos(a)*radius*self.repFact
+                yyy = my0-num.sin(a)*radius*self.repFact
                 pyl.plot(xxx,yyy,'w-',lw=2)
                 pyl.plot([mx0,xxx[-6]],[my0,yyy[-6]],'w:',lw=2)
                 #pyl.text((mx0+xxx[-6])/2.-5,(my0+yyy[-6])/2.-5,'$r$',size=20)
 
 
-                mx0=(l0.xlim[1]+l2.xlim[1])/2
-                my0=(l0(l0.xlim[1])+l2(l2.xlim[1]))/2
-                a0=num.arctan2(l0(l0.xlim[1])-my0,l0.xlim[1]-mx0)
-                a1=num.arctan2(l2(l2.xlim[1])-my0,l2.xlim[1]-mx0)
-                a=num.linspace(a0,a1,25)
-                xxx=mx0+num.cos(a)*radius*self.repFact
-                yyy=my0+num.sin(a)*radius*self.repFact
+                mx0 = (l0.xlim[1]+l2.xlim[1])/2
+                my0 = (l0(l0.xlim[1])+l2(l2.xlim[1]))/2
+                a0 = num.arctan2(l0(l0.xlim[1])-my0,l0.xlim[1]-mx0)
+                a1 = num.arctan2(l2(l2.xlim[1])-my0,l2.xlim[1]-mx0)
+                a = num.linspace(a0,a1,25)
+                xxx = mx0+num.cos(a)*radius*self.repFact
+                yyy = my0+num.sin(a)*radius*self.repFact
                 pyl.plot(xxx,yyy,'w-',lw=2)
 
 
             if enableBGSelection:
                 print 'Current background value: %.3f'%(self.bg)
                 pyl.title('To improve background measurement, zoom on a good\nbackground region, then close.')
-                CA=pyl.gca()
-                (ox0,ox1)=CA.get_xlim()
-                (oy0,oy1)=CA.get_ylim()
+                CA = pyl.gca()
+                (ox0,ox1) = CA.get_xlim()
+                (oy0,oy1) = CA.get_ylim()
 
 
                 pyl.show()
-                (A,B)=im.shape
-                (x0,x1)=CA.get_xlim()
-                (y0,y1)=CA.get_ylim()
+                (A,B) = im.shape
+                (x0,x1) = CA.get_xlim()
+                (y0,y1) = CA.get_ylim()
                 if ox0==x0 and ox1==x1 and oy0==y0 and oy1==y1: return
 
-                x0=max(0,x0)/10
-                y0=max(0,y0)/10
-                x1=min(A,x1)/10
-                y1=min(B,y1)/10
+                x0 = max(0,x0)/10
+                y0 = max(0,y0)/10
+                x1 = min(A,x1)/10
+                y1 = min(B,y1)/10
 
-                rebinnedSkyImage=rebinnedSkyImage[y0:y1,x0:x1]
-                w=num.where(rebinnedSkyImage<>0.0)
-                bgf=bgFinder.bgFinder(rebinnedSkyImage[w])
-                bg=bgf.smartBackground(display=display)
-                bgstd=num.std(rebinnedSkyImage[w])
+                rebinnedSkyImage = rebinnedSkyImage[y0:y1,x0:x1]
+                w = num.where(rebinnedSkyImage<>0.0)
+                bgf = bgFinder.bgFinder(rebinnedSkyImage[w])
+                bg = bgf.smartBackground(display=display)
+                bgstd = num.std(rebinnedSkyImage[w])
 
 
-                W=num.where(mask<>0.0)
-                flux=num.sum(image)-len(W[0])*bg/(self.repFact*self.repFact)
+                W = num.where(mask<>0.0)
+                flux = num.sum(image)-len(W[0])*bg/(self.repFact*self.repFact)
 
-                self.nPix=num.sum(mask)/(self.repFact*self.repFact)
+                self.nPix = num.sum(mask)/(self.repFact*self.repFact)
 
-                self.sourceFlux=flux
-                self.bg=bg
-                self.bgstd=bgstd
-                self.exptime=exptime
-                self.magnitude=zpt-2.5*num.log10(self.sourceFlux/self.exptime)
+                self.sourceFlux = flux
+                self.bg = bg
+                self.bgstd = bgstd
+                self.exptime = exptime
+                self.magnitude = zpt-2.5*num.log10(self.sourceFlux/self.exptime)
 
             else: pyl.show()
         if verbose: print num.sum(image),self.sourceFlux,self.bg,zpt-2.5*num.log10(flux)
@@ -321,14 +348,14 @@ class pillPhot:
         repData=expand2d(data,self.repFact)
         (A,B)=repData.shape
 
-         if ((x<w) and (y<w)):
-           cx=num.array([x*self.repFact, y*self.repFact])
-         elif (x<w):
-           cx=num.array([x*self.repFact, (y-int(y)+w)*self.repFact])
-         elif (y<w):
-           cx=num.array([(x-int(x)+w)*self.repFact, y*self.repFact])
-         else: 
-           cx=num.array([(x-int(x)+w)*self.repFact, (y-int(y)+w)*self.repFact])
+        if ((x < w) and (y < w)):
+            cx = num.array([x * self.repFact, y * self.repFact])
+        elif (x < w):
+            cx = num.array([x * self.repFact, (y - int(y) + w) * self.repFact])
+        elif (y < w):
+            cx = num.array([(x - int(x) + w) * self.repFact, y * self.repFact])
+        else:
+            cx = num.array([(x - int(x) + w) * self.repFact, (y - int(y) + w) * self.repFact])
         h=self.repFact*(radius**2+(l/2.)**2)**0.5
         beta=num.arctan2(num.array(radius),num.array(l/2.))
         
