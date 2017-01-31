@@ -68,7 +68,7 @@ class starChooser:
     (goodStars,meds,stds)=starChooser(40, 5. 2.)
     """
 
-    def __init__(self,data,XWIN_IMAGE,YWIN_IMAGE,FLUX_AUTO,FLUXERR_AUTO,zscaleNsamp=200.,zscaleContrast=1.):
+    def __init__(self,data,XWIN_IMAGE,YWIN_IMAGE,FLUX_AUTO,FLUXERR_AUTO,zscaleNsamp=200,zscaleContrast=1.):
         self.XWIN_IMAGE=XWIN_IMAGE
         self.YWIN_IMAGE=YWIN_IMAGE
         self.FLUX_AUTO=FLUX_AUTO
@@ -97,19 +97,17 @@ class starChooser:
 
         print 'Fitting stars with moffat profiles...'
 
-
         for j in range(len(self.XWIN_IMAGE)):
             if self.FLUX_AUTO[j]/self.FLUXERR_AUTO[j]>self.moffatSNR:
                 if self.XWIN_IMAGE[j]-1<0 or self.XWIN_IMAGE[j]-1>=self.data.shape[1] or self.YWIN_IMAGE[j]-1<0 or self.YWIN_IMAGE[j]-1>=self.data.shape[0]:
                     continue
-                mpsf=psf.modelPSF(num.arange(xWidth),num.arange(yWidth),alpha=self.initAlpha,beta=self.initBeta,repFact=self.repFact)
+                #this psf object creator has to be here. It's to do with the way PSF objects are initialized. Some time
+                #in the future I will adjust this for a small speed boost.
+                mpsf = psf.modelPSF(num.arange(xWidth), num.arange(yWidth), alpha=self.initAlpha, beta=self.initBeta,
+                                    repFact=self.repFact)
                 mpsf.fitMoffat(self.data,self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],boxSize=self.moffatWidth,verbose=verbose)
 
                 fwhm=mpsf.FWHM(fromMoffatProfile=True)
-                #if includeCheesySaturationCut:
-                #    if (mpsf.fDist[0]-mpsf.bg)/(mpsf.moffat(0)*mpsf.A)<0.9: #cheesy saturation cut
-                #        #print 'Saturated'
-                #        continue
 
                 #norm=Im.normalise(mpsf.subsec,[self.z1,self.z2])
                 norm=self.normer(mpsf.subSec)
@@ -172,6 +170,7 @@ class starChooser:
         chi_lim=self.sp1.get_ylim()
 
         w=num.where((self.points[:,0]>fwhm_lim[0])&(self.points[:,0]<fwhm_lim[1])&(self.points[:,1]>chi_lim[0])&(self.points[:,1]<chi_lim[1])&(self.goodStars==True))
+        pyl.clf()
         pyl.close()
 
         goodFits=self.points[w]
