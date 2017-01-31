@@ -112,7 +112,7 @@ class modelPSF:
         list[0].header['angle']=self.angle
         list[0].header['dt']=self.dt
         list[0].header['pixScale']=self.pixScale
-        list.writeto(name+'.fits',clobber=True)
+        list.writeto(name+'.fits', overwrite=True)
 
     def _fitsReStore(self,fn):
         """
