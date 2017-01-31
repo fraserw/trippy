@@ -216,7 +216,6 @@ class modelPSF:
             raise Warning('This has only been robustly tested with repFact=5 or 10. I encourage you to stick with those.')
 
         if not restore:
-            print x
             if type(x)==type(num.ones(1)):
                 if len(x)==1:
                     if x[0]%2==0 or x[0]%2==0:
