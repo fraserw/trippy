@@ -369,7 +369,7 @@ class pillPhot:
         #draw the box
         if abs(ang)%num.pi in [0,num.pi/2,num.pi,-num.pi/2,-num.pi]:
             corners=num.concatenate([[x0],[x1],[x2],[x3]])
-            map[num.min(corners[:,1]):num.max(corners[:,1]),num.min(corners[:,0]):num.max(corners[:,0])]=1.
+            map[num.min(corners[:,1]).astype('int'):num.max(corners[:,1]).astype('int') , num.min(corners[:,0]).astype('int'):num.max(corners[:,0]).astype('int')]=1.
         else:
             l0=line(x0,x1)
             l1=line(x1,x2)
@@ -413,7 +413,7 @@ class pillPhot:
             if (y0<0) and (y1<0): continue
             if (y0<0): y0=0
             if int(y0)==int(y1): y1+=1
-            map[y0:y1,xeval[ii]+0.5]=1.
+            map[int(y0):int(y1),int(xeval[ii]+0.5)]=1.
 
         xeval=num.linspace(max(0.,p1[0]-radius*self.repFact),min(p1[0]+radius*self.repFact,B-1),radius*100*2)
         for ii in range(len(xeval)):
@@ -425,7 +425,7 @@ class pillPhot:
             if (y0<0) and (y1<0): continue
             if (y0<0): y0=0
             if int(y0)==int(y1): y1+=1
-            map[y0:y1,xeval[ii]+0.5]=1.
+            map[int(y0):int(y1),int(xeval[ii]+0.5)]=1.
 
 
         #print p0,p1,radius*self.repFact
