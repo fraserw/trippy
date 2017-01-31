@@ -309,7 +309,7 @@ class pillPhot:
                 x1 = min(A,x1)/10
                 y1 = min(B,y1)/10
 
-                rebinnedSkyImage = rebinnedSkyImage[y0:y1,x0:x1]
+                rebinnedSkyImage = rebinnedSkyImage[int(y0):int(y1), int(x0):int(x1)]
                 w = num.where(rebinnedSkyImage<>0.0)
                 bgf = bgFinder.bgFinder(rebinnedSkyImage[w])
                 bg = bgf.smartBackground(display=display)
