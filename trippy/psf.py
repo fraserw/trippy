@@ -89,11 +89,11 @@ class modelPSF:
         lookupHDU=pyf.ImageHDU(self.lookupTable)
         lineHDU=pyf.ImageHDU(self.longPSF)
 
-        if self.aperCorrs<>None:
+        if self.aperCorrs is not None:
             aperCorrHDU=pyf.ImageHDU(num.array([self.aperCorrs,self.aperCorrRadii]))
         else:
             aperCorrHDU=pyf.ImageHDU(num.array([[-1],[-1]]))
-        if self.lineAperCorrs<>None:
+        if self.lineAperCorrs is not None:
             lineAperCorrHDU=pyf.ImageHDU(num.array([self.lineAperCorrs,self.lineAperCorrRadii]))
         else:
             lineAperCorrHDU=pyf.ImageHDU(num.array([[-1],[-1]]))
