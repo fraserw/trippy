@@ -164,7 +164,8 @@ class starChooser:
         self.sp5.set_aspect('equal')
         self.psfPlotLimits=[self.sp1.get_xlim(),self.sp1.get_ylim()]
         self.conn1=self.sp1.callbacks.connect('ylim_changed',self.PSFrange)
-        self.conn2=pyl.connect('pick_event',self.ScatterPSF)
+#        self.conn2=pyl.connect('pick_event',self.ScatterPSF)
+        self.conn3=pyl.connect('key_press_event',self.ScatterPSF)
         if not noVisualSelection: pyl.show()
 
 
@@ -220,60 +221,89 @@ class starChooser:
         """
 
         ca=pyl.gca()
-        me=event.mouseevent
+#        me=event.mouseevet
+        key = event.key
+        global selected_star  # Currently selected star
+        try:                  # Did we do this once before, or first time? 
+          arg = selected_star
+        except NameError:     # We did not do this before, so define
+          selected_star = 0
+          arg = selected_star
 
         if self.starsScat<>None:
             self.starsScat.remove()
             self.starsScat=None
 
-        ranks=self.points[:,0]*0.0
-        args=num.argsort(num.abs(me.xdata-self.points[:,0]))
-        for ii in range(len(args)):
-            ranks[args[ii]]+=ii
-        args=num.argsort(num.abs(me.ydata-self.points[:,1]))
-        for ii in range(len(args)):
-            ranks[args[ii]]+=ii
+        w = num.where(self.goodStars)[0]
+        W = num.where(self.goodStars != True)
 
-        arg=num.argmin(ranks)
+        if key == 'n':  # Move forwards through points
+            selected_star = (selected_star + 1) % len(self.points)
+            arg = selected_star
+            self.starsScat = self.sp4.scatter(self.starsFlatR[arg],
+                                              self.starsFlatF[arg])
+            self.sp4.set_xlim(0, 30)
+            self.sp4.set_ylim(0, 1.02)
+            self.sp5.imshow(self.subsecs[arg])
+            #below should be cleaned up eventually
+            ##ca=pyl.gca()
+            pyl.sca(self.sp1)
+            xlim = self.sp1.get_xlim()
+            ylim = self.sp1.get_ylim()
+            title = self.sp1.get_title()
+            self.sp1.cla()
+            pyl.scatter(self.points[:, 0], self.points[:, 1], color='b', 
+                        picker=True, zorder=9)
+            pyl.scatter(self.points[:, 0][W], self.points[:, 1][W], 
+                        picker=True, color='r', zorder=10)
+            pyl.scatter(self.points[:, 0][arg], self.points[:, 1][arg], 
+                        marker='d', color='m', zorder=0, s=75)
+            pyl.axis([xlim[0], xlim[1], ylim[0], ylim[1]])
+            pyl.title(title)
+            ##pyl.sca(ca)
 
-        self.starsScat=self.sp4.scatter(self.starsFlatR[arg],self.starsFlatF[arg])
-        self.sp4.set_xlim(0,30)
-        self.sp4.set_ylim(0,1.02)
+        if key == 'p':  # Move backwards through points
+            selected_star = (selected_star - 1) % len(self.points)
+            arg = selected_star
+            self.starsScat = self.sp4.scatter(self.starsFlatR[arg],
+                                              self.starsFlatF[arg])
+            self.sp4.set_xlim(0, 30)
+            self.sp4.set_ylim(0, 1.02)
+            self.sp5.imshow(self.subsecs[arg])
+            #below should be cleaned up eventually
+            ##ca=pyl.gca()
+            pyl.sca(self.sp1)
+            xlim = self.sp1.get_xlim()
+            ylim = self.sp1.get_ylim()
+            title = self.sp1.get_title()
+            self.sp1.cla()
+            pyl.scatter(self.points[:, 0], self.points[:, 1], color='b', 
+                        picker=True, zorder=9)
+            pyl.scatter(self.points[:, 0][W], self.points[:, 1][W], 
+                        picker=True, color='r', zorder=10)
+            pyl.scatter(self.points[:, 0][arg], self.points[:, 1][arg], 
+                        marker='d', color='m', zorder=0, s=75)
+            pyl.axis([xlim[0], xlim[1], ylim[0], ylim[1]])
+            pyl.title(title)
+            ##pyl.sca(ca)
 
-        self.sp5.imshow(self.subsecs[arg])
 
-        #below should be cleaned up eventually
-        ##ca=pyl.gca()
-        pyl.sca(self.sp1)
-        xlim=self.sp1.get_xlim()
-        ylim=self.sp1.get_ylim()
-        title=self.sp1.get_title()
-        self.sp1.cla()
-        w=num.where(self.goodStars)[0]
-        W=num.where(self.goodStars<>True)
-        pyl.scatter(self.points[:,0],self.points[:,1],color='b',picker=True,zorder=9)
-        pyl.scatter(self.points[:,0][W],self.points[:,1][W],picker=True,color='r',zorder=10)
-        pyl.scatter(self.points[:,0][arg],self.points[:,1][arg],marker='d',color='m',zorder=0,s=75)
-        pyl.axis([xlim[0],xlim[1],ylim[0],ylim[1]])
-        pyl.title(title)
-        ##pyl.sca(ca)
-
-        if me.button==3:
-            if self.goodStars[arg]==True: self.goodStars[arg]=False
-            else: self.goodStars[arg]=True
-
-            w=num.where(self.goodStars)[0]
-            W=num.where(self.goodStars<>True)
+        if key == 'd':  # Remove a point; this isn't working yet. 
+            if self.goodStars[arg] == True: self.goodStars[arg] = False
+            else: self.goodStars[arg] = True
 
             ##ca=pyl.gca()
-            xlim=self.sp1.get_xlim()
-            ylim=self.sp1.get_ylim()
-            title=self.sp1.get_title()
-            ##pyl.sca(sp1)
+            xlim = self.sp1.get_xlim()
+            ylim = self.sp1.get_ylim()
+            title = self.sp1.get_title()
+            pyl.sca(self.sp1)
             self.sp1.cla()
-            pyl.scatter(self.points[:,0][w],self.points[:,1][w],picker=True,color='b',zorder=9)
-            pyl.scatter(self.points[:,0][W],self.points[:,1][W],picker=True,color='r',zorder=10)
-            pyl.scatter(self.points[:,0][arg],self.points[:,1][arg],marker='d',color='m',zorder=0,s=75)
+            pyl.scatter(self.points[:, 0][w], self.points[:, 1][w],
+                        picker=True, color='b', zorder=9)
+            pyl.scatter(self.points[:, 0][W], self.points[:, 1][W],
+                        picker=True, color='r', zorder=10)
+            pyl.scatter(self.points[:, 0][arg], self.points[:, 1][arg],
+                        marker='d', color='m', zorder=0, s=75)
             self.sp1.set_xlim(xlim)
             self.sp1.set_ylim(ylim)
             pyl.title(title)
