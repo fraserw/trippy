@@ -226,19 +226,15 @@ class starChooser:
             self.starsScat.remove()
             self.starsScat=None
 
-#        ranks=self.points[:,0]*0.0
-        xscale=1./(num.max(self.points[:,0])-num.min(self.points[:,0]))
-        yscale=1./(num.max(self.points[:,1])-num.min(self.points[:,1]))
-        xnormdist=xscale*(me.xdata-self.points[:,0])
-        ynormdist=yscale*(me.ydata-self.points[:,1])
-        arg=num.argmin(xnormdist**2+ynormdist**2)
-#        args=num.argsort(num.abs(me.xdata-self.points[:,0]))
-#        for ii in range(len(args)):
-#            ranks[args[ii]]+=ii
-#        args=num.argsort(num.abs(me.ydata-self.points[:,1]))
-#        for ii in range(len(args)):
-#            ranks[args[ii]]+=ii
-#        arg=num.argmin(ranks)
+        ranks=self.points[:,0]*0.0
+        args=num.argsort(num.abs(me.xdata-self.points[:,0]))
+        for ii in range(len(args)):
+            ranks[args[ii]]+=ii
+        args=num.argsort(num.abs(me.ydata-self.points[:,1]))
+        for ii in range(len(args)):
+            ranks[args[ii]]+=ii
+
+        arg=num.argmin(ranks)
 
         self.starsScat=self.sp4.scatter(self.starsFlatR[arg],self.starsFlatF[arg])
         self.sp4.set_xlim(0,30)
