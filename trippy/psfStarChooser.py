@@ -143,7 +143,8 @@ class starChooser:
         self.sp1=pyl.subplot2grid((4,4),(0,1),colspan=3,rowspan=2)
         pyl.scatter(self.points[:,0],self.points[:,1],picker=True)
         pyl.title('Select PSF range with zoom,\n' +
-                  'inspect stars (n = next, p = previous, d = deselect),\n' +
+                  'inspect stars (a = next, d = previous, w = toggle on/off,\n' +
+                  'or left/right click to show/toggle),\n' +
                   'then close the plot window.')
         self.sp2=pyl.subplot2grid((4,4),(2,1),colspan=3,sharex=self.sp1,rowspan=1)
         bins=num.arange(num.min(self.points[:,0]),num.max(self.points[:,0])+0.5,0.5)
@@ -167,8 +168,8 @@ class starChooser:
         self.sp5.set_aspect('equal')
         self.psfPlotLimits=[self.sp1.get_xlim(),self.sp1.get_ylim()]
         self.conn1=self.sp1.callbacks.connect('ylim_changed',self.PSFrange)
-        self.conn2=pyl.connect('key_press_event',self.ScatterPSF)
-        self.conn3=pyl.connect('ylim_changed',self.PSFrange)
+        self.conn2=pyl.connect('pick_event',self.ScatterPSF)
+        self.conn3=pyl.connect('key_press_event',self.ScatterPSF_keys)
         if not noVisualSelection: pyl.show()
 
 
@@ -211,7 +212,6 @@ class starChooser:
                 self.moffPatchList[ii]=self.sp4.plot(self.moffr,self.moffs[ii])
         self.sp4.set_xlim(0,30)
         self.sp4.set_ylim(0,1.02)
-        self.selected_star = -1
 
         pyl.draw()
 
@@ -239,7 +239,7 @@ class starChooser:
         ##pyl.sca(ca)
 
 
-    def ScatterPSF(self,event):
+    def ScatterPSF_keys(self, event):
         """
         Display function that you shouldn't call directly.
         """
@@ -250,21 +250,22 @@ class starChooser:
         pointsshowing = self.points[showingbool]
         npointsshowing = len(pointsshowing[:, 0])
         args = num.arange(npoints)[showingbool]
-        arg = args[num.argsort(self.points[:, 0][showingbool])[self.selected_star]]
-        #arg = num.argsort(self.points[:, 0])[self.selected_star]
+        arg = args[num.argsort(pointsshowing[:, 0])[self.selected_star]]
 
         ca=pyl.gca()
         if self.starsScat<>None:
             self.starsScat.remove()
             self.starsScat=None
 
-        if key == 'n' or key == 'p':  # Move forwards/backwards through points
+        if key == 'd' or key == 'a':  # Move forwards/backwards through points
             ## The below might seem overly complicated, 
             ## but doing it this way ensures that you continue 
-            ## from same/next point after zooming. 
-            if key == 'n':
+            ## from same/next point after zooming.
+            ## Hang on, no, this doesn't make it continue at the right point
+            ## after a zoom. hm, fix later.  
+            if key == 'd':
                 increment = +1
-            elif key == 'p': 
+            elif key == 'a': 
                 increment = -1
             else: 
                 pass
@@ -277,13 +278,59 @@ class starChooser:
             self.sp5.imshow(self.subsecs[arg])
             self.ScatterPSFCommon(arg)
 
-        if key == 'd':  # Remove a point. 
+        if key == 'w':  # Remove a point. 
             self.goodStars[arg] = not self.goodStars[arg]
             self.ScatterPSFCommon(arg)
             #pyl.sca(self.sp1)
             #self.sp1.set_xlim(xlim)
             #self.sp1.set_ylim(ylim)
             ##pyl.sca(ca)
+
+        self.conn1=self.sp1.callbacks.connect('ylim_changed',self.PSFrange)
+        ## The above line needs to be here again. 
+        ## This allows for zooming and inspecting again after first inspection.
+        pyl.sca(ca)
+        pyl.draw()
+
+
+    def ScatterPSF(self, event):
+        """
+        Display function that you shouldn't call directly.
+        """
+
+        ca=pyl.gca()
+        me=event.mouseevent
+
+        if self.starsScat<>None:
+            self.starsScat.remove()
+            self.starsScat=None
+
+        npoints = len(self.points[:, 0])
+        showingbool = num.array(self.showing).astype(num.bool)
+        pointsshowing = self.points[showingbool,:]
+        ranks = num.zeros(len(pointsshowing[:,0]))
+        args = num.argsort(num.abs(me.xdata - pointsshowing[:, 0]))
+        for ii in range(len(args)):
+            ranks[args[ii]]+=ii
+        args = num.argsort(num.abs(me.ydata - pointsshowing[:, 1]))
+        for ii in range(len(args)):
+            ranks[args[ii]]+=ii
+
+        args = num.arange(npoints)[showingbool]
+        self.selected_star = num.argmin(ranks[num.argsort(pointsshowing[:, 0])])
+        arg = args[num.argsort(pointsshowing[:, 0])[self.selected_star]]
+
+        self.starsScat=self.sp4.scatter(self.starsFlatR[arg],self.starsFlatF[arg])
+        self.sp4.set_xlim(0,30)
+        self.sp4.set_ylim(0,1.02)
+
+        self.sp5.imshow(self.subsecs[arg])
+
+        self.ScatterPSFCommon(arg)
+
+        if me.button==3:
+            self.goodStars[arg] = not self.goodStars[arg]
+            self.ScatterPSFCommon(arg)
 
         self.conn1=self.sp1.callbacks.connect('ylim_changed',self.PSFrange)
         ## The above line needs to be here again. 
