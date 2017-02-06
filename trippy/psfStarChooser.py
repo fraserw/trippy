@@ -156,7 +156,7 @@ class starChooser:
 
         self.moffPatchList=[]
         self.showing=[]
-        self.selected_star = 0
+        self.selected_star = -1
 
         for j in range(len(self.moffs)):
             self.moffPatchList.append(self.sp4.plot(self.moffr,self.moffs[j]))
@@ -167,7 +167,8 @@ class starChooser:
         self.sp5.set_aspect('equal')
         self.psfPlotLimits=[self.sp1.get_xlim(),self.sp1.get_ylim()]
         self.conn1=self.sp1.callbacks.connect('ylim_changed',self.PSFrange)
-        self.conn3=pyl.connect('key_press_event',self.ScatterPSF)
+        self.conn2=pyl.connect('key_press_event',self.ScatterPSF)
+        self.conn3=pyl.connect('ylim_changed',self.PSFrange)
         if not noVisualSelection: pyl.show()
 
 
@@ -190,8 +191,6 @@ class starChooser:
         #ca=pyl.gca()
         pyl.sca(self.sp1)
 
-        print self.starsScat
-
         newLim=[self.sp1.get_xlim(),self.sp1.get_ylim()]
         self.psfPlotLimits=newLim[:]
         w=num.where((self.points[:,0]>=self.psfPlotLimits[0][0])&(self.points[:,0]<=self.psfPlotLimits[0][1])&(self.points[:,1]>=self.psfPlotLimits[1][0])&(self.points[:,1]<=self.psfPlotLimits[1][1]))[0]
@@ -207,15 +206,15 @@ class starChooser:
             if ii not in w: self.showing[ii]=0
             else: self.showing[ii]=1
 
-
-
         for ii in range(len(self.showing)):
             if self.showing[ii]:
                 self.moffPatchList[ii]=self.sp4.plot(self.moffr,self.moffs[ii])
         self.sp4.set_xlim(0,30)
         self.sp4.set_ylim(0,1.02)
+        self.selected_star = -1
 
         pyl.draw()
+
 
     def ScatterPSFCommon(self, arg):
         """
@@ -239,14 +238,20 @@ class starChooser:
         pyl.title(title)
         ##pyl.sca(ca)
 
+
     def ScatterPSF(self,event):
         """
         Display function that you shouldn't call directly.
         """
 
         key = event.key
-        print self.selected_star
-        arg = self.selected_star
+        npoints = len(self.points[:, 0])
+        showingbool = num.array(self.showing).astype(num.bool)
+        pointsshowing = self.points[showingbool]
+        npointsshowing = len(pointsshowing[:, 0])
+        args = num.arange(npoints)[showingbool]
+        arg = args[num.argsort(self.points[:, 0][showingbool])[self.selected_star]]
+        #arg = num.argsort(self.points[:, 0])[self.selected_star]
 
         ca=pyl.gca()
         if self.starsScat<>None:
@@ -254,11 +259,17 @@ class starChooser:
             self.starsScat=None
 
         if key == 'n' or key == 'p':  # Move forwards/backwards through points
-            if key == 'n': 
-                self.selected_star = (arg + 1) % len(self.points)
+            ## The below might seem overly complicated, 
+            ## but doing it this way ensures that you continue 
+            ## from same/next point after zooming. 
+            if key == 'n':
+                increment = +1
             elif key == 'p': 
-                self.selected_star = (arg - 1) % len(self.points)
-            arg = self.selected_star
+                increment = -1
+            else: 
+                pass
+            self.selected_star = (self.selected_star + increment) % npointsshowing
+            arg = args[num.argsort(self.points[:, 0][showingbool])[self.selected_star]]
             self.starsScat = self.sp4.scatter(self.starsFlatR[arg],
                                               self.starsFlatF[arg])
             self.sp4.set_xlim(0, 30)
@@ -266,7 +277,7 @@ class starChooser:
             self.sp5.imshow(self.subsecs[arg])
             self.ScatterPSFCommon(arg)
 
-        if key == 'd':  # Remove a point; this isn't working yet. 
+        if key == 'd':  # Remove a point. 
             self.goodStars[arg] = not self.goodStars[arg]
             self.ScatterPSFCommon(arg)
             #pyl.sca(self.sp1)
@@ -274,5 +285,8 @@ class starChooser:
             #self.sp1.set_ylim(ylim)
             ##pyl.sca(ca)
 
+        self.conn1=self.sp1.callbacks.connect('ylim_changed',self.PSFrange)
+        ## The above line needs to be here again. 
+        ## This allows for zooming and inspecting again after first inspection.
         pyl.sca(ca)
         pyl.draw()
