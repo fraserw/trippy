@@ -213,6 +213,10 @@ class starChooser:
         self.sp4.set_xlim(0,30)
         self.sp4.set_ylim(0,1.02)
 
+        self.conn2=pyl.connect('pick_event',self.ScatterPSF)
+        self.conn3=pyl.connect('key_press_event',self.ScatterPSF_keys)
+        ## The above two lines need to be here again. 
+        ## This allows for zooming/inspecting in whatever order, over & over.
         pyl.draw()
 
 
@@ -271,11 +275,6 @@ class starChooser:
                 pass
             self.selected_star = (self.selected_star + increment) % npointsshowing
             arg = args[num.argsort(self.points[:, 0][showingbool])[self.selected_star]]
-            self.starsScat = self.sp4.scatter(self.starsFlatR[arg],
-                                              self.starsFlatF[arg])
-            self.sp4.set_xlim(0, 30)
-            self.sp4.set_ylim(0, 1.02)
-            self.sp5.imshow(self.subsecs[arg])
             self.ScatterPSFCommon(arg)
 
         if key == 'w':  # Remove a point. 
@@ -286,9 +285,18 @@ class starChooser:
             #self.sp1.set_ylim(ylim)
             ##pyl.sca(ca)
 
+        colour = 'b' if self.goodStars[arg] else 'r'
+        self.starsScat = self.sp4.scatter(self.starsFlatR[arg],
+                                          self.starsFlatF[arg],
+                                          color=colour)
+        self.sp4.set_xlim(0, 30)
+        self.sp4.set_ylim(0, 1.02)
+        self.sp5.imshow(self.subsecs[arg])
+
         self.conn1=self.sp1.callbacks.connect('ylim_changed',self.PSFrange)
-        ## The above line needs to be here again. 
-        ## This allows for zooming and inspecting again after first inspection.
+        self.conn2=pyl.connect('pick_event',self.ScatterPSF)
+        ## The above two lines need to be here again. 
+        ## This allows for zooming/inspecting in whatever order, over & over.
         pyl.sca(ca)
         pyl.draw()
 
@@ -333,7 +341,8 @@ class starChooser:
             self.ScatterPSFCommon(arg)
 
         self.conn1=self.sp1.callbacks.connect('ylim_changed',self.PSFrange)
-        ## The above line needs to be here again. 
-        ## This allows for zooming and inspecting again after first inspection.
+        self.conn3=pyl.connect('key_press_event',self.ScatterPSF_keys)
+        ## The above two lines need to be here again. 
+        ## This allows for zooming/inspecting in whatever order, over & over.
         pyl.sca(ca)
         pyl.draw()
