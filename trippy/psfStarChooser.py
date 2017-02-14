@@ -101,14 +101,18 @@ class starChooser:
 
         print 'Fitting stars with moffat profiles...'
 
+        mpsf = psf.modelPSF(num.arange(xWidth), num.arange(yWidth), alpha=self.initAlpha, beta=self.initBeta,
+                            repFact=self.repFact)
         for j in range(len(self.XWIN_IMAGE)):
             if self.FLUX_AUTO[j]/self.FLUXERR_AUTO[j]>self.moffatSNR:
                 if self.XWIN_IMAGE[j]-1-(moffatWidth+1)<0 or self.XWIN_IMAGE[j]-1+(moffatWidth+1)>=self.data.shape[1] or self.YWIN_IMAGE[j]-1-(moffatWidth+1)<0 or self.YWIN_IMAGE[j]-1+(moffatWidth+1)>=self.data.shape[0]:
                     continue
+                #
+                #moved this line up and it seems to work! I guess I fixed it at some point in the past, simply forgot to adjust this line
+                #
                 #this psf object creator has to be here. It's to do with the way PSF objects are initialized. Some time
                 #in the future I will adjust this for a small speed boost.
-                mpsf = psf.modelPSF(num.arange(xWidth), num.arange(yWidth), alpha=self.initAlpha, beta=self.initBeta,
-                                    repFact=self.repFact)
+                #mpsf = psf.modelPSF(num.arange(xWidth), num.arange(yWidth), alpha=self.initAlpha, beta=self.initBeta,repFact=self.repFact)
                 mpsf.fitMoffat(self.data,self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],boxSize=self.moffatWidth,verbose=verbose)
 
                 fwhm = mpsf.FWHM(fromMoffatProfile=True)
