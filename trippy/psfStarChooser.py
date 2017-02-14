@@ -82,22 +82,22 @@ class starChooser:
         self._increment = 0
 
     def __call__(self,moffatWidth,moffatSNR,initAlpha=5.,initBeta=2.,repFact=5,xWidth=51,yWidth=51,
-                 includeCheesySaturationCut=True,autoTrim=False,noVisualSelection=False,verbose=False):
+                 includeCheesySaturationCut=False,autoTrim=False,noVisualSelection=False,verbose=False):
         self.moffatWidth=moffatWidth
         self.moffatSNR=moffatSNR
         self.initAlpha=initAlpha
         self.initBeta=initBeta
         self.repFact=repFact
 
-        self.fwhms=[]
-        self.points=[]
-        self.moffs=[]
-        self.moffr=num.linspace(0,30,80)
-        self.starsFlatR=[]
-        self.starsFlatF=[]
-        self.subsecs=[]
-        self.goodStars=[]
-        self.starsScat=None
+        self.fwhms = []
+        self.points = []
+        self.moffs = []
+        self.moffr = num.linspace(0,self.moffatWidth,self.moffatWidth*3)
+        self.starsFlatR = []
+        self.starsFlatF = []
+        self.subsecs = []
+        self.goodStars = []
+        self.starsScat = None
 
         print 'Fitting stars with moffat profiles...'
 
@@ -198,9 +198,9 @@ class starChooser:
         #ca=pyl.gca()
         pyl.sca(self.sp1)
 
-        newLim=[self.sp1.get_xlim(),self.sp1.get_ylim()]
+        newLim = [self.sp1.get_xlim(),self.sp1.get_ylim()]
         self.psfPlotLimits=newLim[:]
-        w=num.where((self.points[:,0]>=self.psfPlotLimits[0][0])&(self.points[:,0]<=self.psfPlotLimits[0][1])&(self.points[:,1]>=self.psfPlotLimits[1][0])&(self.points[:,1]<=self.psfPlotLimits[1][1]))[0]
+        w = num.where((self.points[:,0]>=self.psfPlotLimits[0][0])&(self.points[:,0]<=self.psfPlotLimits[0][1])&(self.points[:,1]>=self.psfPlotLimits[1][0])&(self.points[:,1]<=self.psfPlotLimits[1][1]))[0]
 
         if self.starsScat<>None:
             self.starsScat.remove()
@@ -215,15 +215,17 @@ class starChooser:
 
         for ii in range(len(self.showing)):
             if self.showing[ii]:
-                self.moffPatchList[ii]=self.sp4.plot(self.moffr,self.moffs[ii])
-        self.sp4.set_xlim(0,30)
+                self.moffPatchList[ii] = self.sp4.plot(self.moffr,self.moffs[ii])
+                x_lim_max = num.max(self.moffr)+1
+
+        self.sp4.set_xlim(0,self.moffatWidth)
         self.sp4.set_ylim(0,1.02)
 
-        self.conn2=pyl.connect('pick_event',self.ScatterPSF)
-        self.conn3=pyl.connect('key_press_event',self.ScatterPSF_keys)
+        self.conn2 = pyl.connect('pick_event',self.ScatterPSF)
+        self.conn3 = pyl.connect('key_press_event',self.ScatterPSF_keys)
 
-        self._fwhm_lim=self.sp1.get_xlim()
-        self._chi_lim=self.sp1.get_ylim()
+        self._fwhm_lim = self.sp1.get_xlim()
+        self._chi_lim = self.sp1.get_ylim()
 
         ## The above two lines need to be here again. 
         ## This allows for zooming/inspecting in whatever order, over & over.
@@ -308,7 +310,7 @@ class starChooser:
         self.starsScat = self.sp4.scatter(self.starsFlatR[arg],
                                           self.starsFlatF[arg],
                                           color=colour)
-        self.sp4.set_xlim(0, 30)
+        self.sp4.set_xlim(0, self.moffatWidth)
         self.sp4.set_ylim(0, 1.02)
         self.sp5.imshow(self.subsecs[arg])
 
@@ -358,7 +360,7 @@ class starChooser:
         arg = args[num.argsort(pointsshowing[:, 0])[self.selected_star]]
 
         self.starsScat=self.sp4.scatter(self.starsFlatR[arg],self.starsFlatF[arg])
-        self.sp4.set_xlim(0,30)
+        self.sp4.set_xlim(0, self.moffatWidth)
         self.sp4.set_ylim(0,1.02)
 
         self.sp5.imshow(self.subsecs[arg])
