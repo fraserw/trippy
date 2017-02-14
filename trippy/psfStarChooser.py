@@ -111,7 +111,7 @@ class starChooser:
                                     repFact=self.repFact)
                 mpsf.fitMoffat(self.data,self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],boxSize=self.moffatWidth,verbose=verbose)
 
-                fwhm=mpsf.FWHM(fromMoffatProfile=True)
+                fwhm = mpsf.FWHM(fromMoffatProfile=True)
 
                 #norm=Im.normalise(mpsf.subsec,[self.z1,self.z2])
                 norm=self.normer(mpsf.subSec)
@@ -127,38 +127,38 @@ class starChooser:
                     self.starsFlatR.append(psf.downSample2d(mpsf.repRads,mpsf.repFact))
                     self.starsFlatF.append((mpsf.subSec-mpsf.bg)/(mpsf.moffat(0)*mpsf.A))
 
-                    self.moffs[len(self.moffs)-1]/=num.max(self.moffs[len(self.moffs)-1])
+                    self.moffs[len(self.moffs)-1] /= num.max(self.moffs[len(self.moffs)-1])
 
                     self.points.append([fwhm,mpsf.chi,mpsf.alpha,mpsf.beta,self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],mpsf.bg])
-        self.points=num.array(self.points)
-        self.goodStars=num.array(self.goodStars)
+        self.points = num.array(self.points)
+        self.goodStars = num.array(self.goodStars)
 
         if autoTrim:
-            bg=bgFinder.bgFinder(self.points[:,0])
-            mode=bg('fraserMode')
-            w=num.where(num.abs(self.points[:,0]-mode)>0.5)
-            self.goodStars[w]=False
+            bg = bgFinder.bgFinder(self.points[:,0])
+            mode = bg('fraserMode')
+            w = num.where(num.abs(self.points[:,0]-mode)>0.5)
+            self.goodStars[w] = False
 
 
 
-        self.figPSF=pyl.figure('Point Source Selector')
-        self.sp1=pyl.subplot2grid((4,4),(0,1),colspan=3,rowspan=2)
+        self.figPSF = pyl.figure('Point Source Selector')
+        self.sp1 = pyl.subplot2grid((4,4),(0,1),colspan=3,rowspan=2)
         pyl.scatter(self.points[:,0],self.points[:,1],picker=True)
         pyl.title('Select PSF range with zoom,\n' +
                   'inspect stars (a = next, d = previous, w = toggle on/off,\n' +
                   'or left/right click to show/toggle),\n' +
                   'then close the plot window.')
-        self.sp2=pyl.subplot2grid((4,4),(2,1),colspan=3,sharex=self.sp1,rowspan=1)
-        bins=num.arange(num.min(self.points[:,0]),num.max(self.points[:,0])+0.5,0.5)
+        self.sp2 = pyl.subplot2grid((4,4),(2,1),colspan=3,sharex=self.sp1,rowspan=1)
+        bins = num.arange(num.min(self.points[:,0]),num.max(self.points[:,0])+0.5,0.5)
         pyl.hist(self.points[:,0],bins=bins)
         pyl.xlabel('FWHM (pix)')
-        self.sp3=pyl.subplot2grid((4,4),(0,0),rowspan=2,sharey=self.sp1)
+        self.sp3 = pyl.subplot2grid((4,4),(0,0),rowspan=2,sharey=self.sp1)
         pyl.hist(self.points[:,1],bins=30,orientation='horizontal')
         pyl.ylabel('RMS')
-        self.sp4=pyl.subplot2grid((4,4),(2,0),rowspan=2)
+        self.sp4 = pyl.subplot2grid((4,4),(2,0),rowspan=2)
 
-        self.moffPatchList=[]
-        self.showing=[]
+        self.moffPatchList = []
+        self.showing = []
         self.selected_star = -1
 
         for j in range(len(self.moffs)):
@@ -166,12 +166,12 @@ class starChooser:
             self.showing.append(1)
         self.sp4.set_xlim(0,30)
         self.sp4.set_ylim(0,1.02)
-        self.sp5=pyl.subplot2grid((4,4),(3,1))
+        self.sp5 = pyl.subplot2grid((4,4),(3,1))
         self.sp5.set_aspect('equal')
-        self.psfPlotLimits=[self.sp1.get_xlim(),self.sp1.get_ylim()]
-        self.conn1=self.sp1.callbacks.connect('ylim_changed',self.PSFrange)
-        self.conn2=pyl.connect('pick_event',self.ScatterPSF)
-        self.conn3=pyl.connect('key_press_event',self.ScatterPSF_keys)
+        self.psfPlotLimits = [self.sp1.get_xlim(),self.sp1.get_ylim()]
+        self.conn1 = self.sp1.callbacks.connect('ylim_changed',self.PSFrange)
+        self.conn2 = pyl.connect('pick_event',self.ScatterPSF)
+        self.conn3 = pyl.connect('key_press_event',self.ScatterPSF_keys)
 
         self.ScatterPSF(None)
 
@@ -359,7 +359,7 @@ class starChooser:
         self.selected_star = num.argmin(ranks[num.argsort(pointsshowing[:, 0])])
         arg = args[num.argsort(pointsshowing[:, 0])[self.selected_star]]
 
-        self.starsScat=self.sp4.scatter(self.starsFlatR[arg],self.starsFlatF[arg])
+        self.starsScat = self.sp4.scatter(self.starsFlatR[arg],self.starsFlatF[arg])
         self.sp4.set_xlim(0, self.moffatWidth)
         self.sp4.set_ylim(0,1.02)
 
