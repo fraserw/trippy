@@ -525,11 +525,13 @@ class modelPSF:
 
         if useLookupTable:
             print 'Using the lookup table when generating the long PSF.'
-            self.longPSF=signal.convolve2d(self.moffProf+self.lookupTable*self.repFact*self.repFact, self.line2d,mode='same')
+            #self.longPSF=signal.convolve2d(self.moffProf+self.lookupTable*self.repFact*self.repFact, self.line2d,mode='same')
+            self.longPSF=signal.fftconvolve(self.moffProf+self.lookupTable*self.repFact*self.repFact, self.line2d,mode='same')
             self.longPSF*=num.sum(self.fullPSF)/num.sum(self.longPSF)
         else:
             print 'Not using the lookup table when generating the long PSF'
-            self.longPSF=signal.convolve2d(self.moffProf,self.line2d,mode='same')
+            #self.longPSF=signal.convolve2d(self.moffProf,self.line2d,mode='same')
+            self.longPSF=signal.fftconvolve(self.moffProf,self.line2d,mode='same')
             self.longPSF*=num.sum(self.moffProf)/num.sum(self.longPSF)
         self.psf=downSample2d(self.longPSF,self.repFact)
 
