@@ -176,6 +176,7 @@ class starChooser:
         self.conn1 = self.sp1.callbacks.connect('ylim_changed',self.PSFrange)
         self.conn2 = pyl.connect('pick_event',self.ScatterPSF)
         self.conn3 = pyl.connect('key_press_event',self.ScatterPSF_keys)
+        self.conn4 = pyl.connect('close_event',self.HandleClose)
 
         self.ScatterPSF(None)
 
@@ -193,6 +194,7 @@ class starChooser:
         goodMeds=num.median(goodFits[:4],axis=0)
         goodSTDs=num.std(goodFits[:4],axis=0)
         return (goodFits,goodMeds,goodSTDs)
+
 
     def PSFrange(self, junkAx):
         """
@@ -306,8 +308,6 @@ class starChooser:
             ##pyl.sca(ca)
 
         elif key in ['c','C']:
-            self._fwhm_lim = self.sp1.get_xlim()
-            self._chi_lim = self.sp1.get_ylim()
             doClose = True
 
         colour = 'b' if self.goodStars[arg] else 'r'
@@ -384,3 +384,6 @@ class starChooser:
         pyl.draw()
 
 
+    def HandleClose(self, evt):
+        self._fwhm_lim = self.sp1.get_xlim()
+        self._chi_lim = self.sp1.get_ylim() 
