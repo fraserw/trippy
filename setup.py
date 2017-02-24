@@ -11,12 +11,12 @@ dependencies = ['numpy >= 1.6.1',
                 'scipy',
                 'matplotlib',
                 'stsci.numdisplay',
-                'astropy']
+                'astropy >= 1.1']
 
 setup(
   name = 'trippy',
   packages = ['trippy','trippy.scamp','trippy.MCMCfit'],
-  version = '0.4',
+  version = '0.5',
   description = 'Pill aperture photometry for trailed astronomical sources',
   author = 'Wesley Fraser',
   author_email = 'westhefras@gmail.com',
