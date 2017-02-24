@@ -17,6 +17,7 @@ TRIPPy depends on a few separate, equally useful python packages. These packages
 * astropy
 * stsci.numdisplay
 * emcee (optional)
+* numba -- very very useful for big speed improvements. Highly recommended!!
 
 An additional optional piece of software is the SExtractor package. This can often be installed with through standard
 linux repository systems (yum, apt-get, etc.) or can be simply downloaded and compiled. [Source is available here].(http://www.astromatic.net/software/sextractor)
