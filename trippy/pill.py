@@ -349,11 +349,11 @@ class pillPhot:
         (A,B)=repData.shape
 
         if ((x < w) and (y < w)):
-            cx = num.array([x * self.repFact, y * self.repFact])
+            cx = num.array([(x - 1) * self.repFact, (y - 1) * self.repFact])
         elif (x < w):
-            cx = num.array([x * self.repFact, (y - int(y) + w) * self.repFact])
+            cx = num.array([(x - 1) * self.repFact, (y - int(y) + w) * self.repFact])
         elif (y < w):
-            cx = num.array([(x - int(x) + w) * self.repFact, y * self.repFact])
+            cx = num.array([(x - int(x) + w) * self.repFact, (y - 1) * self.repFact])
         else:
             cx = num.array([(x - int(x) + w) * self.repFact, (y - int(y) + w) * self.repFact])
         h=self.repFact*(radius**2+(l/2.)**2)**0.5
