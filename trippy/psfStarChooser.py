@@ -176,11 +176,10 @@ class starChooser:
 
         self.ScatterPSF(None)
 
-        if not noVisualSelection: pyl.show()
-
-
-        #fwhm_lim=self.sp1.get_xlim()
-        #chi_lim=self.sp1.get_ylim()
+        if not noVisualSelection:
+            pyl.show()
+        self._fwhm_lim=self.sp1.get_xlim()
+        self._chi_lim=self.sp1.get_ylim()
 
         w=num.where((self.points[:,0]>self._fwhm_lim[0])&(self.points[:,0]<self._fwhm_lim[1])&(self.points[:,1]>self._chi_lim[0])&(self.points[:,1]<self._chi_lim[1])&(self.goodStars==True))
         pyl.clf()
