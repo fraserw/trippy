@@ -234,6 +234,10 @@ class modelPSF:
             self.alpha=alpha
             self.beta=beta
             self.chi=None
+            self.rate = None
+            self.angle = None
+            self.dt = None
+            self.pixScale = None
 
             if type(x)<>type(num.ones(1)):
                 self.x=num.arange(x)+0.5
