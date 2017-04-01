@@ -489,7 +489,7 @@ class modelPSF:
     def __getitem__(self,key):
         return self.psf[key]
 
-    def line(self,rate,angle,dt,pixScale=0.2,display=False,useLookupTable=True):
+    def line(self,rate,angle,dt,pixScale=0.2,display=False,useLookupTable=True, verbose=True):
         """
         Compute the TSF given input rate of motion, angle of motion, length of exposure, and pixelScale.
 
@@ -528,12 +528,14 @@ class modelPSF:
             self.line2d=num.array([[1.0]])
 
         if useLookupTable:
-            print 'Using the lookup table when generating the long PSF.'
+            if verbose:
+                print 'Using the lookup table when generating the long PSF.'
             #self.longPSF=signal.convolve2d(self.moffProf+self.lookupTable*self.repFact*self.repFact, self.line2d,mode='same')
             self.longPSF=signal.fftconvolve(self.moffProf+self.lookupTable*self.repFact*self.repFact, self.line2d,mode='same')
             self.longPSF*=num.sum(self.fullPSF)/num.sum(self.longPSF)
         else:
-            print 'Not using the lookup table when generating the long PSF'
+            if verbose:
+                print 'Not using the lookup table when generating the long PSF'
             #self.longPSF=signal.convolve2d(self.moffProf,self.line2d,mode='same')
             self.longPSF=signal.fftconvolve(self.moffProf,self.line2d,mode='same')
             self.longPSF*=num.sum(self.moffProf)/num.sum(self.longPSF)
