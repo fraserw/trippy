@@ -302,6 +302,7 @@ class pillPhot:
                 (A,B) = im.shape
                 (x0,x1) = CA.get_xlim()
                 (y0,y1) = CA.get_ylim()
+                self.bgSamplingRegion = [x0, x1, y0, y1]
                 if ox0==x0 and ox1==x1 and oy0==y0 and oy1==y1: return
 
                 x0 = max(0,x0)/10
@@ -312,7 +313,7 @@ class pillPhot:
                 rebinnedSkyImage = rebinnedSkyImage[int(y0):int(y1), int(x0):int(x1)]
                 w = num.where(rebinnedSkyImage<>0.0)
                 bgf = bgFinder.bgFinder(rebinnedSkyImage[w])
-                bg = bgf.smartBackground(display=display)
+                bg = bgf.smartBackground(display=display, backupMode=backupMode, forceBackupMode = forceBackupMode)
                 bgstd = num.std(rebinnedSkyImage[w])
 
 
@@ -326,7 +327,7 @@ class pillPhot:
                 self.bgstd = bgstd
                 self.exptime = exptime
                 self.magnitude = zpt-2.5*num.log10(self.sourceFlux/self.exptime)
-
+                self.bgSamplingRegion = [x0,x1,y0,y1]
             else: pyl.show()
         if verbose: print num.sum(image),self.sourceFlux,self.bg,zpt-2.5*num.log10(flux)
 
