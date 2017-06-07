@@ -55,6 +55,7 @@ class bgFinder(object):
     """
     def __init__(self, data):
         self.data = num.ravel(data)
+        self.plotAxis = None
 
     def __call__(self, method='median', inp=None):
         if method == 'median':
@@ -185,13 +186,18 @@ class bgFinder(object):
         return g
 
     def background_display(self, g):
-        figHist = pyl.figure('backgroundHistogram')
-        ax = figHist.add_subplot(111)
-        pyl.hist(self.data, bins=min(100, len(self.data) / 10))
-        (y0, y1) = ax.get_ylim()
-        pyl.plot([g, g], [y0, y1], 'r-', lw=2)
-        pyl.title('Background %s' % (g))
-        pyl.show()
+        runShow = False
+        if self.plotAxis  is None:
+            figHist = pyl.figure('backgroundHistogram')
+            self.plotAxis = figHist.add_subplot(111)
+            runShow = True
+        self.plotAxis.hist(self.data, bins=min(100, len(self.data) / 10))
+        (y0, y1) = self.plotAxis.get_ylim()
+        self.plotAxis.plot([g, g], [y0, y1], 'r-', lw=2)
+        self.plotAxis.set_title('Background {:.3f}'.format(g))
+
+        if runShow:
+            pyl.show()
 
     """
     def midBackground(self):
