@@ -571,17 +571,17 @@ class modelPSF:
 
         #repCut=expand2d(cut,self.repFact)
 
-        if self.imData<>None:
+        if self.imData is not None:
             origData=num.copy(self.imData)
-        else: origData=None
+        else: origData = None
 
         self.imData=cut
         if type(cx)==type(1.0):
             self._flatRadial(num.array([cx]),num.array([cy]))
         else:
             self._flatRadial(cx,cy)
-        if origData<>None:
-            self.imData=origData
+        if origData is not None:
+            self.imData = origData
 
         if not useLinePSF:
 
