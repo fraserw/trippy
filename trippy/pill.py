@@ -23,6 +23,7 @@ __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>),
 import numpy as num
 import sys
 import pylab as pyl
+from matplotlib import gridspec
 from scipy import interpolate as interp
 import bgFinder
 
@@ -30,6 +31,7 @@ from astropy.visualization import interval
 from stsci import numdisplay
 
 from trippy_utils import expand2d,line
+
 
 
 
@@ -160,6 +162,20 @@ class pillPhot:
         -the bg is then restimated.
         """
 
+
+        if display:
+            #setup the necessary subplots
+
+            dispFig = pyl.figure('Image Display')
+            if enableBGSelection:
+                #dispFig.subplots_adjust(wspace = 0.0,hspace = 0.0)
+                dispGS = gridspec.GridSpec(1, 2)#, height_ratios = [3.5,1], width_ratios = [3.5,1])
+                dispAx = pyl.subplot(dispGS[0])
+            else:
+
+                dispAx = dispFig.add_subplot(111)
+
+
         x = xi-0.5
         y = yi-0.5
 
@@ -209,16 +225,21 @@ class pillPhot:
 
             w = num.where(rebinnedSkyImage<>0.0)
             bgf = bgFinder.bgFinder(rebinnedSkyImage[w])
+            if display and enableBGSelection:
+                bgf.plotAxis = dispFig.add_subplot(dispGS[1])
+
             if not trimBGHighPix:
-                bg = bgf.smartBackground(display=display,backupMode=backupMode, forceBackupMode = forceBackupMode)
+                bg = bgf.smartBackground(display=display, backupMode=backupMode, forceBackupMode = forceBackupMode)
+                bgstd = num.std(rebinnedSkyImage[w])
             else:
+                #trimming BG high pix
                 bg = bgf.smartBackground(backupMode=backupMode, forceBackupMode = forceBackupMode)
-            bgstd = num.std(rebinnedSkyImage[w])
+                bgstd = num.std(rebinnedSkyImage[w])
 
-
-            if trimBGHighPix:
                 W = num.where(rebinnedSkyImage[w]<bg+trimBGHighPix*bgstd)
                 bgf = bgFinder.bgFinder(rebinnedSkyImage[w][W])
+                if display and enableBGSelection:
+                    bgf.plotAxis = dispFig.add_subplot(dispGS[1])
                 bg = bgf.smartBackground(display=display, backupMode=backupMode, forceBackupMode = forceBackupMode)
                 bgstd = num.std(rebinnedSkyImage[w][W])
 
@@ -244,6 +265,8 @@ class pillPhot:
 
 
         if display:
+
+
             if trimBGHighPix:
                 w = num.where(skyImage>(bg+trimBGHighPix*bgstd)/(self.repFact*self.repFact))
                 skyImage[w] = 0
@@ -252,20 +275,17 @@ class pillPhot:
             if zscale:
                 (z1,z2) = numdisplay.zscale.zscale(im)
                 norm = interval.ManualInterval(z1,z2)
-
-                pyl.imshow(norm(im),interpolation='nearest',origin='lower')
+                dispAx.imshow(norm(im),interpolation='nearest',origin='lower')
             else:
                 w = num.where(im==0.0)
                 im[w]+=self.bg*0.7/(self.repFact*self.repFact)
                 im = num.clip(im,num.min(im),num.max(image))
-                pyl.imshow(im,interpolation='nearest',origin='lower')
+                dispAx.imshow(im,interpolation='nearest',origin='lower')
+
             if self.l0<>None:
-
-
-                pyl.plot(num.linspace(l0.xlim[0],l0.xlim[1],100),l0(num.linspace(l0.xlim[0],l0.xlim[1],100)),'w-',lw=2.)
-                pyl.plot(num.linspace(l2.xlim[0],l2.xlim[1],100),l2(num.linspace(l2.xlim[0],l2.xlim[1],100)),'w-',lw=2.)
+                dispAx.plot(num.linspace(l0.xlim[0],l0.xlim[1],100),l0(num.linspace(l0.xlim[0],l0.xlim[1],100)),'w-',lw=2.)
+                dispAx.plot(num.linspace(l2.xlim[0],l2.xlim[1],100),l2(num.linspace(l2.xlim[0],l2.xlim[1],100)),'w-',lw=2.)
                 #pyl.text((l0.xlim[0]+l0.xlim[1])/2.-5,(l0(l0.xlim[0])+l0(l0.xlim[1]))/2.+5,'$l$',size=20)
-
                 #pyl.plot([l0.xlim[0],l0.xlim[0]+50],[l0(l0.xlim[0]),l0(l0.xlim[0])],'k--')
 
                 mx0 = (l0.xlim[0]+l2.xlim[0])/2
@@ -275,8 +295,8 @@ class pillPhot:
                 a = num.linspace(a0,a1,25)
                 xxx = mx0-num.cos(a)*radius*self.repFact
                 yyy = my0-num.sin(a)*radius*self.repFact
-                pyl.plot(xxx,yyy,'w-',lw=2)
-                pyl.plot([mx0,xxx[-6]],[my0,yyy[-6]],'w:',lw=2)
+                dispAx.plot(xxx,yyy,'w-',lw=2)
+                #dispAx.plot([mx0,xxx[-6]],[my0,yyy[-6]],'w:',lw=2)
                 #pyl.text((mx0+xxx[-6])/2.-5,(my0+yyy[-6])/2.-5,'$r$',size=20)
 
 
@@ -287,33 +307,49 @@ class pillPhot:
                 a = num.linspace(a0,a1,25)
                 xxx = mx0+num.cos(a)*radius*self.repFact
                 yyy = my0+num.sin(a)*radius*self.repFact
-                pyl.plot(xxx,yyy,'w-',lw=2)
+                dispAx.plot(xxx,yyy,'w-',lw=2)
 
 
             if enableBGSelection:
                 print 'Current background value: %.3f'%(self.bg)
-                pyl.title('To improve background measurement, zoom on a good\nbackground region, then close.')
-                CA = pyl.gca()
-                (ox0,ox1) = CA.get_xlim()
-                (oy0,oy1) = CA.get_ylim()
+                dispAx.set_title('To improve background measurement, zoom on\na good background region, then close.')
 
+                (ox0,ox1) = dispAx.get_xlim()
+                (oy0,oy1) = dispAx.get_ylim()
+
+
+                (A,B) = im.shape
+
+                dispAx.callbacks.connect('xlim_changed',self._on_xlims_change)
+                dispAx.callbacks.connect('ylim_changed',self._on_ylims_change)
+                #dispAx.callbacks.connect('lim_changed',self._on_lims_change)
+                #all of these are needed in _on_lims_change
+                self._bgFind = bgf
+                self._rbsi = rebinnedSkyImage
+                self._AB = im.shape
+                self._bgm = backupMode
+                self._fbgm = forceBackupMode
+                self.dispAx = dispAx
 
                 pyl.show()
-                (A,B) = im.shape
-                (x0,x1) = CA.get_xlim()
-                (y0,y1) = CA.get_ylim()
-                self.bgSamplingRegion = [x0, x1, y0, y1]
+
+                (x0,x1) = dispAx.get_xlim()
+                (y0,y1) = dispAx.get_ylim()
+                self.bgSamplingRegion = [x0/self.repFact, x1/self.repFact, y0/self.repFact, y1/self.repFact]
+
+                #need to clear the histogram first
+                #need to update the positions so that the code below this ifstatement actualy fires
                 if ox0==x0 and ox1==x1 and oy0==y0 and oy1==y1: return
 
-                x0 = max(0,x0)/10
-                y0 = max(0,y0)/10
-                x1 = min(A,x1)/10
-                y1 = min(B,y1)/10
+                x0 = max(0,x0)/self.repFact
+                y0 = max(0,y0)/self.repFact
+                x1 = min(B,x1)/self.repFact
+                y1 = min(A,y1)/self.repFact
 
                 rebinnedSkyImage = rebinnedSkyImage[int(y0):int(y1), int(x0):int(x1)]
                 w = num.where(rebinnedSkyImage<>0.0)
                 bgf = bgFinder.bgFinder(rebinnedSkyImage[w])
-                bg = bgf.smartBackground(display=display, backupMode=backupMode, forceBackupMode = forceBackupMode)
+                bg = bgf.smartBackground(display=False, backupMode=backupMode, forceBackupMode = forceBackupMode)
                 bgstd = num.std(rebinnedSkyImage[w])
 
 
@@ -328,9 +364,36 @@ class pillPhot:
                 self.exptime = exptime
                 self.magnitude = zpt-2.5*num.log10(self.sourceFlux/self.exptime)
                 self.bgSamplingRegion = [x0,x1,y0,y1]
+
             else: pyl.show()
         if verbose: print num.sum(image),self.sourceFlux,self.bg,zpt-2.5*num.log10(flux)
 
+
+    #helper functions to enable zoom and histogram updating
+    def _on_xlims_change(self, axis):
+        (x0, x1) = self.dispAx.get_xlim()
+        self._x01 = (x0, x1)
+    def _on_ylims_change(self, axis):
+
+        _origDat = num.copy(self._bgFind.data)
+        (A, B) = self._AB
+        (x0, x1) = self._x01
+        (y0, y1) = self.dispAx.get_ylim()
+
+        x0 = max(0, x0) / self.repFact
+        y0 = max(0, y0) / self.repFact
+        x1 = min(B, x1) / self.repFact
+        y1 = min(A, y1) / self.repFact
+
+        #print x0,x1,y0,y1
+        junk = self._rbsi[int(y0):int(y1),int(x0):int(x1)]
+        w = num.where(junk<>0)
+        self._bgFind.plotAxis.cla()
+        self._bgFind.data = junk[w]
+        self._event_background = self._bgFind.smartBackground(display=False, backupMode=self._bgm, forceBackupMode=self._fbgm)
+        self._bgFind.background_display(self._event_background)
+        self._bgFind.data = num.copy(_origDat)
+        pyl.draw()
 
 
     def __lp__(self,x,y,radius,l,a,w,retObj=True):
