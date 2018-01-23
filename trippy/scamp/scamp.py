@@ -39,7 +39,7 @@ def runScamp(scampFile,imageName):
     """
     Execute scamp using the input scamp parameter file on the provided image name.
     """
-    
+
     if '.fits' in imageName:
         imageName=imageName.split('.fits')[0]
     if '.cat' not in imageName:
@@ -61,7 +61,7 @@ def runSex(sexFile,imageName,options=None,verbose=False):
 
     The full sextractor output is returned.
     """
-    
+
     comm='sex '+imageName+' -c '+sexFile
 
     if options:
@@ -90,7 +90,7 @@ def getCatalog(catalogName,type='FITS_LDAC',paramFile=None):
     .
     .
     """
-    
+
     if type=='FITS_LDAC':
         han=pyf.open(catalogName,ignore_missing_end=True)
         data=han[2].data
@@ -114,7 +114,7 @@ def getCatalog(catalogName,type='FITS_LDAC',paramFile=None):
                 s=d[ii].split()
 
                 if len(s)==0: continue
-                else: 
+                else:
                     filePars.append(s[0])
                     indices.append(len(indices))
 
@@ -127,13 +127,13 @@ def getCatalog(catalogName,type='FITS_LDAC',paramFile=None):
                     catalog[filePars[jj]].append(data[ii][indices[jj]])
             for ii in filePars:
                 catalog[ii]=num.array(catalog[ii])
-                if 'MAG_APER' in ii and ii<>'MAG_APER': 
+                if 'MAG_APER' in ii and ii<>'MAG_APER':
                     catalog['MAG_APER']=num.array(catalog[ii])
                     del catalog[ii]
             return catalog
 
-        
-    
+
+
 
 
 def updateHeader(fileNameBase,overWrite=True):
@@ -143,7 +143,7 @@ def updateHeader(fileNameBase,overWrite=True):
     If overWrite is true as is default, the header entries will be updated in the file directly.
     If cowardly, overWrite=False, a new file will be created with 's' prepended to the name.
     """
-    
+
     print 'Updating header of image %s.'%(fileNameBase)
     #update the headers and setup new images
     handle=open(fileNameBase+'.head')
@@ -166,7 +166,7 @@ def updateHeader(fileNameBase,overWrite=True):
         try:
             if ('NAN' not in entry) and ('INF' not in entry) and ('-INF' not in entry):
                 scampHead.append([key.strip(),float(entry),comment])
-            else: 
+            else:
                 entry=0.0
         except:
             scampHead.append([key.strip(),entry,comment])
@@ -199,7 +199,7 @@ def updateHeader(fileNameBase,overWrite=True):
 
     han.close()
 
-    print 'done.' 
+    print 'done.'
     return (raRms,decRms)
 
 
@@ -208,8 +208,8 @@ def writeDS9Regions(sexCatalog,regionFile,wcsImage=None,radius=15,colour=None):
     """
     Utility to write ds9 regions of your sectractor detections.
     """
-    
-    if not path.isfile(sexCatalog): 
+
+    if not path.isfile(sexCatalog):
         print "I can't seem to find the sexCatalog file %s.\n"%(sexCatalog)
         raise
 
@@ -260,7 +260,7 @@ def writeDS9Regions(sexCatalog,regionFile,wcsImage=None,radius=15,colour=None):
             for ii in range(len(data)):
                 x=data[ii][keys[0]]
                 y=data[ii][keys[1]]
-                
+
                 f=''
                 if len(keys)>2:
                     f=data[ii][keys[2]]
@@ -276,7 +276,7 @@ def writeDS9Regions(sexCatalog,regionFile,wcsImage=None,radius=15,colour=None):
                     region+=' text={'+str(f)+'}'
                 print >>han,region
             han.close()
-                
+
 
         else: #using the wcs of the input image
             with pyf.open(wcsImage) as wcsHan:
@@ -327,7 +327,7 @@ def writeDS9Regions(sexCatalog,regionFile,wcsImage=None,radius=15,colour=None):
                 (x,y)=wcs.wcs_world2pix(ra,dec)
                 x+=1
                 y+=1
-                
+
                 f=''
                 if len(keys)>2:
                     f=data[ii][keys[2]]
@@ -343,8 +343,7 @@ def writeDS9Regions(sexCatalog,regionFile,wcsImage=None,radius=15,colour=None):
                     region+=' text={'+str(f)+'}'
                 print >>han,region
             han.close()
-                
+
 
 
     return
-
