@@ -143,7 +143,7 @@ class pillPhot:
     def __call__(self,xi,yi,radius=4.,l=5.,a=0.01,width=20.,skyRadius=8.,zpt=27.0,exptime=1.,
                  enableBGSelection=False, display=False,
                  verbose=False, backupMode='fraserMode', forceBackupMode = False,
-                 trimBGHighPix=False, zscale=True):
+                 trimBGHighPix=False, zscale=True, connectKeyGatherer = False):
         """
         Perform the actual photometry.
 
@@ -160,20 +160,28 @@ class pillPhot:
         sigma cut to get rid of glaringly bright sources that might affect
         the bg estimate.
         -the bg is then restimated.
+
+        -connectKeyGatherer is a way to gather key presses while displaying the
+        fits image. This is useful if you wish to do a manual marking (eg. good
+        or bad) while doing photometry. If set to True, this will return an
+        array of all the keys pressed.
         """
 
 
         if display:
             #setup the necessary subplots
 
-            dispFig = pyl.figure('Image Display')
+            self.dispFig = pyl.figure('Image Display')
             if enableBGSelection:
                 #dispFig.subplots_adjust(wspace = 0.0,hspace = 0.0)
-                dispGS = gridspec.GridSpec(1, 2)#, height_ratios = [3.5,1], width_ratios = [3.5,1])
-                dispAx = pyl.subplot(dispGS[0])
+                self.dispGS = gridspec.GridSpec(1, 2)#, height_ratios = [3.5,1], width_ratios = [3.5,1])
+                self.dispAx = pyl.subplot(self.dispGS[0])
             else:
 
-                dispAx = dispFig.add_subplot(111)
+                self.dispAx = dispFig.add_subplot(111)
+
+            #if connectKeyGatherer:
+            #    self.dispFig.callbacks.connect(keyGatherer, 'key_press_event')
 
 
         x = xi-0.5
@@ -184,7 +192,7 @@ class pillPhot:
 
         if a>90 or a<-90 or l<0 or num.min(radius)<0:
             raise Exception('Keep the angle between -90 and +90 with positive rates please. If you ask me nicely, I may include code to handle this.')
-        
+
 
         if type(radius) == type(1.0) or type(radius) == num.float64:
             image = self.__lp__(x=x+1.,y=y+1.,radius=radius,l=l,a=a,w=int(width))
@@ -226,7 +234,7 @@ class pillPhot:
             w = num.where(rebinnedSkyImage<>0.0)
             bgf = bgFinder.bgFinder(rebinnedSkyImage[w])
             if display and enableBGSelection:
-                bgf.plotAxis = dispFig.add_subplot(dispGS[1])
+                bgf.plotAxis = self.dispFig.add_subplot(self.dispGS[1])
 
             if not trimBGHighPix:
                 bg = bgf.smartBackground(display=display, backupMode=backupMode, forceBackupMode = forceBackupMode)
@@ -239,7 +247,7 @@ class pillPhot:
                 W = num.where(rebinnedSkyImage[w]<bg+trimBGHighPix*bgstd)
                 bgf = bgFinder.bgFinder(rebinnedSkyImage[w][W])
                 if display and enableBGSelection:
-                    bgf.plotAxis = dispFig.add_subplot(dispGS[1])
+                    bgf.plotAxis = self.dispFig.add_subplot(self.dispGS[1])
                 bg = bgf.smartBackground(display=display, backupMode=backupMode, forceBackupMode = forceBackupMode)
                 bgstd = num.std(rebinnedSkyImage[w][W])
 
@@ -266,7 +274,6 @@ class pillPhot:
 
         if display:
 
-
             if trimBGHighPix:
                 w = num.where(skyImage>(bg+trimBGHighPix*bgstd)/(self.repFact*self.repFact))
                 skyImage[w] = 0
@@ -275,16 +282,16 @@ class pillPhot:
             if zscale:
                 (z1,z2) = numdisplay.zscale.zscale(im)
                 norm = interval.ManualInterval(z1,z2)
-                dispAx.imshow(norm(im),interpolation='nearest',origin='lower')
+                self.dispAx.imshow(norm(im),interpolation='nearest',origin='lower')
             else:
                 w = num.where(im==0.0)
                 im[w]+=self.bg*0.7/(self.repFact*self.repFact)
                 im = num.clip(im,num.min(im),num.max(image))
-                dispAx.imshow(im,interpolation='nearest',origin='lower')
+                self.dispAx.imshow(im,interpolation='nearest',origin='lower')
 
             if self.l0<>None:
-                dispAx.plot(num.linspace(l0.xlim[0],l0.xlim[1],100),l0(num.linspace(l0.xlim[0],l0.xlim[1],100)),'w-',lw=2.)
-                dispAx.plot(num.linspace(l2.xlim[0],l2.xlim[1],100),l2(num.linspace(l2.xlim[0],l2.xlim[1],100)),'w-',lw=2.)
+                self.dispAx.plot(num.linspace(l0.xlim[0],l0.xlim[1],100),l0(num.linspace(l0.xlim[0],l0.xlim[1],100)),'w-',lw=2.)
+                self.dispAx.plot(num.linspace(l2.xlim[0],l2.xlim[1],100),l2(num.linspace(l2.xlim[0],l2.xlim[1],100)),'w-',lw=2.)
                 #pyl.text((l0.xlim[0]+l0.xlim[1])/2.-5,(l0(l0.xlim[0])+l0(l0.xlim[1]))/2.+5,'$l$',size=20)
                 #pyl.plot([l0.xlim[0],l0.xlim[0]+50],[l0(l0.xlim[0]),l0(l0.xlim[0])],'k--')
 
@@ -295,7 +302,7 @@ class pillPhot:
                 a = num.linspace(a0,a1,25)
                 xxx = mx0-num.cos(a)*radius*self.repFact
                 yyy = my0-num.sin(a)*radius*self.repFact
-                dispAx.plot(xxx,yyy,'w-',lw=2)
+                self.dispAx.plot(xxx,yyy,'w-',lw=2)
                 #dispAx.plot([mx0,xxx[-6]],[my0,yyy[-6]],'w:',lw=2)
                 #pyl.text((mx0+xxx[-6])/2.-5,(my0+yyy[-6])/2.-5,'$r$',size=20)
 
@@ -307,21 +314,21 @@ class pillPhot:
                 a = num.linspace(a0,a1,25)
                 xxx = mx0+num.cos(a)*radius*self.repFact
                 yyy = my0+num.sin(a)*radius*self.repFact
-                dispAx.plot(xxx,yyy,'w-',lw=2)
+                self.dispAx.plot(xxx,yyy,'w-',lw=2)
 
 
             if enableBGSelection:
                 print 'Current background value: %.3f'%(self.bg)
-                dispAx.set_title('To improve background measurement, zoom on\na good background region, then close.')
+                self.dispAx.set_title('To improve background measurement, zoom on\na good background region, then close.')
 
-                (ox0,ox1) = dispAx.get_xlim()
-                (oy0,oy1) = dispAx.get_ylim()
+                (ox0,ox1) = self.dispAx.get_xlim()
+                (oy0,oy1) = self.dispAx.get_ylim()
 
 
                 (A,B) = im.shape
 
-                dispAx.callbacks.connect('xlim_changed',self._on_xlims_change)
-                dispAx.callbacks.connect('ylim_changed',self._on_ylims_change)
+                self.dispAx.callbacks.connect('xlim_changed',self._on_xlims_change)
+                self.dispAx.callbacks.connect('ylim_changed',self._on_ylims_change)
                 #dispAx.callbacks.connect('lim_changed',self._on_lims_change)
                 #all of these are needed in _on_lims_change
                 self._bgFind = bgf
@@ -329,12 +336,11 @@ class pillPhot:
                 self._AB = im.shape
                 self._bgm = backupMode
                 self._fbgm = forceBackupMode
-                self.dispAx = dispAx
 
                 pyl.show()
 
-                (x0,x1) = dispAx.get_xlim()
-                (y0,y1) = dispAx.get_ylim()
+                (x0,x1) = self.dispAx.get_xlim()
+                (y0,y1) = self.dispAx.get_ylim()
                 self.bgSamplingRegion = [x0/self.repFact, x1/self.repFact, y0/self.repFact, y1/self.repFact]
 
                 #need to clear the histogram first
@@ -422,7 +428,7 @@ class pillPhot:
             cx = num.array([(x - int(x) + w) * self.repFact, (y - int(y) + w) * self.repFact])
         h=self.repFact*(radius**2+(l/2.)**2)**0.5
         beta=num.arctan2(num.array(radius),num.array(l/2.))
-        
+
         x0=cx+num.array([num.cos(beta+ang),num.sin(beta+ang)])*h
         x1=cx+num.array([num.cos(ang-beta+num.pi),num.sin(ang-beta+num.pi)])*h
         x2=cx+num.array([num.cos(ang+beta+num.pi),num.sin(beta+ang+num.pi)])*h
@@ -504,7 +510,7 @@ class pillPhot:
         #pyl.show()
         return omap*repData
 
-        
+
         pyl.scatter(x0[0],x0[1],marker='^')
         pyl.scatter(x1[0],x1[1],marker='s')
         pyl.scatter(x2[0],x2[1])
@@ -513,7 +519,7 @@ class pillPhot:
         pyl.show()
         sys.exit()
 
-        
+
 def bgselect(event):
     """
     I don't think this is actually used. Haven't confirmed yet.
@@ -521,7 +527,7 @@ def bgselect(event):
     global CA
     print CA.get_xlim()
     print CA.get_ylim()
-        
+
 
 
 if __name__=="__main__":
