@@ -44,7 +44,7 @@ def writeConv(fileName='default.conv'):
 
 #write a parameter list to the cwd
 #this is a modified default.param from sextractor
-def writeParam(fileName='def.param',numAps=1):   
+def writeParam(fileName='def.param',numAps=1):
     """Write a sex parameter list to the current working directory.
     Default file is called def.param unless otherwise specified.
 
@@ -55,6 +55,8 @@ def writeParam(fileName='def.param',numAps=1):
             '',
             'XWIN_IMAGE',
             'YWIN_IMAGE',
+            'ERRX2WIN_IMAGE',
+            'ERRY2WIN_IMAGE',
             '',
             'ERRAWIN_IMAGE ',
             'ERRBWIN_IMAGE ',
@@ -95,10 +97,10 @@ def writeParam(fileName='def.param',numAps=1):
 
 #write a modified default scamp file
 def writeScamp(fileName='def.scamp',distort=2):
-    """Write a modified nearly-default scamp file to the current 
+    """Write a modified nearly-default scamp file to the current
     working directory.
 
-    Options - distort is the order of the geometric distortion for 
+    Options - distort is the order of the geometric distortion for
               the scamp fit.
 
     Default file name is def.scamp unless otherwise specified.
@@ -207,7 +209,7 @@ def writeSex(fileName='def.sex',paramFileName='def.param',minArea=20, threshold=
 
     Options - paramFileName -the name of the associated parameter
                              file.
-              minArea - the minimum threshold area for sources. 
+              minArea - the minimum threshold area for sources.
                         Default is 20.
               threshold - the snr threshold for sources.
                           default is 8
