@@ -757,13 +757,15 @@ class modelPSF:
 
 
 
-    def genLookupTable(self,imData,centXs,centYs,verbose=False,bpMask=None,threeSigCut=True,bgRadius=20.):
+    def genLookupTable(self,imData,centXs,centYs,verbose=False,bpMask=None,threeSigCut=True,bgRadius=20.,returnAmpsCutouts = False):
         """
         Generate the lookup table from input imData and x/y coordinates in the numpy arrays centX,centY.
 
         verbose=True to see a lot of fitting output.
         bpMask=array to provide a bad pixel mask.
         threeSigCut=True to apply a 3 sigma cut before reporting the mean lookupTable. Only useful for ~5 or more stars.
+
+        returnAmpsCutouts returns the fitted amplitudes of each moffat fit and the image cutouts, and the centroid x and y in each cutout
         """
 
         adjCentXs=centXs-0.5
@@ -783,6 +785,10 @@ class modelPSF:
 
         shiftIms=[]
         fluxes=[]
+        cutouts = []
+        cxs = []
+        cys = []
+        bgs = []
         for ii in range(len(centXs)):
 
             #store the psf star location
@@ -793,18 +799,25 @@ class modelPSF:
             cx,cy=adjCentXs[ii]-int(adjCentXs[ii])+self.boxSize+2,adjCentYs[ii]-int(adjCentYs[ii])+self.boxSize+2
             cx+=0.5
             cy+=0.5
-
             cut=imData[yint:yint+2*self.boxSize+5,xint:xint+2*self.boxSize+5]
+
 
             self.fitMoffat(cut,num.array([cx]),num.array([cy]),self.boxSize,verbose=verbose,fixAB=True,fitXY=False,fitMaxRadius=3.,bgRadius=bgRadius)
             self.imData=num.copy(imData) #this is necessary because the imdata gets set to the shifted image subsection
             moff=downSample2d(self.moffat(self.repRads),self.repFact)*self.A
 
+            if returnAmpsCutouts:
+                cutouts.append(num.copy(cut))
+                cxs.append(cx)
+                cys.append(cy)
+                bgs.append(self.bg)
 
             diff=cut-self.bg
             diff[2:-2,2:-2]-=moff
 
+
             fluxes.append(self.A)
+
             self.psfStars[ii].append(self.A)
 
             repCut=expand2d(diff,self.repFact)
@@ -839,6 +852,9 @@ class modelPSF:
         self.psfStar=num.array(self.psfStars)
 
         self.genPSF()
+
+        if returnAmpsCutouts:
+            return (fluxes,cutouts,cxs,cys,bgs)
         return None
 
 
@@ -926,6 +942,7 @@ class modelPSF:
         (A)=p
         self.alpha=alpha
         self.beta=beta
+
         err=(self.subSec-(self.bg+A*downSample2d(self.moffat(self.repRads),self.repFact))).reshape(self.subSec.size)
         #if maxRad>0:
         #    w=num.where(self.rDist<=maxRad)
