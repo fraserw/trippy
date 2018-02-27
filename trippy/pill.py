@@ -204,6 +204,7 @@ class pillPhot:
                 image.append(self.__lp__(x=x+1.,y=y+1.,radius=radius[jj],l=l,a=a,w=int(width)))
                 mask.append(self.mask)
 
+
         if display and self.l0<>None:
             l0 = self.l0
             l1 = self.l1
@@ -274,10 +275,16 @@ class pillPhot:
 
         if display:
 
+
             if trimBGHighPix:
                 w = num.where(skyImage>(bg+trimBGHighPix*bgstd)/(self.repFact*self.repFact))
                 skyImage[w] = 0
-            im = skyImage+image
+
+            if type(radius) == type(num.array([1.0])) or type(radius) == type(num.array([1])):
+
+                im = skyImage+image[-1]
+            else:
+                im = skyImage+image
 
             if zscale:
                 (z1,z2) = numdisplay.zscale.zscale(im)
