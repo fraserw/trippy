@@ -178,7 +178,7 @@ class pillPhot:
                 self.dispAx = pyl.subplot(self.dispGS[0])
             else:
 
-                self.dispAx = dispFig.add_subplot(111)
+                self.dispAx = self.dispFig.add_subplot(111)
 
             #if connectKeyGatherer:
             #    self.dispFig.callbacks.connect(keyGatherer, 'key_press_event')
