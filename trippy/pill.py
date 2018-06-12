@@ -266,17 +266,17 @@ class pillPhot:
 
 
         if singleAperture:
-            W = num.where(mask <> 0.0)
-            flux = num.sum(image)-len(W[0])*bg/(self.repFact*self.repFact)
+            W = num.where(mask != 0.0)
+            flux = num.sum(image) - len(W[0]) * bg / (self.repFact ** 2)
         elif multipleApertures:
             flux = []
             for jj in range(len(radius)):
-                W = num.where(mask[jj] <> 0.0)
-                flux.append(num.sum(image[jj])-len(W[0])*bg/(self.repFact*self.repFact))
+                W = num.where(mask[jj] != 0.0)
+                flux.append(num.sum(image[jj]) -
+                            len(W[0]) * bg / (self.repFact ** 2))
             flux = num.array(flux)
 
-        self.nPix = num.sum(mask)/(self.repFact*self.repFact)
-
+        self.nPix = num.sum(mask) / (self.repFact ** 2)
         self.sourceFlux = flux
         self.bg = bg
         self.bgstd = bgstd
@@ -286,8 +286,6 @@ class pillPhot:
 
 
         if display:
-
-
             if trimBGHighPix:
                 w = num.where(skyImage>(bg+trimBGHighPix*bgstd)/(self.repFact*self.repFact))
                 skyImage[w] = 0
@@ -377,11 +375,18 @@ class pillPhot:
                 bgstd = num.std(rebinnedSkyImage[w])
 
 
-                W = num.where(mask<>0.0)
-                flux = num.sum(image)-len(W[0])*bg/(self.repFact*self.repFact)
+                if singleAperture:
+                    W = num.where(mask != 0.0)
+                    flux = num.sum(image) - len(W[0]) * bg / (self.repFact ** 2)
+                elif multipleApertures:
+                    flux = []
+                    for jj in range(len(radius)):
+                        W = num.where(mask[jj] != 0.0)
+                        flux.append(num.sum(image[jj]) -
+                                    len(W[0]) * bg / (self.repFact ** 2))
+                    flux = num.array(flux)
 
-                self.nPix = num.sum(mask)/(self.repFact*self.repFact)
-
+                self.nPix = num.sum(mask) / (self.repFact ** 2)
                 self.sourceFlux = flux
                 self.bg = bg
                 self.bgstd = bgstd
