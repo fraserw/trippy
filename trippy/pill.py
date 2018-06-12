@@ -166,6 +166,12 @@ class pillPhot:
         or bad) while doing photometry. If set to True, this will return an
         array of all the keys pressed.
         """
+        #Single-letter variables = super painful debugging
+        #I'll leave them in the function call for backwards compatibility,
+        #but will remove below.
+        angle = a
+        length = l
+        del(a, l)
 
         #Set up some of the True/False statements that gets used repeatedly:
         singleAperture = isinstance(radius, (float, num.float64))
@@ -203,19 +209,21 @@ class pillPhot:
         #if l+radius<width or l+skyRadius<width:
         #    raise Exception("Width must be large enough to include both the full aperture, and the sky radius.")
 
-        if a>90 or a<-90 or l<0 or num.min(radius)<0:
+        if angle > 90 or angle < -90 or length < 0 or num.min(radius) < 0:
             raise Exception('Keep the angle between -90 and +90 with positive rates please. If you ask me nicely, I may include code to handle this.')
 
         if singleAperture:
-            image = self.__lp__(x=x+1.,y=y+1.,radius=radius,l=l,a=a,w=int(width))
+            image = self.__lp__(x=x + 1., y=y + 1.,
+                                radius=radius, l=length, a=angle, w=int(width))
             mask = self.mask
         elif multipleApertures:
             image = []
             mask = []
             for jj in range(len(radius)):
-                image.append(self.__lp__(x=x+1.,y=y+1.,radius=radius[jj],l=l,a=a,w=int(width)))
+                image.append(self.__lp__(x=x + 1., y=y + 1.,
+                                         radius=radius[jj], l=length, a=angle,
+                                         w=int(width)))
                 mask.append(self.mask)
-
 
         if display and self.l0<>None:
             l0 = self.l0
@@ -232,8 +240,9 @@ class pillPhot:
                 skyImage = image[0]*0.0
             bg=0.0
         else:
-            skyImage = self.__lp__(x=x+1.,y=y+1.,radius=skyRadius,l=l,a=a,w=int(width),
-                                 retObj=False)
+            skyImage = self.__lp__(x=x + 1., y=y + 1., radius=skyRadius,
+                                   l=length, a=angle, w=int(width),
+                                   retObj=False)
             bgmask = self.bgmask
 
             rebinnedSkyImage = num.zeros(num.array(skyImage.shape)/self.repFact)
@@ -264,7 +273,6 @@ class pillPhot:
                 bg = bgf.smartBackground(display=display, backupMode=backupMode, forceBackupMode = forceBackupMode)
                 bgstd = num.std(rebinnedSkyImage[w][W])
 
-
         if singleAperture:
             W = num.where(mask != 0.0)
             flux = num.sum(image) - len(W[0]) * bg / (self.repFact ** 2)
@@ -282,8 +290,6 @@ class pillPhot:
         self.bgstd = bgstd
         self.exptime = exptime
         self.magnitude = zpt-2.5*num.log10(self.sourceFlux/self.exptime)
-
-
 
         if display:
             if trimBGHighPix:
@@ -304,34 +310,25 @@ class pillPhot:
                 im[w]+=self.bg*0.7/(self.repFact*self.repFact)
                 im = num.clip(im,num.min(im),num.max(image))
                 self.dispAx.imshow(im,interpolation='nearest',origin='lower')
-
-            if self.l0<>None:
-                self.dispAx.plot(num.linspace(l0.xlim[0],l0.xlim[1],100),l0(num.linspace(l0.xlim[0],l0.xlim[1],100)),'w-',lw=2.)
-                self.dispAx.plot(num.linspace(l2.xlim[0],l2.xlim[1],100),l2(num.linspace(l2.xlim[0],l2.xlim[1],100)),'w-',lw=2.)
-                #pyl.text((l0.xlim[0]+l0.xlim[1])/2.-5,(l0(l0.xlim[0])+l0(l0.xlim[1]))/2.+5,'$l$',size=20)
-                #pyl.plot([l0.xlim[0],l0.xlim[0]+50],[l0(l0.xlim[0]),l0(l0.xlim[0])],'k--')
-
-                mx0 = (l0.xlim[0]+l2.xlim[0])/2
-                my0 = (l0(l0.xlim[0])+l2(l2.xlim[0]))/2
-                a0 = num.arctan2(l0(l0.xlim[0])-my0,l0.xlim[0]-mx0)
-                a1 = num.arctan2(l2(l2.xlim[0])-my0,l2.xlim[0]-mx0)
-                a = num.linspace(a0,a1,25)
-                xxx = mx0-num.cos(a)*radius*self.repFact
-                yyy = my0-num.sin(a)*radius*self.repFact
-                self.dispAx.plot(xxx,yyy,'w-',lw=2)
-                #dispAx.plot([mx0,xxx[-6]],[my0,yyy[-6]],'w:',lw=2)
-                #pyl.text((mx0+xxx[-6])/2.-5,(my0+yyy[-6])/2.-5,'$r$',size=20)
-
-
-                mx0 = (l0.xlim[1]+l2.xlim[1])/2
-                my0 = (l0(l0.xlim[1])+l2(l2.xlim[1]))/2
-                a0 = num.arctan2(l0(l0.xlim[1])-my0,l0.xlim[1]-mx0)
-                a1 = num.arctan2(l2(l2.xlim[1])-my0,l2.xlim[1]-mx0)
-                a = num.linspace(a0,a1,25)
-                xxx = mx0+num.cos(a)*radius*self.repFact
-                yyy = my0+num.sin(a)*radius*self.repFact
-                self.dispAx.plot(xxx,yyy,'w-',lw=2)
-
+            if self.l0 is not None:
+                self.dispAx.plot(num.linspace(l0.xlim[0], l0.xlim[1], 100),
+                                 l0(num.linspace(l0.xlim[0], l0.xlim[1], 100)),
+                                 'w-', lw=2.)
+                self.dispAx.plot(num.linspace(l2.xlim[0], l2.xlim[1], 100),
+                                 l2(num.linspace(l2.xlim[0], l2.xlim[1], 100)),
+                                 'w-', lw=2.)
+                mx0 = (l0.xlim[0] + l2.xlim[0]) / 2
+                my0 = (l0.ylim[0] + l2.ylim[0]) / 2
+                a0 = num.arctan2(l0.ylim[0] - my0, l0.xlim[0] - mx0)
+                a1 = num.arctan2(l2.ylim[0] - my0, l2.xlim[0] - mx0)
+                a01 = num.linspace(a0, a1, 25)
+                outerRadius = radius if singleAperture else radius[-1]
+                semiCircX = num.cos(a01) * outerRadius * self.repFact
+                semiCircY = num.sin(a01) * outerRadius * self.repFact
+                mx1 = (l0.xlim[1] + l2.xlim[1]) / 2
+                my1 = (l0.ylim[1] + l2.ylim[1]) / 2
+                self.dispAx.plot(mx0 - semiCircX, my0 - semiCircY, 'w-', lw=2)
+                self.dispAx.plot(mx1 + semiCircX, my1 + semiCircY, 'w-', lw=2)
 
             if enableBGSelection:
                 print 'Current background value: %.3f'%(self.bg)
@@ -426,7 +423,13 @@ class pillPhot:
 
 
     def __lp__(self,x,y,radius,l,a,w,retObj=True):
-        ang=a*num.pi/180.
+        #Single-letter variables = super painful debugging
+        #I'll leave them in the function call for backwards compatibility,
+        #but will remove below.
+        angle = a
+        length = l
+        del(a, l)
+        ang=num.radians(angle)
 
         (A,B)=self.data.shape
 
@@ -449,8 +452,8 @@ class pillPhot:
             cx = num.array([(x - int(x) + w) * self.repFact, (y - 1) * self.repFact])
         else:
             cx = num.array([(x - int(x) + w) * self.repFact, (y - int(y) + w) * self.repFact])
-        h=self.repFact*(radius**2+(l/2.)**2)**0.5
-        beta=num.arctan2(num.array(radius),num.array(l/2.))
+        h = self.repFact * (radius ** 2 + (length / 2.) ** 2) ** 0.5
+        beta = num.arctan2(num.array(radius), num.array(length / 2.))
 
         x0=cx+num.array([num.cos(beta+ang),num.sin(beta+ang)])*h
         x1=cx+num.array([num.cos(ang-beta+num.pi),num.sin(ang-beta+num.pi)])*h
@@ -460,20 +463,18 @@ class pillPhot:
 
         map=num.zeros((A,B)).astype('float')
         #draw the box
+        l0=line(x0,x1)
+        l1=line(x1,x2)
+        l2=line(x2,x3)
+        l3=line(x3,x0)
+        self.l0=l0
+        self.l1=l1
+        self.l2=l2
+        self.l3=l3
         if abs(ang)%num.pi in [0,num.pi/2,num.pi,-num.pi/2,-num.pi]:
             corners=num.concatenate([[x0],[x1],[x2],[x3]])
             map[num.min(corners[:,1]).astype('int'):num.max(corners[:,1]).astype('int') , num.min(corners[:,0]).astype('int'):num.max(corners[:,0]).astype('int')]=1.
         else:
-            l0=line(x0,x1)
-            l1=line(x1,x2)
-            l2=line(x2,x3)
-            l3=line(x3,x0)
-            self.l0=l0
-            self.l1=l1
-            self.l2=l2
-            self.l3=l3
-
-
             perimeter=[]
             for ii in num.arange(l0.xlim[0],l0.xlim[1]):
                 perimeter.append([ii+0.5,l0(ii)])
@@ -493,8 +494,10 @@ class pillPhot:
                 map[num.max([0,num.min(y)]):num.max([0,num.max(y)+1]),ux[ii]]=1.
                 #ADDIN double check for pixels beyond 1 of the lines.
 
-        p0=cx+self.repFact*(l/2.)*num.array([num.cos(ang),num.sin(ang)])
-        p1=cx+self.repFact*(l/2.)*num.array([num.cos(ang+num.pi),num.sin(ang+num.pi)])
+        p0 = (cx + self.repFact *( length / 2.) *
+              num.array([num.cos(ang), num.sin(ang)]))
+        p1 = (cx + self.repFact * (length / 2.) *
+              num.array([num.cos(ang + num.pi), num.sin(ang + num.pi)]))
 
         xeval=num.linspace(max(0.,p0[0]-radius*self.repFact),min(p0[0]+radius*self.repFact,B-1),radius*100*2)
         for ii in range(len(xeval)):
