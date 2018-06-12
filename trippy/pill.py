@@ -167,6 +167,19 @@ class pillPhot:
         array of all the keys pressed.
         """
 
+        #Set up some of the True/False statements that gets used repeatedly:
+        singleAperture = isinstance(radius, (float, num.float64))
+        multipleApertures = isinstance(radius, num.ndarray)
+        if not singleAperture | multipleApertures:
+          raise Exception('Aperture size not understood. ' +
+                          'It seems to be neither an array or a single value')
+        #Check whether aperture(s) is integer: if True convert to float.
+        integerAperture = isinstance(radius, (int, num.integer))
+        if multipleApertures:
+            integerAperture = issubclass(radius.dtype.type, num.integer)
+        if integerAperture:
+            radius *= 1.
+            integerAperture = False
 
         if display:
             #setup the necessary subplots
@@ -193,11 +206,10 @@ class pillPhot:
         if a>90 or a<-90 or l<0 or num.min(radius)<0:
             raise Exception('Keep the angle between -90 and +90 with positive rates please. If you ask me nicely, I may include code to handle this.')
 
-
-        if type(radius) == type(1.0) or type(radius) == num.float64:
+        if singleAperture:
             image = self.__lp__(x=x+1.,y=y+1.,radius=radius,l=l,a=a,w=int(width))
             mask = self.mask
-        elif type(radius) == type(num.array([1.0])) or type(radius) == type(num.array([1])):
+        elif multipleApertures:
             image = []
             mask = []
             for jj in range(len(radius)):
@@ -214,9 +226,9 @@ class pillPhot:
         bgstd = -1.
 
         if skyRadius == None:
-            if type(radius) == type(1.0) or type(radius) == num.float64:
+            if singleAperture:
                 skyImage = image*0.0
-            elif type(radius) == type(num.array([1.0])) or type(radius) == type(num.array([1])):
+            elif multipleApertures:
                 skyImage = image[0]*0.0
             bg=0.0
         else:
@@ -253,10 +265,10 @@ class pillPhot:
                 bgstd = num.std(rebinnedSkyImage[w][W])
 
 
-        if type(radius) == type(1.0) or type(radius) == num.float64:
+        if singleAperture:
             W = num.where(mask <> 0.0)
             flux = num.sum(image)-len(W[0])*bg/(self.repFact*self.repFact)
-        elif type(radius) == type(num.array([1.0])) or type(radius) == type(num.array([1])):
+        elif multipleApertures:
             flux = []
             for jj in range(len(radius)):
                 W = num.where(mask[jj] <> 0.0)
@@ -280,10 +292,9 @@ class pillPhot:
                 w = num.where(skyImage>(bg+trimBGHighPix*bgstd)/(self.repFact*self.repFact))
                 skyImage[w] = 0
 
-            if type(radius) == type(num.array([1.0])) or type(radius) == type(num.array([1])):
-
+            if multipleApertures:
                 im = skyImage+image[-1]
-            else:
+            elif singleAperture:
                 im = skyImage+image
 
             if zscale:
