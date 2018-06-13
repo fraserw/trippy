@@ -209,8 +209,17 @@ class pillPhot:
         #if l+radius<width or l+skyRadius<width:
         #    raise Exception("Width must be large enough to include both the full aperture, and the sky radius.")
 
-        if angle > 90 or angle < -90 or length < 0 or num.min(radius) < 0:
-            raise Exception('Keep the angle between -90 and +90 with positive rates please. If you ask me nicely, I may include code to handle this.')
+#        if angle > 90 or angle < -90 or length < 0 or num.min(radius) < 0:
+        if angle > 90 or angle < -90:
+            angle = angle % 180.
+            if verbose:
+                print("Warning! You gave a bad angle. I'll fix it for you.")
+        if length < 0:
+            length = -length
+            if verbose:
+                print("Warning! You gave a bad length. I'll fix it for you.")
+        if num.min(radius) < 0:
+            raise Exception('Aperture radius must be positive!')
 
         if singleAperture:
             image = self.__lp__(x=x + 1., y=y + 1.,
