@@ -336,6 +336,8 @@ class pillPhot:
                 semiCircY = num.sin(a01) * outerRadius * self.repFact
                 mx1 = (l0.xlim[1] + l2.xlim[1]) / 2
                 my1 = (l0.ylim[1] + l2.ylim[1]) / 2
+                my0, my1 = ((my1, my0) if ((angle < 0) & (angle > -90))
+                            else (my0, my1))
                 self.dispAx.plot(mx0 - semiCircX, my0 - semiCircY, 'w-', lw=2)
                 self.dispAx.plot(mx1 + semiCircX, my1 + semiCircY, 'w-', lw=2)
 
