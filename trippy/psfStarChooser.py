@@ -19,13 +19,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), Academic email: wes.fraser@qub.ac.uk'
 
 
-import pylab as pyl, numpy as np,psf
-from matplotlib import backend_bases
-from stsci import numdisplay
+import numpy as np
+import psf
+import pylab as pyl
 from astropy.visualization import interval
+from stsci import numdisplay
+
 from trippy import bgFinder
 
-from astropy.io import fits
 
 class starChooser:
     """
@@ -156,8 +157,17 @@ class starChooser:
             w = np.where( (np.abs(self.points[:,0]-mode)>FWHM_mode_width) | (np.abs(self.points[:,2]-mean_a)>ab_std_width*std_a) | (np.abs(self.points[:,3]-mean_b)>ab_std_width*std_b) )
             self.goodStars[w] = False
 
+            #now eliminate the ones with sources nearby
+            for ii in range(len(self.goodStars)):
+                dist = ((self.XWIN_IMAGE-self.points[ii,4])**2 + (self.YWIN_IMAGE-self.points[ii,5])**2)**0.5
+                args = np.argsort(dist)
+                dist = dist[args]
+                #print self.points[ii,4:6],dist
+                if dist[1]<moffatWidth:
+                    self.goodStars[ii] = False
 
             """
+
             #now print out the number of pixels that are 3-sigma above the naive expectation of the moffat profile itself
             mpsf = psf.modelPSF(np.arange(xWidth), np.arange(yWidth), alpha=mean_a, beta=mean_b,
                                 repFact=self.repFact)
@@ -174,7 +184,7 @@ class starChooser:
                     cut = self.data[a:b,c:d]
 
                     removed = mpsf.remove(self.XWIN_IMAGE[ii]-0.5,self.YWIN_IMAGE[ii]-0.5, mpsf.A, self.data)[a:b,c:d]-mpsf.bg
-                    print  len(np.where( np.abs(removed/cut**0.5)>3)[0])
+                    print  ii,len(np.where( np.abs(removed/cut**0.5)>3)[0])
 
             exit()
             """
