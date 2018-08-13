@@ -20,16 +20,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), Academic email: wes.fraser@qub.ac.uk'
 
-import numpy as np
-from scipy import signal
-import sys,os
-import pylab as pyl
-from scipy import optimize as opti,interpolate as interp
-import scipy as sci
-import bgFinder
-#import weightedMeanSTD
-
 import imp
+import os
+import sys
+
+import scipy as sci
+from scipy import optimize as opti, interpolate as interp
+from scipy import signal
+
+import bgFinder
+
+# import weightedMeanSTD
 try:
     imp.find_module('astropy')
     astropyFound = True
@@ -548,7 +549,7 @@ class modelPSF:
 
 
 
-    def plant(self,x,y,amp,indata,addNoise=True,useLinePSF=False,returnModel=False):
+    def plant(self,x,y,amp,indata,addNoise=True,useLinePSF=False,returnModel=False,verbose=False):
         """
         Plant a star at coordinates x,y with amplitude amp.
 
@@ -562,7 +563,9 @@ class modelPSF:
 
 
 
-        self.boxSize=len(self.lookupTable)/self.repFact/2
+        #self.boxSize=len(self.lookupTable)/self.repFact/2
+        self.boxSize = len(self.R[0]) / self.repFact / 2
+
 
         xint,yint=int(x)-self.boxSize,int(y)-self.boxSize
         cx,cy=x-int(x)+self.boxSize,y-int(y)+self.boxSize
@@ -586,25 +589,29 @@ class modelPSF:
         if not useLinePSF:
 
             moff=downSample2d(self.moffat(self.repRads),self.repFact)*amp
-            (pa,pb)=moff.shape
+            if self.lookupTable is not None:
+                (pa,pb)=moff.shape
 
-            #shift the lookuptable right and up to account for the off-zero centroid
-            slu=np.copy(self.lookupTable)
-            (a,b)=slu.shape
+                #shift the lookuptable right and up to account for the off-zero centroid
+                slu=np.copy(self.lookupTable)
+                (a,b) = slu.shape
 
-            if sx>0:
-                sec=slu[:,b-sx:]
-                slu[:,sx:]=slu[:,:b-sx]
-                slu[:,:sx]=sec
-            if sy>0:
-                sec=slu[a-sy:,:]
-                slu[sy:,:]=slu[:a-sy,:]
-                slu[:sy,:]=sec
-            slu=downSample2d(slu,self.repFact)*amp*self.repFact*self.repFact
-            psf=slu+moff
+                if sx>0:
+                    sec = slu[:,b-sx:]
+                    slu[:,sx:] = slu[:,:b-sx]
+                    slu[:,:sx] = sec
+                if sy>0:
+                    sec = slu[a-sy:,:]
+                    slu[sy:,:] = slu[:a-sy,:]
+                    slu[:sy,:] = sec
+                slu = downSample2d(slu,self.repFact)*amp*self.repFact*self.repFact
+                psf = slu+moff
+            else:
+                psf = moff
+                if verbose: print "Lookup table is none. Just using Moffat profile."
         else:
-            lpsf=np.copy(self.longPSF)
-            (a,b)=lpsf.shape
+            lpsf = np.copy(self.longPSF)
+            (a,b) = lpsf.shape
 
             #cubic interpolation doesn't do as good as the x10 subsampling
             #quintic does just about as well, linear sucks
@@ -613,13 +620,13 @@ class modelPSF:
 
 
             if sx>0:
-                sec=lpsf[:,b-sx:]
-                lpsf[:,sx:]=lpsf[:,:b-sx]
-                lpsf[:,:sx]=sec
+                sec = lpsf[:,b-sx:]
+                lpsf[:,sx:] = lpsf[:,:b-sx]
+                lpsf[:,:sx] = sec
             if sy>0:
-                sec=lpsf[a-sy:,:]
-                lpsf[sy:,:]=lpsf[:a-sy,:]
-                lpsf[:sy,:]=sec
+                sec = lpsf[a-sy:,:]
+                lpsf[sy:,:] = lpsf[:a-sy,:]
+                lpsf[:sy,:] = sec
             psf=downSample2d(lpsf,self.repFact)*amp
 
             #this is a cheat to handle the outer edges that can go negative after convolution
@@ -737,6 +744,7 @@ class modelPSF:
         else:
             res=self._resid((self.A,self.alpha,self.beta),fitMaxRadius)
         self.chi = np.sqrt(np.sum(res**2)/(len(res)-1))
+        self.chiFluxNorm = np.sqrt(np.sum((res/self.A)**2)/(len(res)-1))
         self.fitted = True
 
         self.PSF = self.moffat(self.R)
@@ -753,7 +761,7 @@ class modelPSF:
             pyl.plot(r,self.A*self.moffat(r)+self.bg,'r--')
             fw = self.FWHM(fromMoffatProfile=True)
             print 'FWHM: %.3f'%(fw)
-            pyl.title('FWHM: %.3f alpha: %.3f beta: %.3f'%(fw,self.alpha,self.beta))
+            pyl.title('FWHM: {.3f} alpha: {.3f} beta: {.3f}'.format(fw,self.alpha,self.beta))
             if logRadPlot: ax.set_xscale('log')
             pyl.show()
 
