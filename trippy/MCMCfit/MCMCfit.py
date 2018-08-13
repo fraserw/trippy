@@ -128,7 +128,7 @@ class MCMCfitter:
                         bg = None, useErrorMap = False,
                         useLinePSF = False, fitRateAngle = False,
                         rate_in = None, angle_in = None, exptime = None, pixScale = None,
-                        verbose=False):
+                        verbose=False, rand_pos = 0.1):
 
         """
         Using emcee (It's hammer time!) the provided image is fit using
@@ -191,7 +191,7 @@ class MCMCfitter:
             nDim = 2
             r0 = []
             for ii in range(nWalkers):
-                r0.append(np.array([x_in,y_in])+sci.randn(2)*np.array([0.1,0.1]))
+                r0.append(np.array([x_in,y_in])+sci.randn(2)*np.array([rand_pos,rand_pos]))
             r0 = np.array(r0)
 
             #fit first using input best guess amplitude
