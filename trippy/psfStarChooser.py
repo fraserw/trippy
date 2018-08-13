@@ -101,6 +101,7 @@ class starChooser:
         self.starsScat = None
 
         print 'Fitting stars with moffat profiles...'
+        print '      X         Y    chi    a     b    FWHM'
 
 
         for j in range(len(self.XWIN_IMAGE)):
@@ -109,7 +110,6 @@ class starChooser:
                     continue
                 #this psf object creator has to be here. It's to do with the way PSF objects are initialized. Some time
                 #in the future I will adjust this for a small speed boost.
-                #mpsf = psf.modelPSF(np.arange(xWidth), np.arange(yWidth), alpha=self.initAlpha, beta=self.initBeta,repFact=self.repFact)
                 mpsf = psf.modelPSF(np.arange(xWidth), np.arange(yWidth), alpha=self.initAlpha, beta=self.initBeta,
                                     repFact=self.repFact)
                 mpsf.fitMoffat(self.data,self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],boxSize=self.moffatWidth,verbose=verbose)
@@ -119,7 +119,7 @@ class starChooser:
                 #norm=Im.normalise(mpsf.subsec,[self.z1,self.z2])
                 norm=self.normer(mpsf.subSec)
                 if (fwhm is not None) and not (np.isnan(mpsf.beta) or np.isnan(mpsf.alpha)):
-                    print '{: 8.2f} {: 8.2f} {: 5.2f} {: 5.2f} {: 5.2f}'.format(self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],mpsf.alpha,mpsf.beta,fwhm)
+                    print '   {: 8.2f} {: 8.2f} {:3.2f} {: 5.2f} {: 5.2f} {: 5.2f} '.format(self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],mpsf.chiFluxNorm,mpsf.alpha,mpsf.beta,fwhm)
 
                     self.subsecs.append(norm*1.)
                     self.goodStars.append(True)
@@ -135,11 +135,49 @@ class starChooser:
         self.points = np.array(self.points)
         self.goodStars = np.array(self.goodStars)
 
+        FWHM_mode_width = 1.0 #could be 0.5 just as well
+        ab_std_width = 3.0
         if autoTrim:
+            print '\nDoing auto star selection.'
+            #first use Frasermode on the distribution of FWHM to get a good handle on the true FWHM of stars
+            #select only those stars with FWHM of +-1 pixel of the mode.
             bg = bgFinder.bgFinder(self.points[:,0])
             mode = bg('fraserMode')
-            w = np.where(np.abs(self.points[:,0]-mode)>0.5)
+            w = np.where(np.abs(self.points[:,0]-mode)>FWHM_mode_width)
             self.goodStars[w] = False
+
+            #now mean select on both moffat a and b parameters to get only those with common shapes
+            w = np.where(self.goodStars)
+            mean_a = np.mean(self.points[w][:,2])
+            std_a = np.std(self.points[w][:,2])
+            mean_b = np.mean(self.points[w][:,3])
+            std_b = np.std(self.points[w][:,3])
+
+            w = np.where( (np.abs(self.points[:,0]-mode)>FWHM_mode_width) | (np.abs(self.points[:,2]-mean_a)>ab_std_width*std_a) | (np.abs(self.points[:,3]-mean_b)>ab_std_width*std_b) )
+            self.goodStars[w] = False
+
+
+            """
+            #now print out the number of pixels that are 3-sigma above the naive expectation of the moffat profile itself
+            mpsf = psf.modelPSF(np.arange(xWidth), np.arange(yWidth), alpha=mean_a, beta=mean_b,
+                                repFact=self.repFact)
+            print 'Fitting amplitudes to each good star.'
+            for ii in range(len(self.moffs)):
+                if self.goodStars[ii]:
+                    mpsf.fitMoffat(self.data,
+                                   self.XWIN_IMAGE[ii], self.YWIN_IMAGE[ii],
+                                   boxSize = self.moffatWidth,
+                                   fixAB = True)
+                    a,b = int(self.YWIN_IMAGE[ii]-yWidth/2),int(self.YWIN_IMAGE[ii]+yWidth/2)+1
+                    c,d = int(self.XWIN_IMAGE[ii]-xWidth/2),int(self.XWIN_IMAGE[ii]+xWidth/2)+1
+                    x,y = self.XWIN_IMAGE[ii]-int(self.XWIN_IMAGE[ii])+xWidth/2+1.0, self.YWIN_IMAGE[ii]-int(self.YWIN_IMAGE[ii])+yWidth/2+1.0
+                    cut = self.data[a:b,c:d]
+
+                    removed = mpsf.remove(self.XWIN_IMAGE[ii]-0.5,self.YWIN_IMAGE[ii]-0.5, mpsf.A, self.data)[a:b,c:d]-mpsf.bg
+                    print  len(np.where( np.abs(removed/cut**0.5)>3)[0])
+
+            exit()
+            """
 
 
 
@@ -538,8 +576,6 @@ class starChooser:
             #pyl.imshow(d,interpolation = 'nearest',cmap='gray', vmin=m-s, vmax=m+s, origin='lower')
             #pyl.title(np.max(np.abs(d)))
             #pyl.show()
-        #fits.writeto('junk.fits',d,clobber = True)
-        #exit()
         xxx=np.array(xxx)
         yyy=np.array(yyy)
         pyl.scatter(xxx,np.abs(yyy-xxx)/xxx)
