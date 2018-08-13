@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), Academic email: wes.fraser@qub.ac.uk'
 
-import numpy as num
+import numpy as np
 from scipy import signal
 import sys,os
 import pylab as pyl
@@ -90,14 +90,14 @@ class modelPSF:
         lineHDU=pyf.ImageHDU(self.longPSF)
 
         if self.aperCorrs is not None:
-            aperCorrHDU=pyf.ImageHDU(num.array([self.aperCorrs,self.aperCorrRadii]))
+            aperCorrHDU=pyf.ImageHDU(np.array([self.aperCorrs,self.aperCorrRadii]))
         else:
-            aperCorrHDU=pyf.ImageHDU(num.array([[-1],[-1]]))
+            aperCorrHDU=pyf.ImageHDU(np.array([[-1],[-1]]))
         if self.lineAperCorrs is not None:
-            lineAperCorrHDU=pyf.ImageHDU(num.array([self.lineAperCorrs,self.lineAperCorrRadii]))
+            lineAperCorrHDU=pyf.ImageHDU(np.array([self.lineAperCorrs,self.lineAperCorrRadii]))
         else:
-            lineAperCorrHDU=pyf.ImageHDU(num.array([[-1],[-1]]))
-        #distHDU=pyf.ImageHDU(num.array([self.rDist,self.fDist]))
+            lineAperCorrHDU=pyf.ImageHDU(np.array([[-1],[-1]]))
+        #distHDU=pyf.ImageHDU(np.array([self.rDist,self.fDist]))
         list=pyf.HDUList([HDU,lookupHDU,lineHDU,hdu,aperCorrHDU,lineAperCorrHDU])
 
 
@@ -161,36 +161,36 @@ class modelPSF:
             self.lineAperCorrFunc=interp.interp1d(self.lineAperCorrRadii*1.,self.lineAperCorrs*1.)
 
         self.shape=self.psf.shape
-        self.x=num.arange(self.shape[0])+0.5
-        self.y=num.arange(self.shape[1])+0.5
+        self.x=np.arange(self.shape[0])+0.5
+        self.y=np.arange(self.shape[1])+0.5
 
-        self.cent=num.array([len(self.y)/2.,len(self.x)/2.])
+        self.cent=np.array([len(self.y)/2.,len(self.x)/2.])
         self.centx=self.cent[0]
         self.centy=self.cent[1]
 
-        self.psf=num.ones([len(self.y),len(self.x)]).astype('float')
+        self.psf=np.ones([len(self.y),len(self.x)]).astype('float')
 
-        self.inds=num.zeros((len(self.y),len(self.x),2)).astype('int')
+        self.inds=np.zeros((len(self.y),len(self.x),2)).astype('int')
         for ii in range(len(self.y)):
-            self.inds[ii,:,1]=num.arange(len(self.x))
+            self.inds[ii,:,1]=np.arange(len(self.x))
         for ii in range(len(self.x)):
-            self.inds[:,ii,0]=num.arange(len(self.y))
+            self.inds[:,ii,0]=np.arange(len(self.y))
 
-        self.coords=self.inds+num.array([0.5,0.5])
-        self.r=num.sqrt(num.sum((self.coords-self.cent)**2,axis=2))
+        self.coords=self.inds+np.array([0.5,0.5])
+        self.r=np.sqrt(np.sum((self.coords-self.cent)**2,axis=2))
 
 
 
-        self.X=num.arange(len(self.x)*self.repFact)/float(self.repFact)+0.5/self.repFact
-        self.Y=num.arange(len(self.y)*self.repFact)/float(self.repFact)+0.5/self.repFact
-        self.Inds=num.zeros((len(self.y)*self.repFact,len(self.x)*self.repFact,2)).astype('int')
+        self.X=np.arange(len(self.x)*self.repFact)/float(self.repFact)+0.5/self.repFact
+        self.Y=np.arange(len(self.y)*self.repFact)/float(self.repFact)+0.5/self.repFact
+        self.Inds=np.zeros((len(self.y)*self.repFact,len(self.x)*self.repFact,2)).astype('int')
         for ii in range(len(self.y)*self.repFact):
-            self.Inds[ii,:,1]=num.arange(len(self.x)*self.repFact)
+            self.Inds[ii,:,1]=np.arange(len(self.x)*self.repFact)
         for ii in range(len(self.x)*self.repFact):
-            self.Inds[:,ii,0]=num.arange(len(self.y)*self.repFact)
-        self.Coords=(self.Inds+num.array([0.5,0.5]))/float(self.repFact)
+            self.Inds[:,ii,0]=np.arange(len(self.y)*self.repFact)
+        self.Coords=(self.Inds+np.array([0.5,0.5]))/float(self.repFact)
 
-        self.R=num.sqrt(num.sum((self.Coords-self.cent)**2,axis=2))
+        self.R=np.sqrt(np.sum((self.Coords-self.cent)**2,axis=2))
         self.genPSF()
         self.fitted=True
 
@@ -216,7 +216,7 @@ class modelPSF:
             raise Warning('This has only been robustly tested with repFact=5 or 10. I encourage you to stick with those.')
 
         if not restore:
-            if type(x)==type(num.ones(1)):
+            if type(x)==type(np.ones(1)):
                 if len(x)==1:
                     if x[0]%2==0 or x[0]%2==0:
                         raise Exception('Please use odd width PSFs. Even has not been tested yet.')
@@ -239,46 +239,46 @@ class modelPSF:
             self.dt = None
             self.pixScale = None
 
-            if type(x)<>type(num.ones(1)):
-                self.x=num.arange(x)+0.5
-                self.y=num.arange(y)+0.5
+            if type(x)<>type(np.ones(1)):
+                self.x=np.arange(x)+0.5
+                self.y=np.arange(y)+0.5
             elif len(x)==1:
-                self.x=num.arange(x)+0.5
-                self.y=num.arange(y)+0.5
+                self.x=np.arange(x)+0.5
+                self.y=np.arange(y)+0.5
             else:
                 self.x=x*1.0+0.5
                 self.y=y*1.0+0.5
-            self.cent=num.array([len(self.y)/2.,len(self.x)/2.])
+            self.cent=np.array([len(self.y)/2.,len(self.x)/2.])
             self.centx=self.cent[0]
             self.centy=self.cent[1]
             self.repFact=repFact
 
-            self.psf=num.ones([len(self.y),len(self.x)]).astype('float')
+            self.psf=np.ones([len(self.y),len(self.x)]).astype('float')
 
-            self.inds=num.zeros((len(self.y),len(self.x),2)).astype('int')
+            self.inds=np.zeros((len(self.y),len(self.x),2)).astype('int')
             for ii in range(len(self.y)):
-                self.inds[ii,:,1]=num.arange(len(self.x))
+                self.inds[ii,:,1]=np.arange(len(self.x))
             for ii in range(len(self.x)):
-                self.inds[:,ii,0]=num.arange(len(self.y))
+                self.inds[:,ii,0]=np.arange(len(self.y))
 
-            self.coords=self.inds+num.array([0.5,0.5])
-            self.r=num.sqrt(num.sum((self.coords-self.cent)**2,axis=2))
+            self.coords=self.inds+np.array([0.5,0.5])
+            self.r=np.sqrt(np.sum((self.coords-self.cent)**2,axis=2))
 
 
-            self.X=num.arange(len(self.x)*self.repFact)/float(self.repFact)+0.5/self.repFact
-            self.Y=num.arange(len(self.y)*self.repFact)/float(self.repFact)+0.5/self.repFact
-            self.Inds=num.zeros((len(self.y)*self.repFact,len(self.x)*self.repFact,2)).astype('int')
+            self.X=np.arange(len(self.x)*self.repFact)/float(self.repFact)+0.5/self.repFact
+            self.Y=np.arange(len(self.y)*self.repFact)/float(self.repFact)+0.5/self.repFact
+            self.Inds=np.zeros((len(self.y)*self.repFact,len(self.x)*self.repFact,2)).astype('int')
             for ii in range(len(self.y)*self.repFact):
-                self.Inds[ii,:,1]=num.arange(len(self.x)*self.repFact)
+                self.Inds[ii,:,1]=np.arange(len(self.x)*self.repFact)
             for ii in range(len(self.x)*self.repFact):
-                self.Inds[:,ii,0]=num.arange(len(self.y)*self.repFact)
-            self.Coords=(self.Inds+num.array([0.5,0.5]))/float(self.repFact)
+                self.Inds[:,ii,0]=np.arange(len(self.y)*self.repFact)
+            self.Coords=(self.Inds+np.array([0.5,0.5]))/float(self.repFact)
 
-            self.R=num.sqrt(num.sum((self.Coords-self.cent)**2,axis=2))
+            self.R=np.sqrt(np.sum((self.Coords-self.cent)**2,axis=2))
 
 
             self.PSF=self.moffat(self.R)
-            self.PSF/=num.sum(self.PSF)
+            self.PSF/=np.sum(self.PSF)
             self.psf=downSample2d(self.PSF,self.repFact)
 
             self.fullPSF=None
@@ -355,7 +355,7 @@ class modelPSF:
              display=displayAperture)
         aperCorrs = phot.magnitude
 
-        self.aperCorrs=num.array(aperCorrs)
+        self.aperCorrs=np.array(aperCorrs)
         self.aperCorrFunc=interp.interp1d(self.aperCorrRadii*1.,self.aperCorrs*1.)
 
         if display:
@@ -374,7 +374,7 @@ class modelPSF:
         """
 
         if self.aperCorrFunc<>None:
-            return self.aperCorrFunc(r)-num.min(self.aperCorrs)
+            return self.aperCorrFunc(r)-np.min(self.aperCorrs)
         else:
             raise Exception('Must first fun computeRoundAperCorrFromPSF before the aperture corrections can be evaluated here.')
 
@@ -420,7 +420,7 @@ class modelPSF:
         for ii in range(len(self.lineAperCorrRadii)):
             print '    {:6.2f} {:10.3f}  {:8.3f}'.format(radii[ii],phot.sourceFlux[ii],phot.magnitude[ii])
 
-        self.lineAperCorrs=num.array(self.lineAperCorrs)
+        self.lineAperCorrs=np.array(self.lineAperCorrs)
         self.lineAperCorrFunc=interp.interp1d(self.lineAperCorrRadii,self.lineAperCorrs)
 
         if display:
@@ -439,7 +439,7 @@ class modelPSF:
         """
 
         if self.lineAperCorrFunc<>None:
-            return self.lineAperCorrFunc(r)-num.min(self.lineAperCorrs)
+            return self.lineAperCorrFunc(r)-np.min(self.lineAperCorrs)
         else:
             raise Exception('Must first fun computeLineAperCorrFromMoffat before the aperture corrections can be evaluated here.')
 
@@ -451,7 +451,7 @@ class modelPSF:
 
         #normalized flux profile return 1.-(1.+(rad/self.alpha)**2)**(1.-self.beta)
         a2=self.alpha*self.alpha
-        return (self.beta-1)*(num.pi*a2)*(1.+(rad/self.alpha)**2)**(-self.beta)
+        return (self.beta-1)*(np.pi*a2)*(1.+(rad/self.alpha)**2)**(-self.beta)
 
     def FWHM(self,fromMoffatProfile=False):
         """
@@ -460,28 +460,28 @@ class modelPSF:
         """
 
         if (not self.fitted) or fromMoffatProfile:
-            r=num.arange(0,(2*max(self.x.shape[0]/2.,self.y.shape[0]/2.)**2)**0.5,0.005)
+            r=np.arange(0,(2*max(self.x.shape[0]/2.,self.y.shape[0]/2.)**2)**0.5,0.005)
             m=self.moffat(r)
-            m/=num.max(m)
-            k=num.sum(num.greater(m,0.5))
+            m/=np.max(m)
+            k=np.sum(np.greater(m,0.5))
             if k<0 or k>=len(m): return None
             return r[k]*2.
         else:
             a=self.y.shape[0]/2.
             b=self.x.shape[0]/2.
-            rangeY=num.arange(-a*self.repFact,a*self.repFact)/float(self.repFact)
-            rangeX=num.arange(-b*self.repFact,b*self.repFact)/float(self.repFact)
+            rangeY=np.arange(-a*self.repFact,a*self.repFact)/float(self.repFact)
+            rangeX=np.arange(-b*self.repFact,b*self.repFact)/float(self.repFact)
             dx2=(0.5/self.repFact-rangeX)**2
             repRads=[]
             for ii in range(len(rangeY)):
                 repRads.append((0.5/self.repFact-rangeY[ii])**2+dx2)
-            repRads=num.array(repRads)**0.5
+            repRads=np.array(repRads)**0.5
 
             r=0.
 
-            s=num.sum(self.fullPSF)
-            while r<num.max(repRads):
-                if num.sum(self.fullPSF[num.where(repRads<r)])>=s*0.5:
+            s=np.sum(self.fullPSF)
+            while r<np.max(repRads):
+                if np.sum(self.fullPSF[np.where(repRads<r)])>=s*0.5:
                     return r*2.
                 r+=0.01
 
@@ -506,39 +506,39 @@ class modelPSF:
         self.dt=dt
         self.pixScale=pixScale
 
-        angr=angle*num.pi/180.
+        angr=angle*np.pi/180.
 
 
         self.line2d=self.PSF*0.0
-        w=num.where(( num.abs(self.X-self.centx)<num.cos(angr)*rate*dt/pixScale/2.))
+        w=np.where(( np.abs(self.X-self.centx)<np.cos(angr)*rate*dt/pixScale/2.))
         if len(w[0])>0:
             x=self.X[w]*1.0
-            y=num.tan(angr)*(x-self.centx)+self.centy
+            y=np.tan(angr)*(x-self.centx)+self.centy
             X=(x*self.repFact).astype('int')
             Y=(y*self.repFact).astype('int')
             self.line2d[Y,X]=1.0
 
-            w=num.where(self.line2d>0)
-            yl,yh=num.min(w[0]),num.max(w[0])
-            xl,xh=num.min(w[1]),num.max(w[1])
+            w=np.where(self.line2d>0)
+            yl,yh=np.min(w[0]),np.max(w[0])
+            xl,xh=np.min(w[1]),np.max(w[1])
 
             self.line2d=self.line2d[yl:yh+1,xl:xh+1]
 
         else:
-            self.line2d=num.array([[1.0]])
+            self.line2d=np.array([[1.0]])
 
         if useLookupTable:
             if verbose:
                 print 'Using the lookup table when generating the long PSF.'
             #self.longPSF=signal.convolve2d(self.moffProf+self.lookupTable*self.repFact*self.repFact, self.line2d,mode='same')
             self.longPSF=signal.fftconvolve(self.moffProf+self.lookupTable*self.repFact*self.repFact, self.line2d,mode='same')
-            self.longPSF*=num.sum(self.fullPSF)/num.sum(self.longPSF)
+            self.longPSF*=np.sum(self.fullPSF)/np.sum(self.longPSF)
         else:
             if verbose:
                 print 'Not using the lookup table when generating the long PSF'
             #self.longPSF=signal.convolve2d(self.moffProf,self.line2d,mode='same')
             self.longPSF=signal.fftconvolve(self.moffProf,self.line2d,mode='same')
-            self.longPSF*=num.sum(self.moffProf)/num.sum(self.longPSF)
+            self.longPSF*=np.sum(self.moffProf)/np.sum(self.longPSF)
         self.psf=downSample2d(self.longPSF,self.repFact)
 
         if display:
@@ -567,17 +567,17 @@ class modelPSF:
         xint,yint=int(x)-self.boxSize,int(y)-self.boxSize
         cx,cy=x-int(x)+self.boxSize,y-int(y)+self.boxSize
         sx,sy=int(round((x-int(x))*self.repFact)),int(round((y-int(y))*self.repFact))
-        cut=num.copy(indata[yint:yint+2*self.boxSize+1,xint:xint+2*self.boxSize+1])
+        cut=np.copy(indata[yint:yint+2*self.boxSize+1,xint:xint+2*self.boxSize+1])
 
         #repCut=expand2d(cut,self.repFact)
 
         if self.imData is not None:
-            origData=num.copy(self.imData)
+            origData=np.copy(self.imData)
         else: origData = None
 
         self.imData=cut
         if type(cx)==type(1.0):
-            self._flatRadial(num.array([cx]),num.array([cy]))
+            self._flatRadial(np.array([cx]),np.array([cy]))
         else:
             self._flatRadial(cx,cy)
         if origData is not None:
@@ -589,7 +589,7 @@ class modelPSF:
             (pa,pb)=moff.shape
 
             #shift the lookuptable right and up to account for the off-zero centroid
-            slu=num.copy(self.lookupTable)
+            slu=np.copy(self.lookupTable)
             (a,b)=slu.shape
 
             if sx>0:
@@ -603,7 +603,7 @@ class modelPSF:
             slu=downSample2d(slu,self.repFact)*amp*self.repFact*self.repFact
             psf=slu+moff
         else:
-            lpsf=num.copy(self.longPSF)
+            lpsf=np.copy(self.longPSF)
             (a,b)=lpsf.shape
 
             #cubic interpolation doesn't do as good as the x10 subsampling
@@ -623,7 +623,7 @@ class modelPSF:
             psf=downSample2d(lpsf,self.repFact)*amp
 
             #this is a cheat to handle the outer edges that can go negative after convolution
-            w=num.where(psf<0)
+            w=np.where(psf<0)
             psf[w]=0.0
 
         self.fitFluxCorr=1. #HACK! Could get rid of this in the future...
@@ -633,7 +633,7 @@ class modelPSF:
             psf+=sci.randn(a,b)*psf**0.5
 
         (A,B)=indata.shape
-        bigOut=num.zeros((A+2*self.boxSize,B+2*self.boxSize),dtype=indata.dtype)
+        bigOut=np.zeros((A+2*self.boxSize,B+2*self.boxSize),dtype=indata.dtype)
         bigOut[yint+self.boxSize:yint+3*self.boxSize+1,xint+self.boxSize:xint+3*self.boxSize+1]+=psf
 
         if returnModel:
@@ -688,32 +688,36 @@ class modelPSF:
 
         self.verbose = verbose
 
-        self.imData = imData*1.0
+        self.imData = np.copy(imData)
         self.boxSize = boxSize
+
 
         self._flatRadial(centX-0.5,centY-0.5)#set the radial distribution pixels
 
-        #w = num.where(self.rDist>bgRadius)
+        #w = np.where(self.rDist>bgRadius)
         #bgf = bgFinder.bgFinder(self.fDist[w])
-        w = num.where(self.rads>bgRadius)
+        w = np.where(self.rads>bgRadius)
         bgf = bgFinder.bgFinder(self.subSec[w])
         self.bg = bgf(method=mode)
 
-        #peakGuess = (num.max(self.fDist)-self.bg)/(num.max(self.moffat(self.rDist)))
-        peakGuess = (num.max(self.subSec)-self.bg)/(num.max(self.moffat(self.rads)))
+        #peakGuess = (np.max(self.fDist)-self.bg)/(np.max(self.moffat(self.rDist)))
+        peakGuess = (np.max(self.subSec)-self.bg)/(np.max(self.moffat(self.rads)))
+
+
+
 
         if fitXY:
-            print 'This is hacky and really slow. Not really meant for production.'
+            print 'This is hacky and really slow. Not yet meant for production.'
             self.verbose = False
             best = [1.e8,-1.,-1.,-1.]
             print 'Fitting XYA'
-            deltaX = num.arange(-0.2,0.2+1./self.repFact,1./self.repFact/2.)
-            deltaY = num.arange(-0.2,0.2+1./self.repFact,1./self.repFact/2.)
+            deltaX = np.arange(-0.2,0.2+1./self.repFact,1./self.repFact/2.)
+            deltaY = np.arange(-0.2,0.2+1./self.repFact,1./self.repFact/2.)
             for ii in range(len(deltaX)):
                 for jj in range(len(deltaY)):
                     self._flatRadial(centX+deltaX[ii],centY+deltaY[jj])
                     lsqf = opti.leastsq(self._residFAB,(peakGuess),args=(self.alpha,self.beta,fitMaxRadius),maxfev=1000)
-                    res = num.sum(self._residFAB((lsqf[0][0]),self.alpha,self.beta,fitMaxRadius)**2)
+                    res = np.sum(self._residFAB((lsqf[0][0]),self.alpha,self.beta,fitMaxRadius)**2)
                     if best[0]>= res:
                         best = [res,lsqf[0],deltaX[ii],deltaY[jj]]
 
@@ -732,11 +736,11 @@ class modelPSF:
             res=self._residFAB((self.A),self.alpha,self.beta,fitMaxRadius)
         else:
             res=self._resid((self.A,self.alpha,self.beta),fitMaxRadius)
-        self.chi = num.sqrt(num.sum(res**2)/(len(res)-1))
+        self.chi = np.sqrt(np.sum(res**2)/(len(res)-1))
         self.fitted = True
 
         self.PSF = self.moffat(self.R)
-        self.PSF /= num.sum(self.PSF)
+        self.PSF /= np.sum(self.PSF)
         self.psf = downSample2d(self.PSF,self.repFact)
 
 
@@ -745,7 +749,7 @@ class modelPSF:
             fig = pyl.figure('Radial Profile')
             ax = fig.add_subplot(111)
             pyl.scatter(downSample2d(self.repRads,self.repFact),self.subSec)
-            r = num.linspace(0,num.max(self.rads),100)
+            r = np.linspace(0,np.max(self.rads),100)
             pyl.plot(r,self.A*self.moffat(r)+self.bg,'r--')
             fw = self.FWHM(fromMoffatProfile=True)
             print 'FWHM: %.3f'%(fw)
@@ -768,6 +772,9 @@ class modelPSF:
         returnAmpsCutouts returns the fitted amplitudes of each moffat fit and the image cutouts, and the centroid x and y in each cutout
         """
 
+        #(AD,BD) = imData.shape
+
+
         adjCentXs=centXs-0.5
         adjCentYs=centYs-0.5
 
@@ -780,8 +787,8 @@ class modelPSF:
         self.psfStars=[]
 
         if bpMask<>None:
-            w=num.where(bpMask==0)
-            imData[w]=num.median(imData)
+            w=np.where(bpMask==0)
+            imData[w]=np.median(imData)
 
         shiftIms=[]
         fluxes=[]
@@ -789,6 +796,7 @@ class modelPSF:
         cxs = []
         cys = []
         bgs = []
+        #print centXs,len(centXs)
         for ii in range(len(centXs)):
 
             #store the psf star location
@@ -796,18 +804,20 @@ class modelPSF:
 
 
             xint,yint=int(adjCentXs[ii])-self.boxSize-2,int(adjCentYs[ii])-self.boxSize-2
+            #if xint<=0 or yint<=0 or xint+2*self.boxSize+5>=BD or yint+2*self.boxSize+5>=BD: continue
             cx,cy=adjCentXs[ii]-int(adjCentXs[ii])+self.boxSize+2,adjCentYs[ii]-int(adjCentYs[ii])+self.boxSize+2
             cx+=0.5
             cy+=0.5
             cut=imData[yint:yint+2*self.boxSize+5,xint:xint+2*self.boxSize+5]
+            (cA,cB) = cut.shape
+            if cA<>2*self.boxSize+5 or cB<>2*self.boxSize+5: continue
 
-
-            self.fitMoffat(cut,num.array([cx]),num.array([cy]),self.boxSize,verbose=verbose,fixAB=True,fitXY=False,fitMaxRadius=3.,bgRadius=bgRadius)
-            self.imData=num.copy(imData) #this is necessary because the imdata gets set to the shifted image subsection
+            self.fitMoffat(cut,np.array([cx]),np.array([cy]),self.boxSize,verbose=verbose,fixAB=True,fitXY=False,fitMaxRadius=3.,bgRadius=bgRadius)
+            self.imData=np.copy(imData) #this is necessary because the imdata gets set to the shifted image subsection
             moff=downSample2d(self.moffat(self.repRads),self.repFact)*self.A
 
             if returnAmpsCutouts:
-                cutouts.append(num.copy(cut))
+                cutouts.append(np.copy(cut))
                 cxs.append(cx)
                 cys.append(cy)
                 bgs.append(self.bg)
@@ -830,8 +840,9 @@ class modelPSF:
                          kx-self.repFact*self.boxSize:kx+self.repFact*self.boxSize+self.repFact]
 
             shiftIms.append(shiftedImage)
-        shiftIms=num.array(shiftIms)
-        fluxes=num.array(fluxes)
+        shiftIms=np.array(shiftIms)
+        fluxes=np.array(fluxes)
+
 
         self.maxFlux=1.0
         invFluxes=self.maxFlux/fluxes
@@ -840,16 +851,16 @@ class modelPSF:
             shiftIms[ii]*=invFluxes[ii]
 
         if threeSigCut:
-            meanLUT=num.median(shiftIms,axis=0)
-            stdLUT=num.std(shiftIms,axis=0)
+            meanLUT=np.median(shiftIms,axis=0)
+            stdLUT=np.std(shiftIms,axis=0)
 
-            bigMean=num.repeat(num.array([meanLUT]),len(shiftIms),axis=0)
-            w=num.where( num.abs(bigMean-shiftIms)>3*stdLUT)
-            shiftIms[w]=num.nan
-            self.lookupTable=num.nanmean(shiftIms,axis=0)/self.maxFlux
+            bigMean=np.repeat(np.array([meanLUT]),len(shiftIms),axis=0)
+            w=np.where( np.abs(bigMean-shiftIms)>3*stdLUT)
+            shiftIms[w]=np.nan
+            self.lookupTable=np.nanmean(shiftIms,axis=0)/self.maxFlux
         else:
-            self.lookupTable=num.mean(shiftIms,axis=0)/self.maxFlux
-        self.psfStar=num.array(self.psfStars)
+            self.lookupTable=np.nanmean(shiftIms,axis=0)/self.maxFlux
+        self.psfStar=np.array(self.psfStars)
 
         self.genPSF()
 
@@ -863,7 +874,7 @@ class modelPSF:
         """
         generate the psf with lookup table. Convenience function only.
         """
-        self.moffProf=self.moffat(self.R-num.min(self.R))
+        self.moffProf=self.moffat(self.R-np.min(self.R))
         self.fullPSF=(self.moffProf+self.lookupTable)*A
         self.fullpsf=downSample2d(self.fullPSF,self.repFact)
 
@@ -873,7 +884,7 @@ class modelPSF:
         Convenience function for the fitMoffat routines.
         """
 
-        if type(centX)<>type(1.) and type(centX)<>type(num.float64(1.)):
+        if type(centX)<>type(1.) and type(centX)<>type(np.float64(1.)):
             centX=centX[0]
             centY=centY[0]
         (A,B)=self.imData.shape
@@ -888,36 +899,43 @@ class modelPSF:
 
 
 
-        rangeY=num.arange(a*self.repFact,b*self.repFact)/float(self.repFact)
-        rangeX=num.arange(c*self.repFact,d*self.repFact)/float(self.repFact)
+        rangeY=np.arange(a*self.repFact,b*self.repFact)/float(self.repFact)
+        rangeX=np.arange(c*self.repFact,d*self.repFact)/float(self.repFact)
         dx2=(centX-rangeX)**2
         repRads=[]
         for ii in range(len(rangeY)):
             repRads.append((centY-rangeY[ii])**2+dx2)
-        self.repRads=num.array(repRads)**0.5
+        self.repRads=np.array(repRads)**0.5
 
 
         self.dX=centX-rangeX
         self.dY=centY-rangeY
-        self.dx=centX-num.arange(c,d)
-        self.dy=centY-num.arange(a,b)
+        self.dx=centX-np.arange(c,d)
+        self.dy=centY-np.arange(a,b)
+
         #there are more efficient ways to do this, but I leave it like this for clarity.
-        subSec=[]
-        arrR=[]
-        for ii in range(a,b):
-            arrR.append([])
-            for jj in range(c,d):
-                D=((centY-ii)**2+(centX-jj)**2)**0.5
-
-                arrR[-1].append(D)
-
+        #subSec=[]
+        #arrR=[]
+        #for ii in range(a,b):
+        #    arrR.append([])
+        #    for jj in range(c,d):
+        #        D=((centY-ii)**2+(centX-jj)**2)**0.5
+        #
+        #        arrR[-1].append(D)
+        ##faster version of the above just like done with repRads a 20 lines up.
+        arrR = []
+        dy2 = (centY - np.arange(a, b)) ** 2
+        dx2 = (centX - np.arange(c, d)) ** 2
+        for ii in range(len(dy2)):
+            arrR.append(dy2[ii] + dx2)
+        arrR = np.array(arrR) ** 0.5
 
         #subSecFlat=self.subSec.reshape((b-a)*(c-d))
 
-        arrR=num.array(arrR)
-        self.rads=num.copy(arrR)
+        arrR=np.array(arrR)
+        self.rads=np.copy(arrR)
         #arrR=arrR.reshape((b-a)*(d-c))
-        #arg=num.argsort(arrR)
+        #arg=np.argsort(arrR)
         #self.rDist=arrR[arg]*1.
         #self.fDist=subSecFlat[arg]*1.
 
@@ -927,15 +945,15 @@ class modelPSF:
         self.beta=beta
         err=(self.subSec-(self.bg+A*downSample2d(self.moffat(self.repRads),self.repFact))).reshape(self.subSec.size)
         #if maxRad>0:
-        #    w=num.where(self.rDist<=maxRad)
+        #    w=np.where(self.rDist<=maxRad)
         #else:
-        #    w=num.arange(len(self.rDist))
+        #    w=np.arange(len(self.rDist))
         #moff=self.moffat(self.rDist[w])
         #err=self.fDist[w]-(self.bg+A*moff)
-        if self.alpha<0 or self.beta<0: return num.inf
+        if self.alpha<0 or self.beta<0: return err*np.inf
 
 
-        if self.verbose: print A,alpha,beta,num.sqrt(num.sum(err**2)/(self.subSec.size-1.))
+        if self.verbose: print A,alpha,beta,np.sqrt(np.sum(err**2)/(self.subSec.size-1.))
         return err
 
     def _residFAB(self,p,alpha,beta,maxRad):
@@ -945,14 +963,38 @@ class modelPSF:
 
         err=(self.subSec-(self.bg+A*downSample2d(self.moffat(self.repRads),self.repFact))).reshape(self.subSec.size)
         #if maxRad>0:
-        #    w=num.where(self.rDist<=maxRad)
+        #    w=np.where(self.rDist<=maxRad)
         #else:
-        #    w=num.arange(len(self.rDist))
+        #    w=np.arange(len(self.rDist))
         #err=self.fDist[w]-(self.bg+A*self.moffat(self.rDist[w]))
 
-        if self.verbose: print A,alpha,beta,num.sqrt(num.sum(err**2)/(self.subSec.size-1.))
+        if self.verbose: print A,alpha,beta,np.sqrt(np.sum(err**2)/(self.subSec.size-1.))
         return err
 
+
+    """
+    #much too slow compared to fitting each star individually
+    def _residMultiStarTest(self,p,maxRad):
+        #print p
+        alpha = p[-2]
+        beta = p[-1]
+        #(A,alpha,beta)=p
+        self.alpha=alpha
+        self.beta=beta
+        errs = []
+        n = 0
+        for ii in range(len(self.repRadsArr)):
+            A = p[ii]
+            err=(self.subSecs[ii]-(self.bgs[ii]+A*downSample2d(self.moffat(self.repRadsArr[ii]),self.repFact))).reshape(self.subSecs[ii].size)
+            errs.append(np.copy(err))
+            n+=len(err)
+        errs = np.array(errs).reshape(n)
+        if self.alpha<0 or self.beta<0: return np.inf
+
+
+        if self.verbose: print p,np.sqrt(np.sum(errs**2)/(n-1.))
+        return err
+    """
 
 
 
@@ -961,10 +1003,10 @@ class modelPSF:
 if __name__=="__main__":
 
     import pylab as pyl
-    psfNoLine=modelPSF(num.arange(25),num.arange(25),alpha=1.5,beta=2.0,repFact=10)
+    psfNoLine=modelPSF(np.arange(25),np.arange(25),alpha=1.5,beta=2.0,repFact=10)
     psfNoLine.writeto('noline.fits')
     print
-    psfLine=modelPSF(num.arange(25),num.arange(25),alpha=1.5,beta=2.0,repFact=10)
+    psfLine=modelPSF(np.arange(25),np.arange(25),alpha=1.5,beta=2.0,repFact=10)
     psfLine.line(4.0,32.,0.45)
     psfLine.writeto('line.fits')
     sys.exit()
