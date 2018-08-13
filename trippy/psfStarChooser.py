@@ -136,7 +136,7 @@ class starChooser:
         self.goodStars = np.array(self.goodStars)
 
         FWHM_mode_width = 1.0 #could be 0.5 just as well
-        ab_std_width = 3.0
+        ab_std_width = 2.0
         if autoTrim:
             print '\nDoing auto star selection.'
             #first use Frasermode on the distribution of FWHM to get a good handle on the true FWHM of stars
