@@ -540,7 +540,7 @@ class modelPSF:
             #self.longPSF=signal.convolve2d(self.moffProf,self.line2d,mode='same')
             self.longPSF=signal.fftconvolve(self.moffProf,self.line2d,mode='same')
             self.longPSF*=np.sum(self.moffProf)/np.sum(self.longPSF)
-        self.psf=downSample2d(self.longPSF,self.repFact)
+        self.longpsf=downSample2d(self.longPSF,self.repFact)
 
         if display:
             fig=pyl.figure('Line PSF')
@@ -637,6 +637,7 @@ class modelPSF:
 
         (a,b)=psf.shape
         if addNoise:
+            print psf,np.min(psf),np.max(psf)
             psf+=sci.randn(a,b)*psf**0.5
 
         (A,B)=indata.shape
