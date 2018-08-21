@@ -211,7 +211,7 @@ class pillPhot:
 
 #        if angle > 90 or angle < -90 or length < 0 or num.min(radius) < 0:
         if angle > 90 or angle < -90:
-            angle = angle % 180.
+            angle = (angle + 90) % 180. - 90
             if verbose:
                 print("Warning! You gave a bad angle. I'll fix it for you.")
         if length < 0:
