@@ -55,8 +55,9 @@ class pillPhot:
     -trimBGHighPix=3.5 is a sigma clip of the background, ignoring all values above the sigma threshold provided.
 
     """
-    def __init__(self,data,repFact=10):
+    def __init__(self,data,zscale=True,repFact=10):
         self.data=data*1.0
+        self.zscale=zscale
         self.repFact=repFact
         self.l0=None
         self.bg=None
@@ -310,7 +311,7 @@ class pillPhot:
             elif singleAperture:
                 im = skyImage+image
 
-            if zscale:
+            if self.zscale:
                 (z1,z2) = numdisplay.zscale.zscale(im)
                 norm = interval.ManualInterval(z1,z2)
                 self.dispAx.imshow(norm(im),interpolation='nearest',origin='lower')
