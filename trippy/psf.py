@@ -24,7 +24,6 @@ import imp
 import os
 import sys
 
-import scipy as sci
 from scipy import optimize as opti, interpolate as interp
 from scipy import signal
 
@@ -549,7 +548,7 @@ class modelPSF:
 
 
 
-    def plant(self,x,y,amp,indata,addNoise=True,useLinePSF=False,returnModel=False,verbose=False):
+    def plant(self, x, y, amp, indata, addNoise=True, useLinePSF=False, returnModel=False, verbose=False, plantIntegerValues=False, gain=1.66):
         """
         Plant a star at coordinates x,y with amplitude amp.
 
@@ -588,6 +587,7 @@ class modelPSF:
 
         if not useLinePSF:
 
+            #don't need to shift this up and right because the _flatRadial function handles the moffat sub-pixel centering.
             moff=downSample2d(self.moffat(self.repRads),self.repFact)*amp
             if self.lookupTable is not None:
                 (pa,pb)=moff.shape
@@ -635,13 +635,16 @@ class modelPSF:
 
         self.fitFluxCorr=1. #HACK! Could get rid of this in the future...
 
-        (a,b)=psf.shape
+        (a,b) = psf.shape
         if addNoise:
-            print psf,np.min(psf),np.max(psf)
-            psf+=sci.randn(a,b)*psf**0.5
+            #psf+=sci.randn(a,b)*psf**0.5
+            psf = (np.random.poisson(np.clip(psf,0,np.max(psf*gain))).astype('float64')/gain).astype(indata.dtype)
 
-        (A,B)=indata.shape
-        bigOut=np.zeros((A+2*self.boxSize,B+2*self.boxSize),dtype=indata.dtype)
+        if plantIntegerValues:
+            psf = np.round(psf)
+
+        (A,B) = indata.shape
+        bigOut = np.zeros((A+2*self.boxSize,B+2*self.boxSize),dtype=indata.dtype)
         bigOut[yint+self.boxSize:yint+3*self.boxSize+1,xint+self.boxSize:xint+3*self.boxSize+1]+=psf
 
         if returnModel:
