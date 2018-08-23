@@ -548,16 +548,19 @@ class modelPSF:
 
 
 
-    def plant(self, x, y, amp, indata, addNoise=True, useLinePSF=False, returnModel=False, verbose=False, plantIntegerValues=False, gain=1.66):
+    def plant(self, x, y, amp, indata,
+              useLinePSF=False, returnModel=False, verbose=False,
+              addNoise=True, plantIntegerValues=False, gain=None, plantBoxWidth = None):
         """
         Plant a star at coordinates x,y with amplitude amp.
 
         indata is the array in which you want to plant the source.
-        addNoise=True to add gaussian noise.
+        addNoise=True to add gaussian noise. gain variable must be set.
         useLinePSF=True to use the TSF rather than the circular PSF.
         returnModel=True to not actually plant in the data, but return an array of the same size containing the TSF or
         PSF without noise added.
-
+        plantBoxWidth is the width of the planting region in pixels centred on the source location. If this is set to a
+        value, then the planted source pixels will only be within a box of width 2*plantBoxWidth+1.
         """
 
 
@@ -637,8 +640,14 @@ class modelPSF:
 
         (a,b) = psf.shape
         if addNoise:
-            #psf+=sci.randn(a,b)*psf**0.5
-            psf = (np.random.poisson(np.clip(psf,0,np.max(psf*gain))).astype('float64')/gain).astype(indata.dtype)
+            if gain is not None:
+                psf+=sci.randn(a,b)*(psf/gain)**0.5
+                #old poisson experimenting
+                #psfg = (psf+bg)*gain
+                #psf = (np.random.poisson(np.clip(psfg,0,np.max(psfg))).astype('float64')/gain).astype(indata.dtype)
+            else:
+                print "Please set the gain variable before trying to plant with Poisson noise."
+                raise TypeError
 
         if plantIntegerValues:
             psf = np.round(psf)
@@ -647,11 +656,17 @@ class modelPSF:
         bigOut = np.zeros((A+2*self.boxSize,B+2*self.boxSize),dtype=indata.dtype)
         bigOut[yint+self.boxSize:yint+3*self.boxSize+1,xint+self.boxSize:xint+3*self.boxSize+1]+=psf
 
+
         if returnModel:
             return bigOut[self.boxSize:A+self.boxSize,self.boxSize:B+self.boxSize]
 
-        indata+=bigOut[self.boxSize:A+self.boxSize, self.boxSize:B+self.boxSize]
+        if plantBoxWidth is not None:
+            indata[int(y)-plantBoxWidth:int(y)+plantBoxWidth+1,int(x)-plantBoxWidth:int(x)+plantBoxWidth] = bigOut[self.boxSize:A + self.boxSize, self.boxSize:B + self.boxSize][int(y)-plantBoxWidth:int(y)+plantBoxWidth+1,int(x)-plantBoxWidth:int(x)+plantBoxWidth]+bg
+        else:
+            indata+=bigOut[self.boxSize:A+self.boxSize, self.boxSize:B+self.boxSize]
+
         return indata
+
 
 
     def remove(self,x,y,amp,data,useLinePSF=False):
