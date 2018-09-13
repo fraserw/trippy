@@ -46,9 +46,6 @@ from pill import pillPhot
 from trippy_utils import *
 
 
-
-
-
 class modelPSF:
     """
     Round and moving object psf class.
