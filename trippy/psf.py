@@ -24,6 +24,7 @@ import imp
 import os
 import sys
 
+import scipy as sci
 from scipy import optimize as opti, interpolate as interp
 from scipy import signal
 
@@ -529,13 +530,13 @@ class modelPSF:
 
         if useLookupTable:
             if verbose:
-                print 'Using the lookup table when generating the long PSF.'
+                print 'Using the lookup table when generating the line PSF.'
             #self.longPSF=signal.convolve2d(self.moffProf+self.lookupTable*self.repFact*self.repFact, self.line2d,mode='same')
             self.longPSF=signal.fftconvolve(self.moffProf+self.lookupTable*self.repFact*self.repFact, self.line2d,mode='same')
             self.longPSF*=np.sum(self.fullPSF)/np.sum(self.longPSF)
         else:
             if verbose:
-                print 'Not using the lookup table when generating the long PSF'
+                print 'Not using the lookup table when generating the line PSF'
             #self.longPSF=signal.convolve2d(self.moffProf,self.line2d,mode='same')
             self.longPSF=signal.fftconvolve(self.moffProf,self.line2d,mode='same')
             self.longPSF*=np.sum(self.moffProf)/np.sum(self.longPSF)
@@ -902,7 +903,7 @@ class modelPSF:
         generate the psf with lookup table. Convenience function only.
         """
         self.moffProf=self.moffat(self.R-np.min(self.R))
-        self.fullPSF=(self.moffProf+self.lookupTable)*A
+        self.fullPSF=(self.moffProf+self.lookupTable*self.repFact*self.repFact)*A
         self.fullpsf=downSample2d(self.fullPSF,self.repFact)
 
 
