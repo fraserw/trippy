@@ -20,20 +20,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), Academic email: wes.fraser@qub.ac.uk'
 
 
-import numpy as num
 import sys
+
+import numpy as num
 import pylab as pyl
+from astropy.visualization import interval
 from matplotlib import gridspec
 from scipy import interpolate as interp
-import bgFinder
-
-from astropy.visualization import interval
 from stsci import numdisplay
 
-from trippy_utils import expand2d,line
-
-
-
+import bgFinder
+from trippy_utils import expand2d, line
 
 
 class pillPhot:
@@ -108,7 +105,7 @@ class pillPhot:
         self.aperFunc=interp.interp1d(radii,self.aperMags)
 
         if display:
-            aperFig=pyl.figure('Aperture Corrections')
+            aperFig = pyl.figure('Aperture Corrections')
             pyl.plot(radii,self.aperMags)
             pyl.show()
             pyl.close()
