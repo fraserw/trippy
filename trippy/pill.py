@@ -23,7 +23,6 @@ __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>),
 import sys
 
 import numpy as num
-import pylab as pyl
 from astropy.visualization import interval
 from matplotlib import gridspec
 from scipy import interpolate as interp
@@ -141,7 +140,7 @@ class pillPhot:
     def __call__(self,xi,yi,radius=4.,l=5.,a=0.01,width=20.,skyRadius=8.,zpt=27.0,exptime=1.,
                  enableBGSelection=False, display=False,
                  verbose=False, backupMode='fraserMode', forceBackupMode = False,
-                 trimBGHighPix=False, zscale=True, connectKeyGatherer = False):
+                 trimBGHighPix=False, zscale=True):
         """
         Perform the actual photometry.
 
@@ -158,11 +157,6 @@ class pillPhot:
         sigma cut to get rid of glaringly bright sources that might affect
         the bg estimate.
         -the bg is then restimated.
-
-        -connectKeyGatherer is a way to gather key presses while displaying the
-        fits image. This is useful if you wish to do a manual marking (eg. good
-        or bad) while doing photometry. If set to True, this will return an
-        array of all the keys pressed.
         """
         #Single-letter variables = super painful debugging
         #I'll leave them in the function call for backwards compatibility,
@@ -197,8 +191,6 @@ class pillPhot:
 
                 self.dispAx = self.dispFig.add_subplot(111)
 
-            #if connectKeyGatherer:
-            #    self.dispFig.callbacks.connect(keyGatherer, 'key_press_event')
 
 
         x = xi-0.5
