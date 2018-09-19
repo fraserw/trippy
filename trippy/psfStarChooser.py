@@ -226,7 +226,7 @@ class starChooser:
         self.selected_star = -1
 
         for j in range(len(self.moffs)):
-            self.moffPatchList.append(self.sp4.plot(self.moffr,self.moffs[j]))
+            self.moffPatchList.append(self.sp4.plot(self.moffr,self.moffs[j],zorder=0))
             self.showing.append(1)
         self.sp4.set_xlim(0,30)
         self.sp4.set_ylim(0,1.02)
@@ -372,7 +372,7 @@ class starChooser:
         colour = 'b' if self.goodStars[arg] else 'r'
         self.starsScat = self.sp4.scatter(self.starsFlatR[arg],
                                           self.starsFlatF[arg],
-                                          color=colour)
+                                          edgecolor=colour,facecolor='none',zorder=10)
         self.sp4.set_xlim(0, self.moffatWidth)
         self.sp4.set_ylim(0, 1.02)
         self.sp5.imshow(self.subsecs[arg])
@@ -422,7 +422,7 @@ class starChooser:
         self.selected_star = np.argmin(ranks[np.argsort(pointsshowing[:, 0])])
         arg = args[np.argsort(pointsshowing[:, 0])[self.selected_star]]
 
-        self.starsScat = self.sp4.scatter(self.starsFlatR[arg],self.starsFlatF[arg])
+        self.starsScat = self.sp4.scatter(self.starsFlatR[arg],self.starsFlatF[arg],facecolor='none',edgecolor='b',zorder=10)
         self.sp4.set_xlim(0, self.moffatWidth)
         self.sp4.set_ylim(0,1.02)
 
