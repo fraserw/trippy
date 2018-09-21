@@ -23,6 +23,7 @@ __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>),
 import sys
 
 import numpy as num
+import pylab as pyl
 from astropy.visualization import interval
 from matplotlib import gridspec
 from scipy import interpolate as interp
