@@ -313,7 +313,7 @@ class pillPhot:
 
         if display:
             if trimBGHighPix:
-                w = num.where(skyImage>(bg+trimBGHighPix*bgstd)/(self.repFact*self.repFact))
+                w = num.where(skyImage>(bg+trimBGHighPix*bgstd))/(self.repFact*self.repFact))
                 skyImage[w] = 0
 
             if multipleApertures:
@@ -400,7 +400,8 @@ class pillPhot:
 
                 rebinnedSkyImage = rebinnedSkyImage[int(y0):int(y1), int(x0):int(x1)]
                 w = num.where(rebinnedSkyImage<>0.0)
-                bgf = bgFinder.bgFinder(rebinnedSkyImage[w])
+                W = num.where(rebinnedSkyImage[w] < bg + trimBGHighPix * bgstd)
+                bgf = bgFinder.bgFinder(rebinnedSkyImage[w][W])
                 bg = bgf.smartBackground(display=False, backupMode=backupMode, forceBackupMode = forceBackupMode,verbose=verbose)
                 bgstd = num.std(rebinnedSkyImage[w])
 
