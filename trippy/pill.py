@@ -23,7 +23,6 @@ __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>),
 import sys
 
 import numpy as num
-import pylab as pyl
 from astropy.visualization import interval
 from matplotlib import gridspec
 from scipy import interpolate as interp
@@ -313,7 +312,7 @@ class pillPhot:
 
         if display:
             if trimBGHighPix:
-                w = num.where(skyImage>(bg+trimBGHighPix*bgstd)/(self.repFact*self.repFact))
+                w = num.where(skyImage*(self.repFact*self.repFact)>(bg+trimBGHighPix*bgstd))
                 skyImage[w] = 0
 
             if multipleApertures:
