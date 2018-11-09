@@ -30,6 +30,8 @@ from stsci import numdisplay
 import bgFinder
 from trippy_utils import expand2d, line
 
+import pylab as pyl
+
 
 class pillPhot:
     """
