@@ -313,7 +313,7 @@ class pillPhot:
 
         if display:
             if trimBGHighPix:
-                w = num.where(skyImage>(bg+trimBGHighPix*bgstd))/(self.repFact*self.repFact))
+                w = num.where(skyImage>(bg+trimBGHighPix*bgstd)/(self.repFact*self.repFact))
                 skyImage[w] = 0
 
             if multipleApertures:
