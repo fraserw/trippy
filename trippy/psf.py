@@ -24,6 +24,8 @@ import imp
 import os
 import sys
 
+import pylab as pyl
+
 import scipy as sci
 from scipy import optimize as opti, interpolate as interp
 from scipy import signal
