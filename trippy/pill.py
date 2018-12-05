@@ -19,21 +19,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), Academic email: wes.fraser@qub.ac.uk'
 
+import sys
 
 import numpy as num
-import sys
-import pylab as pyl
+from astropy.visualization import interval
 from matplotlib import gridspec
 from scipy import interpolate as interp
-import bgFinder
-
-from astropy.visualization import interval
 from stsci import numdisplay
 
-from trippy_utils import expand2d,line
+import bgFinder
+from trippy_utils import expand2d, line
 
-
-
+import pylab as pyl
 
 
 class pillPhot:
@@ -55,13 +52,15 @@ class pillPhot:
     -trimBGHighPix=3.5 is a sigma clip of the background, ignoring all values above the sigma threshold provided.
 
     """
-    def __init__(self,data,repFact=10):
+    def __init__(self,data,zscale=True,repFact=10):
         self.data=data*1.0
+        self.zscale=zscale
         self.repFact=repFact
         self.l0=None
         self.bg=None
 
         self.aperFunc=None
+
 
 
 
@@ -107,7 +106,7 @@ class pillPhot:
         self.aperFunc=interp.interp1d(radii,self.aperMags)
 
         if display:
-            aperFig=pyl.figure('Aperture Corrections')
+            aperFig = pyl.figure('Aperture Corrections')
             pyl.plot(radii,self.aperMags)
             pyl.show()
             pyl.close()
@@ -143,9 +142,15 @@ class pillPhot:
     def __call__(self,xi,yi,radius=4.,l=5.,a=0.01,width=20.,skyRadius=8.,zpt=27.0,exptime=1.,
                  enableBGSelection=False, display=False,
                  verbose=False, backupMode='fraserMode', forceBackupMode = False,
-                 trimBGHighPix=False, zscale=True, connectKeyGatherer = False):
+                 trimBGHighPix=False, zscale=True, zoomRegion = None):
         """
         Perform the actual photometry.
+
+        Important note: the background is taken as the output from bgfinder.smartBackground.
+            First a Guassian is fit to the data.
+            If the gaussian standard deviation / gaussian peak is larger than the variable gaussSTDlimit, or if
+            forceBackupMode is set to true, the backup mode background value is returned. Otherwise, the peak of the
+            gaussian fit is returned.
 
         angle in degrees clockwise +-90 degrees from +x
         Length in pixels.
@@ -161,10 +166,8 @@ class pillPhot:
         the bg estimate.
         -the bg is then restimated.
 
-        -connectKeyGatherer is a way to gather key presses while displaying the
-        fits image. This is useful if you wish to do a manual marking (eg. good
-        or bad) while doing photometry. If set to True, this will return an
-        array of all the keys pressed.
+        -when zoomRegion is set [x_low,x_high,y_low,y_high], a 4 int/float array, and enableBGSelection = True, the
+        aperture panel will automatically zoom to the region of the image specified by the box coordinates in zoomRegion
         """
         #Single-letter variables = super painful debugging
         #I'll leave them in the function call for backwards compatibility,
@@ -179,6 +182,16 @@ class pillPhot:
         if not singleAperture | multipleApertures:
           raise Exception('Aperture size not understood. ' +
                           'It seems to be neither an array or a single value')
+        if enableBGSelection:
+            if zoomRegion is not None:
+                if isinstance(zoomRegion, (list,num.float64)):
+                    if not len(zoomRegion) == 4:
+                        raise Exception('Need four values to specify the corners of the zoom box.')
+                    elif len(zoomRegion) == 4 and not isinstance(zoomRegion[0],(float,int)):
+                        raise Exception('zoomRegion takes floats or ints only.')
+                else:
+                    raise Exception('zoomRegion is a 4 float/int array or list ')
+
         #Check whether aperture(s) is integer: if True convert to float.
         integerAperture = isinstance(radius, (int, num.integer))
         if multipleApertures:
@@ -199,8 +212,6 @@ class pillPhot:
 
                 self.dispAx = self.dispFig.add_subplot(111)
 
-            #if connectKeyGatherer:
-            #    self.dispFig.callbacks.connect(keyGatherer, 'key_press_event')
 
 
         x = xi-0.5
@@ -302,7 +313,7 @@ class pillPhot:
 
         if display:
             if trimBGHighPix:
-                w = num.where(skyImage>(bg+trimBGHighPix*bgstd)/(self.repFact*self.repFact))
+                w = num.where(skyImage*(self.repFact*self.repFact)>(bg+trimBGHighPix*bgstd))
                 skyImage[w] = 0
 
             if multipleApertures:
@@ -310,7 +321,7 @@ class pillPhot:
             elif singleAperture:
                 im = skyImage+image
 
-            if zscale:
+            if self.zscale:
                 (z1,z2) = numdisplay.zscale.zscale(im)
                 norm = interval.ManualInterval(z1,z2)
                 self.dispAx.imshow(norm(im),interpolation='nearest',origin='lower')
@@ -351,9 +362,6 @@ class pillPhot:
 
                 (A,B) = im.shape
 
-                self.dispAx.callbacks.connect('xlim_changed',self._on_xlims_change)
-                self.dispAx.callbacks.connect('ylim_changed',self._on_ylims_change)
-                #dispAx.callbacks.connect('lim_changed',self._on_lims_change)
                 #all of these are needed in _on_lims_change
                 self._bgFind = bgf
                 self._rbsi = rebinnedSkyImage
@@ -361,46 +369,60 @@ class pillPhot:
                 self._bgm = backupMode
                 self._fbgm = forceBackupMode
 
+                if zoomRegion is not None:
+                    # Broad steps to zoom to a specific region
+                    self.dispAx.set_xlim(zoomRegion[0]*self.repFact,zoomRegion[1]*self.repFact)
+                    self.dispAx.set_ylim(zoomRegion[2]*self.repFact,zoomRegion[3]*self.repFact)
+                    self._on_xlims_change(self.dispAx)
+                    self._on_ylims_change(self.dispAx)
+
+                self.dispAx.callbacks.connect('xlim_changed',self._on_xlims_change)
+                self.dispAx.callbacks.connect('ylim_changed',self._on_ylims_change)
+
+
+
                 pyl.show()
 
                 (x0,x1) = self.dispAx.get_xlim()
                 (y0,y1) = self.dispAx.get_ylim()
-                self.bgSamplingRegion = [x0/self.repFact, x1/self.repFact, y0/self.repFact, y1/self.repFact]
 
-                #need to clear the histogram first
-                #need to update the positions so that the code below this ifstatement actualy fires
-                if ox0==x0 and ox1==x1 and oy0==y0 and oy1==y1: return
+
 
                 x0 = max(0,x0)/self.repFact
                 y0 = max(0,y0)/self.repFact
                 x1 = min(B,x1)/self.repFact
                 y1 = min(A,y1)/self.repFact
+                self.bgSamplingRegion = [x0,x1,y0,y1]
+
+                #need to clear the histogram first
+                #need to update the positions so that the code below this ifstatement actualy fires
+                if ox0==x0 and ox1==x1 and oy0==y0 and oy1==y1: return
 
                 rebinnedSkyImage = rebinnedSkyImage[int(y0):int(y1), int(x0):int(x1)]
                 w = num.where(rebinnedSkyImage<>0.0)
-                bgf = bgFinder.bgFinder(rebinnedSkyImage[w])
-                bg = bgf.smartBackground(display=False, backupMode=backupMode, forceBackupMode = forceBackupMode)
+                W = num.where(rebinnedSkyImage[w] < bg + trimBGHighPix * bgstd)
+                bgf = bgFinder.bgFinder(rebinnedSkyImage[w][W])
+                bg = bgf.smartBackground(display=False, backupMode=backupMode, forceBackupMode = forceBackupMode,verbose=verbose)
                 bgstd = num.std(rebinnedSkyImage[w])
 
 
                 if singleAperture:
                     W = num.where(mask != 0.0)
-                    flux = num.sum(image) - len(W[0]) * bg / (self.repFact ** 2)
+                    flux = num.sum(image) - len(W[0]) * bg / (self.repFact * self.repFact)
                 elif multipleApertures:
                     flux = []
                     for jj in range(len(radius)):
                         W = num.where(mask[jj] != 0.0)
                         flux.append(num.sum(image[jj]) -
-                                    len(W[0]) * bg / (self.repFact ** 2))
+                                    len(W[0]) * bg / (self.repFact * self.repFact))
                     flux = num.array(flux)
 
-                self.nPix = num.sum(mask) / (self.repFact ** 2)
+                self.nPix = num.sum(mask) / (self.repFact * self.repFact)
                 self.sourceFlux = flux
                 self.bg = bg
                 self.bgstd = bgstd
                 self.exptime = exptime
                 self.magnitude = zpt-2.5*num.log10(self.sourceFlux/self.exptime)
-                self.bgSamplingRegion = [x0,x1,y0,y1]
 
             else: pyl.show()
         if verbose: print num.sum(image),self.sourceFlux,self.bg,zpt-2.5*num.log10(flux)

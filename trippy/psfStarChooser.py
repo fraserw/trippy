@@ -20,11 +20,11 @@ __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>),
 
 
 import numpy as np
-import psf
 import pylab as pyl
 from astropy.visualization import interval
 from stsci import numdisplay
 
+import psf
 from trippy import bgFinder
 
 
@@ -55,6 +55,8 @@ class starChooser:
     - inital alpha and beta for the fitter starting point
     - repfact, the subssampling factor for the moffat fitting
     - xWidth, yWidth are the widths of the star cutouts displayed
+    - minGoodVal is used FOR DISPLAY PURPOSES ONLY. If set to a real number, it flags the zscaling algorithm to ignore pixel values below that value.
+      This is useful for images that contain large regions or edges of bad data, for example marked with -32768. eg. suprime-cam data.
     - cheesy saturation cut is probably something you don't want to use.
 
 
@@ -72,13 +74,21 @@ class starChooser:
     (goodStars,meds,stds)=starChooser(40, 5. 2.)
     """
 
-    def __init__(self,data,XWIN_IMAGE,YWIN_IMAGE,FLUX_AUTO,FLUXERR_AUTO,zscaleNsamp=200,zscaleContrast=1.):
+    def __init__(self,data,XWIN_IMAGE,YWIN_IMAGE,FLUX_AUTO,FLUXERR_AUTO,zscaleNsamp=200,zscaleContrast=1.,minGoodVal=None):
         self.XWIN_IMAGE=XWIN_IMAGE
         self.YWIN_IMAGE=YWIN_IMAGE
         self.FLUX_AUTO=FLUX_AUTO
         self.FLUXERR_AUTO=FLUXERR_AUTO
         self.data=data
-        (self.z1,self.z2)=numdisplay.zscale.zscale(self.data,nsamples=zscaleNsamp,contrast=zscaleContrast)
+        self.minGoodVal = minGoodVal
+
+        if self.minGoodVal is not None:
+            mask = np.zeros(self.data.shape)
+            w = np.where(self.data<self.minGoodVal)
+            mask[w] = 1
+            (self.z1,self.z2)=numdisplay.zscale.zscale(self.data,nsamples=zscaleNsamp,contrast=zscaleContrast,bpmask=mask)
+        else:
+            (self.z1,self.z2)=numdisplay.zscale.zscale(self.data,nsamples=zscaleNsamp,contrast=zscaleContrast)
         self.normer=interval.ManualInterval(self.z1,self.z2)
 
         self._increment = 0
@@ -118,7 +128,11 @@ class starChooser:
                 fwhm = mpsf.FWHM(fromMoffatProfile=True)
 
                 #norm=Im.normalise(mpsf.subsec,[self.z1,self.z2])
-                norm=self.normer(mpsf.subSec)
+                if self.minGoodVal is not None:
+
+                    norm=self.normer(np.clip(mpsf.subSec,self.minGoodVal,np.max(mpsf.subSec)))
+                else:
+                    norm=self.normer(mpsf.subSec)
                 if (fwhm is not None) and not (np.isnan(mpsf.beta) or np.isnan(mpsf.alpha)):
                     print '   {: 8.2f} {: 8.2f} {:3.2f} {: 5.2f} {: 5.2f} {: 5.2f} '.format(self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],mpsf.chiFluxNorm,mpsf.alpha,mpsf.beta,fwhm)
 
@@ -212,7 +226,7 @@ class starChooser:
         self.selected_star = -1
 
         for j in range(len(self.moffs)):
-            self.moffPatchList.append(self.sp4.plot(self.moffr,self.moffs[j]))
+            self.moffPatchList.append(self.sp4.plot(self.moffr,self.moffs[j],zorder=0))
             self.showing.append(1)
         self.sp4.set_xlim(0,30)
         self.sp4.set_ylim(0,1.02)
@@ -358,7 +372,7 @@ class starChooser:
         colour = 'b' if self.goodStars[arg] else 'r'
         self.starsScat = self.sp4.scatter(self.starsFlatR[arg],
                                           self.starsFlatF[arg],
-                                          color=colour)
+                                          edgecolor=colour,facecolor='none',zorder=10)
         self.sp4.set_xlim(0, self.moffatWidth)
         self.sp4.set_ylim(0, 1.02)
         self.sp5.imshow(self.subsecs[arg])
@@ -408,7 +422,7 @@ class starChooser:
         self.selected_star = np.argmin(ranks[np.argsort(pointsshowing[:, 0])])
         arg = args[np.argsort(pointsshowing[:, 0])[self.selected_star]]
 
-        self.starsScat = self.sp4.scatter(self.starsFlatR[arg],self.starsFlatF[arg])
+        self.starsScat = self.sp4.scatter(self.starsFlatR[arg],self.starsFlatF[arg],facecolor='none',edgecolor='b',zorder=10)
         self.sp4.set_xlim(0, self.moffatWidth)
         self.sp4.set_ylim(0,1.02)
 

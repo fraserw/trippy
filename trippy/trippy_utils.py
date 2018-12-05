@@ -1,5 +1,5 @@
 import numpy as np
-import imp
+
 
 def extent(r1,r2,n):
     lr1=np.log10(r1)
@@ -59,10 +59,10 @@ except:
 
 class line:
     def __init__(self,p1,p2):
-        self.m=(p2[1]-p1[1])/(p2[0]-p1[0])
-        self.b=p2[1]-self.m*p2[0]
-        self.xlim=np.array([min(p1[0],p2[0]),max(p1[0],p2[0])])
-        self.ylim=np.array([min(p1[1],p2[1]),max(p1[1],p2[1])])
+        self.m = (p2[1]-p1[1])/(p2[0]-p1[0])
+        self.b = p2[1]-self.m*p2[0]
+        self.xlim = np.array([min(p1[0],p2[0]),max(p1[0],p2[0])])
+        self.ylim = np.array([min(p1[1],p2[1]),max(p1[1],p2[1])])
 
     def __call__(self,x):
         return self.m*x+self.b

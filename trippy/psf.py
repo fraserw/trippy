@@ -24,6 +24,8 @@ import imp
 import os
 import sys
 
+import pylab as pyl
+
 import scipy as sci
 from scipy import optimize as opti, interpolate as interp
 from scipy import signal
@@ -44,9 +46,6 @@ else:
 from pill import pillPhot
 
 from trippy_utils import *
-
-
-
 
 
 class modelPSF:
@@ -530,13 +529,13 @@ class modelPSF:
 
         if useLookupTable:
             if verbose:
-                print 'Using the lookup table when generating the long PSF.'
+                print 'Using the lookup table when generating the line PSF.'
             #self.longPSF=signal.convolve2d(self.moffProf+self.lookupTable*self.repFact*self.repFact, self.line2d,mode='same')
             self.longPSF=signal.fftconvolve(self.moffProf+self.lookupTable*self.repFact*self.repFact, self.line2d,mode='same')
             self.longPSF*=np.sum(self.fullPSF)/np.sum(self.longPSF)
         else:
             if verbose:
-                print 'Not using the lookup table when generating the long PSF'
+                print 'Not using the lookup table when generating the line PSF'
             #self.longPSF=signal.convolve2d(self.moffProf,self.line2d,mode='same')
             self.longPSF=signal.fftconvolve(self.moffProf,self.line2d,mode='same')
             self.longPSF*=np.sum(self.moffProf)/np.sum(self.longPSF)
@@ -549,16 +548,19 @@ class modelPSF:
 
 
 
-    def plant(self,x,y,amp,indata,addNoise=True,useLinePSF=False,returnModel=False,verbose=False):
+    def plant(self, x, y, amp, indata,
+              useLinePSF=False, returnModel=False, verbose=False,
+              addNoise=True, plantIntegerValues=False, gain=None, plantBoxWidth = None):
         """
         Plant a star at coordinates x,y with amplitude amp.
 
         indata is the array in which you want to plant the source.
-        addNoise=True to add gaussian noise.
+        addNoise=True to add gaussian noise. gain variable must be set.
         useLinePSF=True to use the TSF rather than the circular PSF.
         returnModel=True to not actually plant in the data, but return an array of the same size containing the TSF or
         PSF without noise added.
-
+        plantBoxWidth is the width of the planting region in pixels centred on the source location. If this is set to a
+        value, then the planted source pixels will only be within a box of width 2*plantBoxWidth+1.
         """
 
 
@@ -588,6 +590,7 @@ class modelPSF:
 
         if not useLinePSF:
 
+            #don't need to shift this up and right because the _flatRadial function handles the moffat sub-pixel centering.
             moff=downSample2d(self.moffat(self.repRads),self.repFact)*amp
             if self.lookupTable is not None:
                 (pa,pb)=moff.shape
@@ -635,20 +638,35 @@ class modelPSF:
 
         self.fitFluxCorr=1. #HACK! Could get rid of this in the future...
 
-        (a,b)=psf.shape
+        (a,b) = psf.shape
         if addNoise:
-            print psf,np.min(psf),np.max(psf)
-            psf+=sci.randn(a,b)*psf**0.5
+            if gain is not None:
+                psf+=sci.randn(a,b)*(psf/gain)**0.5
+                #old poisson experimenting
+                #psfg = (psf+bg)*gain
+                #psf = (np.random.poisson(np.clip(psfg,0,np.max(psfg))).astype('float64')/gain).astype(indata.dtype)
+            else:
+                print "Please set the gain variable before trying to plant with Poisson noise."
+                raise TypeError
 
-        (A,B)=indata.shape
-        bigOut=np.zeros((A+2*self.boxSize,B+2*self.boxSize),dtype=indata.dtype)
+        if plantIntegerValues:
+            psf = np.round(psf)
+
+        (A,B) = indata.shape
+        bigOut = np.zeros((A+2*self.boxSize,B+2*self.boxSize),dtype=indata.dtype)
         bigOut[yint+self.boxSize:yint+3*self.boxSize+1,xint+self.boxSize:xint+3*self.boxSize+1]+=psf
+
 
         if returnModel:
             return bigOut[self.boxSize:A+self.boxSize,self.boxSize:B+self.boxSize]
 
-        indata+=bigOut[self.boxSize:A+self.boxSize, self.boxSize:B+self.boxSize]
+        if plantBoxWidth is not None:
+            indata[int(y)-plantBoxWidth:int(y)+plantBoxWidth+1,int(x)-plantBoxWidth:int(x)+plantBoxWidth] = bigOut[self.boxSize:A + self.boxSize, self.boxSize:B + self.boxSize][int(y)-plantBoxWidth:int(y)+plantBoxWidth+1,int(x)-plantBoxWidth:int(x)+plantBoxWidth]+bg
+        else:
+            indata+=bigOut[self.boxSize:A+self.boxSize, self.boxSize:B+self.boxSize]
+
         return indata
+
 
 
     def remove(self,x,y,amp,data,useLinePSF=False):
@@ -884,7 +902,7 @@ class modelPSF:
         generate the psf with lookup table. Convenience function only.
         """
         self.moffProf=self.moffat(self.R-np.min(self.R))
-        self.fullPSF=(self.moffProf+self.lookupTable)*A
+        self.fullPSF=(self.moffProf+self.lookupTable*self.repFact*self.repFact)*A
         self.fullpsf=downSample2d(self.fullPSF,self.repFact)
 
 
