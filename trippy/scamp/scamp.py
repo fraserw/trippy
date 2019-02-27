@@ -1,3 +1,4 @@
+from __future__ import (absolute_import, division, print_function, unicode_literals)
 """
 Copyright (C) 2016  Wesley Fraser
 
@@ -18,21 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), Academic email: wes.fraser@qub.ac.uk'
 
 
-import commands
+import subprocess
 from astropy import wcs as WCS
+from astropy.io import fits as pyf
 import numpy as num
 from os import path
 import os
-import imp
-try:
-    imp.find_module('astropy')
-    astropyFound = True
-except ImportError:
-    astropyFound = False
-if astropyFound:
-    from astropy.io import fits as pyf
-else:
-    import pyfits as pyf
+#import future
 
 
 def runScamp(scampFile,imageName):
@@ -46,8 +39,8 @@ def runScamp(scampFile,imageName):
         comm='scamp '+imageName+'.cat -c '+scampFile
     else:
         comm='scamp '+imageName+' -c '+scampFile
-    print comm
-    print commands.getoutput(comm)
+    print(comm)
+    print(subprocess.check_output(comm.split()))
     return
 
 def runSex(sexFile,imageName,options=None,verbose=False):
@@ -67,12 +60,15 @@ def runSex(sexFile,imageName,options=None,verbose=False):
     if options:
         for ii in options:
             comm+=' -'+ii+' '+options[ii]
-    bigDump=commands.getoutput(comm).split('\n')
+    process = subprocess.Popen(comm.split(),stdout = subprocess.PIPE, stderr=subprocess.PIPE,encoding='utf8')
+    junk = process.communicate()
+    #print(junk[1].split('\n\x1b[1M>'))
+    #exit()
     if verbose:
-        print comm
-        for ii in range(len(bigDump)):
-            print bigDump[ii]
-    return bigDump
+        print(comm)
+        for i in range(len(junk)):
+            print(junk[i])
+    return junk[1]
 
 
 def getCatalog(catalogName,type='FITS_LDAC',paramFile=None):
@@ -127,7 +123,7 @@ def getCatalog(catalogName,type='FITS_LDAC',paramFile=None):
                     catalog[filePars[jj]].append(data[ii][indices[jj]])
             for ii in filePars:
                 catalog[ii]=num.array(catalog[ii])
-                if 'MAG_APER' in ii and ii<>'MAG_APER':
+                if 'MAG_APER' in ii and ii!='MAG_APER':
                     catalog['MAG_APER']=num.array(catalog[ii])
                     del catalog[ii]
             return catalog
@@ -144,7 +140,7 @@ def updateHeader(fileNameBase,overWrite=True):
     If cowardly, overWrite=False, a new file will be created with 's' prepended to the name.
     """
 
-    print 'Updating header of image %s.'%(fileNameBase)
+    print('Updating header of image %s.'%(fileNameBase))
     #update the headers and setup new images
     handle=open(fileNameBase+'.head')
     H=handle.readlines()
@@ -199,7 +195,7 @@ def updateHeader(fileNameBase,overWrite=True):
 
     han.close()
 
-    print 'done.'
+    print('done.')
     return (raRms,decRms)
 
 
@@ -210,10 +206,10 @@ def writeDS9Regions(sexCatalog,regionFile,wcsImage=None,radius=15,colour=None):
     """
 
     if not path.isfile(sexCatalog):
-        print "I can't seem to find the sexCatalog file %s.\n"%(sexCatalog)
+        print("I can't seem to find the sexCatalog file %s.\n"%(sexCatalog))
         raise
 
-    print sexCatalog
+    print(sexCatalog)
     binTable=True
     try:
         han=pyf.open(sexCatalog)
@@ -242,8 +238,8 @@ def writeDS9Regions(sexCatalog,regionFile,wcsImage=None,radius=15,colour=None):
                     keys.append(k)
                     break
 
-            if len(keys)<>2:
-                print "Cannot find XWIN_IMAGE,YWIN_IMAGE"
+            if len(keys)!=2:
+                print("Cannot find XWIN_IMAGE,YWIN_IMAGE")
                 raise
 
 
@@ -272,9 +268,9 @@ def writeDS9Regions(sexCatalog,regionFile,wcsImage=None,radius=15,colour=None):
                 region='circle(%s, %s, %s)'%(x,y,radius)
                 if colour:
                     region+=' # color='+colour
-                if f<>0:
+                if f!=0:
                     region+=' text={'+str(f)+'}'
-                print >>han,region
+                print(region,file=han)
             han.close()
 
 
@@ -298,8 +294,8 @@ def writeDS9Regions(sexCatalog,regionFile,wcsImage=None,radius=15,colour=None):
                     keys.append(k)
                     break
 
-            if len(keys)<>2:
-                print "Cannot find X_WORLD,Y_WORLD"
+            if len(keys)!=2:
+                print("Cannot find X_WORLD,Y_WORLD")
                 raise
 
 
@@ -316,14 +312,7 @@ def writeDS9Regions(sexCatalog,regionFile,wcsImage=None,radius=15,colour=None):
             for ii in range(len(data)):
                 ra=data[ii][keys[0]]
                 dec=data[ii][keys[1]]
-                """
-                comm='sky2xy %s %s %s'%(wcsImage,ra,dec)
-                out=commands.getoutput(comm)
 
-                s=out.split()
-                x=float(s[4])
-                y=float(s[5])
-                """
                 (x,y)=wcs.wcs_world2pix(ra,dec)
                 x+=1
                 y+=1
@@ -339,9 +328,9 @@ def writeDS9Regions(sexCatalog,regionFile,wcsImage=None,radius=15,colour=None):
                 region='circle(%s, %s, %s)'%(x,y,radius)
                 if colour:
                     region+=' # color='+colour
-                if f<>0:
+                if f!=0:
                     region+=' text={'+str(f)+'}'
-                print >>han,region
+                print(region,file=han)
             han.close()
 
 
