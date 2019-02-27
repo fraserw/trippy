@@ -62,7 +62,7 @@ def lnprob_varRateAngle(r,dat,lims,psf,ue,useLinePSF, exptime, pixScale, verbose
     return chi
 
 
-def lnprob_varRateAngle_LSSTHACK(r,dat,lims,psf,ue,useLinePSF, exptime, pixScale, verbose=False):
+def _lnprob_varRateAngle_LSSTHACK(r,dat,lims,psf,ue,useLinePSF, exptime, pixScale, verbose=False):
     """
     for now because I am lazy, rates, exptime, and pixScale should be given in "/hr, seconds, and "/pix
     """
