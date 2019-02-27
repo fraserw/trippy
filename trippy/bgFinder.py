@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function, division
+from collections import namedtuple
+
 """
 Copyright (C) 2016  Wesley Fraser
 
@@ -15,10 +18,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from __future__ import print_function, division
+
 __author__ = ('Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), '
               'Academic email: wes.fraser@qub.ac.uk')
-from collections import namedtuple
+
 import numpy as num
 import pylab as pyl
 from scipy import stats
