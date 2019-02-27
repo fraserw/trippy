@@ -15,7 +15,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from __future__ import print_function
+from __future__ import print_function, division
 __author__ = ('Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), '
               'Academic email: wes.fraser@qub.ac.uk')
 from collections import namedtuple
@@ -121,9 +121,9 @@ class bgFinder(object):
         # ahist and stats generously donated by JJ Kavelaars from jjkmode.py
         b = num.sort(data)
         ## use the top and bottom octile to set the histogram bounds
-        mx = b[len(b) - max(1, len(b) / 100)]
-        mn = b[len(b) - 99 * len(b) / 100]
-        w = ((mx - mn) / nbins)
+        mx = b[len(b) - max(1, int(len(b) / 100.0))]
+        mn = b[len(b) - int(99 * len(b) / 100.0)]
+        w = (int((mx - mn) / nbins))
 
         n = num.searchsorted(b, num.arange(mn, mx, w))
         n = num.concatenate([n, [len(b)]])
@@ -135,7 +135,7 @@ class bgFinder(object):
         b[len(b) - 1] = 0
         b[0] = 0
         am = num.argmax(b)
-        c = b[b > (b[am] / 2)]
+        c = b[b > int(b[am] / 2.0)]
         mode = (am * w) + l
         stddev = (len(c) * w / 2.0) / 1.41
         retval = Stats(mode, stddev)
@@ -158,7 +158,7 @@ class bgFinder(object):
     def _gaussLike(self, x):
         [m, s] = x[:]
 
-        X = -num.sum((self.data - m)**2) / (2 * s * s)
+        X = -num.sum((self.data - m)**2) / (2.0 * s * s)
         X -= len(self.data) * num.log((2 * num.pi * s * s)**0.5)
         return -X
 
@@ -191,7 +191,7 @@ class bgFinder(object):
             figHist = pyl.figure('backgroundHistogram')
             self.plotAxis = figHist.add_subplot(111)
             runShow = True
-        self.plotAxis.hist(self.data, bins=min(100, len(self.data) / 10))
+        self.plotAxis.hist(self.data, bins=min(100, int(len(self.data) / 10.0)))
         (y0, y1) = self.plotAxis.get_ylim()
         self.plotAxis.plot([g, g], [y0, y1], 'r-', lw=2)
         self.plotAxis.set_title('Background {:.3f}'.format(g))
