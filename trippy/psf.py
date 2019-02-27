@@ -589,11 +589,11 @@ class modelPSF:
             self.imData = origData
 
         if not useLinePSF:
-
+            ###original moffat profile creation
             #don't need to shift this up and right because the _flatRadial function handles the moffat sub-pixel centering.
-            moff=downSample2d(self.moffat(self.repRads),self.repFact)*amp
+            #moff=downSample2d(self.moffat(self.repRads),self.repFact)*amp
             if self.lookupTable is not None:
-                (pa,pb)=moff.shape
+                #(pa,pb)=moff.shape
 
                 #shift the lookuptable right and up to account for the off-zero centroid
                 slu=np.copy(self.lookupTable)
@@ -607,8 +607,16 @@ class modelPSF:
                     sec = slu[a-sy:,:]
                     slu[sy:,:] = slu[:a-sy,:]
                     slu[:sy,:] = sec
-                slu = downSample2d(slu,self.repFact)*amp*self.repFact*self.repFact
-                psf = slu+moff
+                ###original lookup table creation
+                #slu = downSample2d(slu,self.repFact)*amp*self.repFact*self.repFact
+
+                ###this is a merger of the original moffat and lookup table lines above.
+                ###results in a significant performance boost.
+                psf = downSample2d(slu+self.moffat(self.repRads)/(self.repFact*self.repFact),self.repFact)*amp*self.repFact*self.repFact
+
+                ###original sum of lookup table and moffat profile.
+                ###not needed in the newer performance boosted version.
+                #psf = slu+moff
             else:
                 psf = moff
                 if verbose: print "Lookup table is none. Just using Moffat profile."
@@ -641,7 +649,7 @@ class modelPSF:
         (a,b) = psf.shape
         if addNoise:
             if gain is not None:
-                psf+=sci.randn(a,b)*(psf/gain)**0.5
+                psf+=sci.randn(a,b)*(np.abs(psf)/gain)**0.5
                 #old poisson experimenting
                 #psfg = (psf+bg)*gain
                 #psf = (np.random.poisson(np.clip(psfg,0,np.max(psfg))).astype('float64')/gain).astype(indata.dtype)
@@ -674,9 +682,8 @@ class modelPSF:
         The opposite of plant.
         """
 
-        mo = self.plant(x,y,amp,data,addNoise=False,returnModel=True,useLinePSF=useLinePSF)
-        self.model = mo*1.
-        return data-mo
+        self.model =  self.plant(x,y,amp,data,addNoise=False,returnModel=True,useLinePSF=useLinePSF)
+        return data-self.model
 
 
     def writeto(self,name):
@@ -929,11 +936,15 @@ class modelPSF:
         rangeY=np.arange(a*self.repFact,b*self.repFact)/float(self.repFact)
         rangeX=np.arange(c*self.repFact,d*self.repFact)/float(self.repFact)
         dx2=(centX-rangeX)**2
-        repRads=[]
-        for ii in range(len(rangeY)):
-            repRads.append((centY-rangeY[ii])**2+dx2)
-        self.repRads=np.array(repRads)**0.5
-
+        ####slow version kept for clarity
+        #repRads=[]
+        #for ii in range(len(rangeY)):
+        #    repRads.append((centY-rangeY[ii])**2+dx2)
+        #self.repRads=np.array(repRads)**0.5
+        #####
+        #this is the faster version that produces the same result
+        dy2 = (centY-rangeY)**2
+        self.repRads = (np.repeat(dy2,len(rangeY)).reshape(len(rangeY),len(rangeX)) + np.repeat(np.array([dx2]),len(rangeY),axis = 0).reshape(len(rangeY),len(rangeX)))**0.5
 
         self.dX=centX-rangeX
         self.dY=centY-rangeY
@@ -959,6 +970,7 @@ class modelPSF:
 
         #subSecFlat=self.subSec.reshape((b-a)*(c-d))
 
+        #this line seems redundant
         arrR=np.array(arrR)
         self.rads=np.copy(arrR)
         #arrR=arrR.reshape((b-a)*(d-c))
