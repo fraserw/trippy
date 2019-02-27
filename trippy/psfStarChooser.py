@@ -114,7 +114,6 @@ class starChooser:
         print 'Fitting stars with moffat profiles...'
         print '      X         Y    chi    a     b    FWHM'
 
-
         for j in range(len(self.XWIN_IMAGE)):
             if self.FLUX_AUTO[j]/self.FLUXERR_AUTO[j]>self.moffatSNR:
                 if self.XWIN_IMAGE[j]-1-(moffatWidth+1)<0 or self.XWIN_IMAGE[j]-1+(moffatWidth+1)>=self.data.shape[1] or self.YWIN_IMAGE[j]-1-(moffatWidth+1)<0 or self.YWIN_IMAGE[j]-1+(moffatWidth+1)>=self.data.shape[0]:
@@ -317,7 +316,7 @@ class starChooser:
                     marker='d', color='m', zorder=0, s=75)
         pyl.axis([xlim[0], xlim[1], ylim[0], ylim[1]])
         pyl.title(title)
-        ##pyl.sca(ca)
+        max_x = self.sp5.get_xlim()[1]
 
 
     def ScatterPSF_keys(self, event):
@@ -376,6 +375,8 @@ class starChooser:
         self.sp4.set_xlim(0, self.moffatWidth)
         self.sp4.set_ylim(0, 1.02)
         self.sp5.imshow(self.subsecs[arg])
+        #self.sp5.set_xlabel("x,y = {:.1f}, {:.1f}".format(self.points[:, 4][arg],self.points[:, 5][arg]))
+
 
         self.conn1=self.sp1.callbacks.connect('ylim_changed',self.PSFrange)
         self.conn2=pyl.connect('pick_event',self.ScatterPSF)
@@ -427,6 +428,7 @@ class starChooser:
         self.sp4.set_ylim(0,1.02)
 
         self.sp5.imshow(self.subsecs[arg])
+        #self.sp5.set_xlabel("x,y = {:.1f}, {:.1f}".format(self.points[:, 4][arg],self.points[:, 5][arg]))
 
         self.ScatterPSFCommon(arg)
 
