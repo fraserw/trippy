@@ -306,7 +306,7 @@ class MCMCfitter:
 
         bp = goodSamps[-1]
         print 'Best point:',bp
-        if b == 3:
+        if b == 3 or b == 6:
             self.residual = self.psf.remove(bp[0],bp[1],bp[2],self.dat,useLinePSF=self.useLinePSF)
         elif b == 6:
             self.residual = self.psf.remove(bp[3],bp[4],bp[5],self.residual,useLinePSF=self.useLinePSF)
