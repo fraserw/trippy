@@ -21,16 +21,23 @@ class tester(unittest.TestCase):
         #os.system('gunzip test_image.fits.gz')
 
         self.gened_bg = 1000.0
-        with fits.open('test_image.fits') as han:
-            self.image = han[0].data
-        self.loadedPSF = psf.modelPSF(restore = 'test_psf.fits')
+        try:
+            with fits.open('test_image.fits') as han:
+                self.image = han[0].data
+            self.loadedPSF = psf.modelPSF(restore = 'test_psf.fits')
 
-        with open('planted_locations.pickle','rb') as han:
-            if sys.version_info[0]==3:
-                x = pickle.load(han, encoding='latin1')
-            elif sys.version_info[0]==2:
-                x = pickle.load(han)
-
+            with open('planted_locations.pickle','rb') as han:
+                if sys.version_info[0]==3:
+                    x = pickle.load(han, encoding='latin1')
+                elif sys.version_info[0]==2:
+                    x = pickle.load(han)
+        except:
+            print('You may not have the necessary fits files for these tests.')
+            print('Please execute the following two wget commands:')
+            print('wget https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/files/vault/fraserw/test_psf.fits')
+            print('wget https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/files/vault/fraserw/test_image.fits')
+            print('')
+            exit()
         self.planted_locations = np.array(x)
 
         self.bg = bgFinder.bgFinder(self.image)
