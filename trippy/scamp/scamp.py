@@ -24,7 +24,7 @@ from astropy import wcs as WCS
 from astropy.io import fits as pyf
 import numpy as num
 from os import path
-import os
+import os,sys
 #import future
 
 
@@ -60,7 +60,10 @@ def runSex(sexFile,imageName,options=None,verbose=False):
     if options:
         for ii in options:
             comm+=' -'+ii+' '+options[ii]
-    process = subprocess.Popen(comm.split(),stdout = subprocess.PIPE, stderr=subprocess.PIPE,encoding='utf8')
+    if sys.version_info[0]==3:
+        process = subprocess.Popen(comm.split(),stdout = subprocess.PIPE, stderr=subprocess.PIPE,encoding='utf8')
+    elif sys.version_info[0]==2:
+        process = subprocess.Popen(comm.split(),stdout = subprocess.PIPE, stderr=subprocess.PIPE)
     junk = process.communicate()
     #print(junk[1].split('\n\x1b[1M>'))
     #exit()

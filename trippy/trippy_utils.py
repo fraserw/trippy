@@ -31,7 +31,7 @@ def expand2d(a, repFact):
         for j in range(repFact):
             out[i * repFact + j, :] = r
     return out / (float(repFact) * float(repFact))
-
+    
 
 try:
     from numba import jit
@@ -39,22 +39,44 @@ try:
     @jit
     def downSample2d(a, sampFact):
         (A, B) = a.shape
-        o = np.zeros((A/sampFact,B/sampFact)).astype('float64')
+        o = np.zeros((int(A/sampFact),int(B/sampFact))).astype('float64')
         for i in range(0,A,sampFact):
             for j in range(0,B,sampFact):
                 s = 0.0
                 for k in range(sampFact):
                     for l in range(sampFact):
                         s += a[i+k,j+l]
-                o[i/sampFact,j/sampFact] = s
-        return o/(sampFact*sampFact)
+                o[int(i/sampFact),int(j/sampFact)] = s
+        return o/float(sampFact*sampFact)
+
 
 except:
     def downSample2d(a,sampFact):
         (A,B)=a.shape
-        A/=sampFact
-        B/=sampFact
+        A = int(A/sampFact)
+        B = int(B/sampFact)
         return np.array([np.sum(a[i:i+sampFact,j:j+sampFact]) for i in range(0,sampFact*A,sampFact) for j in range(0,sampFact*B,sampFact)]).reshape(A,B)/(sampFact*sampFact)
+
+
+
+"""
+def downSample2d(a, sampFact):
+    (A, B) = a.shape
+    o = np.zeros((A/sampFact,B/sampFact)).astype('float64')
+    summer(a,o,A,B,sampFact)
+    return o
+@jit(nopython=True)
+def summer(a,o,A,B,sampFact):
+    sf2 = sampFact*sampFact
+    for i in range(0,A,sampFact):
+        for j in range(0,B,sampFact):
+            s = 0.0
+            for k in range(sampFact):
+                for l in range(sampFact):
+                    s += a[i+k,j+l]
+            o[i/sampFact,j/sampFact] = s/sf2
+    return o
+"""
 
 
 class line:
@@ -66,4 +88,3 @@ class line:
 
     def __call__(self,x):
         return self.m*x+self.b
-

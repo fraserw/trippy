@@ -1,5 +1,8 @@
 #! /usr/bin/env python
 
+from __future__ import print_function, division
+from collections import namedtuple
+
 """
 Copyright (C) 2016  Wesley Fraser
 
@@ -23,13 +26,31 @@ __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>),
 import numpy as np, scipy as sci,emcee
 from trippy import bgFinder
 import pickle
+from scipy import optimize as opti
+import pylab as pyl
+
+def resid(p,cutout,psf,boxWidth = 7,useLinePSF = False,verbose=False):
+    (x,y,m) = p
+    xt,yt = int(x),int(y)
+    (a,b) = cutout.shape
+    res = psf.remove(x,y,m,cutout,useLinePSF=useLinePSF)[yt-boxWidth:yt+boxWidth+1,xt-boxWidth:xt+boxWidth+1]
+    if verbose:
+        print(np.sum(res**2)**0.5,x,y,m)
+    return np.array(res).astype('float').reshape((boxWidth*2+1)**2)
+
+def likelihood_for_LS(p,cutout,bg,psf,boxWidth = 7,useLinePSF = False,verbose=False):
+    (x,y,m) = p
+    res = resid(p,cutout-bg,psf,boxWidth = boxWidth,verbose=verbose,useLinePSF = useLinePSF)
+    xt,yt = int(x),int(y)
+    ue2 = np.abs(cutout[yt-boxWidth:yt+boxWidth+1,xt-boxWidth:xt+boxWidth+1].reshape((boxWidth*2+1)**2))
+    return -0.5*np.sum(res**2/ue2)
 
 def lnprob(r,dat,lims,psf,ue,useLinePSF, verbose=False, other=None):
     """
     can't recall what the purpose of parameter other is. Note to look into this in the future.
     """
     psf.nForFitting+=1
-    if other <> None:
+    if other != None:
         (x,y,amp) = other[:]
     if len(r) == 3:
         (x, y, amp) = r
@@ -41,7 +62,7 @@ def lnprob(r,dat,lims,psf,ue,useLinePSF, verbose=False, other=None):
     if  amp <= 0 or x >= b or x <= 0 or y <= 0 or y >= a: return -np.inf
     diff = psf.remove(x,y,amp,dat,useLinePSF=useLinePSF)[lims[0]:lims[1],lims[2]:lims[3]]
     chi = -0.5*np.sum(diff**2/ue[lims[0]:lims[1],lims[2]:lims[3]]**2)
-    if verbose: print '{:6d} {:8.3f} {:8.3f} {:8.3f} {:10.3f}'.format(psf.nForFitting,x,y,amp,chi)
+    if verbose: print('{:6d} {:8.3f} {:8.3f} {:8.3f} {:10.3f}'.format(psf.nForFitting,x,y,amp,chi))
     return chi
 
 
@@ -58,7 +79,7 @@ def lnprob_varRateAngle(r,dat,lims,psf,ue,useLinePSF, exptime, pixScale, verbose
 
     diff = psf.remove(x,y,amp,dat, useLinePSF = useLinePSF)[lims[0]:lims[1],lims[2]:lims[3]]
     chi = -0.5*np.sum(diff**2/ue[lims[0]:lims[1],lims[2]:lims[3]]**2)
-    if verbose: print '{:6d} {:8.3f} {:8.3f} {:8.3f} {:8.3f} {:8.3f} {:10.3f}'.format(psf.nForFitting,x,y,amp,rate,angle,chi)
+    if verbose: print('{:6d} {:8.3f} {:8.3f} {:8.3f} {:8.3f} {:8.3f} {:10.3f}'.format(psf.nForFitting,x,y,amp,rate,angle,chi))
     return chi
 
 
@@ -83,7 +104,7 @@ def _lnprob_varRateAngle_LSSTHACK(r,dat,lims,psf,ue,useLinePSF, exptime, pixScal
     diff = psf.remove(x+dx/2.0,y+dy/2.0,amp,d,useLinePSF=useLinePSF)[lims[0]:lims[1],lims[2]:lims[3]]
 
     chi = -0.5*np.sum(diff**2/ue[lims[0]:lims[1],lims[2]:lims[3]]**2)
-    if verbose: print '{:6d} {:8.3f} {:8.3f} {:8.3f} {:8.3f} {:8.3f} {:10.3f}'.format(psf.nForFitting,x,y,amp,rate,angle,chi)
+    if verbose: print('{:6d} {:8.3f} {:8.3f} {:8.3f} {:8.3f} {:8.3f} {:10.3f}'.format(psf.nForFitting,x,y,amp,rate,angle,chi))
     return chi
 
 
@@ -98,9 +119,69 @@ def lnprobDouble(r,dat,lims,psf,ue,useLinePSF,verbose=False):
     chi = -0.5*np.sum((diff**2/ue**2)[lims[0]:lims[1],lims[2]:lims[3]])
     #chi=-np.sum(diff**2)**0.5
     if verbose:
-        print '{:6d} {: 8.3f} {: 8.3f} {: 8.3f} {: 8.3f} {: 8.3f} {: 8.3f} {: 10.3f}'.format(psf.nForFitting,x,y,amp,X,Y,AMP,chi)
+        print('{:6d} {: 8.3f} {: 8.3f} {: 8.3f} {: 8.3f} {: 8.3f} {: 8.3f} {: 10.3f}'.format(psf.nForFitting,x,y,amp,X,Y,AMP,chi))
     return chi
 
+
+class LSfitter(object):
+
+    def __init__(self,psf,imageData):
+        """
+        Initialize a least squares fitter object which is essentially a wrapper
+        around scipy.optimize.leastsq.
+
+        Input:
+        psf is the trippy model psf object
+        imageData is the data on which the fit will be performed.
+
+        Use restore=fileName to import a dump fit file saved by saveState.
+
+        """
+        self.psf = psf
+        self.imageData = np.copy(imageData)
+        self.fitted = False
+
+    def fitWithModelPSF(self,x_in,y_in,m_in = -1.,fitWidth = 7,
+                        bg = None,ftol=1.e-8,
+                        useLinePSF = False,
+                        verbose=False):
+        """
+        This is still experimental and hasn't been fully vetted yet.
+
+        Use at your own risk.
+        """
+
+        self.useLinePSF = useLinePSF
+        if fitWidth>self.psf.boxSize:
+            raise NotImplementedError('Need to keep the fitWidth <= boxSize.')
+
+        (A,B) = self.imageData.shape
+        #ai = max(0,int(y_in)-fitWidth)
+        #bi = min(A,int(y_in)+fitWidth+1)
+        #ci = max(0,int(x_in)-fitWidth)
+        #di = min(B,int(x_in)+fitWidth+1)
+        dat = np.copy(self.imageData)
+
+        if bg == None:
+            bgf = bgFinder.bgFinder(self.imageData)
+            bg = bgf.smartBackground()
+            dmbg = dat - bg
+            print('Subtracting background {}'.format(bg))
+        else:
+            dmbg = dat - bg
+        if m_in==-1.:
+            if useLinePSF:
+                m_in = self.psf.repFact*self.psf.repFact*np.sum(dat)/np.sum(self.psf.longPSF)
+            else:
+                m_in = self.psf.repFact*self.psf.repFact*np.sum(dat)/np.sum(self.psf.fullPSF)
+
+
+        lsqf = opti.leastsq(resid,(x_in,y_in,m_in),args=(dmbg,self.psf,fitWidth,useLinePSF,verbose),maxfev=1000,ftol=ftol)
+        fitPars = lsqf[0]
+        l = likelihood_for_LS(fitPars,dat,bg,self.psf,boxWidth = fitWidth,useLinePSF=useLinePSF)
+        fitPars = np.concatenate([fitPars,np.array([l])])
+
+        return fitPars
 
 
 class MCMCfitter:
@@ -149,7 +230,7 @@ class MCMCfitter:
         verbose - if set to true, lots of information printed to screen
         """
 
-        print "Initializing sampler"
+        print("Initializing sampler")
 
         self.nForFitting = 0
         self.useLinePSF = useLinePSF
@@ -170,7 +251,7 @@ class MCMCfitter:
             bgf = bgFinder.bgFinder(self.imageData)
             bg = bgf.smartBackground()
             dat -= bg
-            print 'Subtracting background {}'.format(bg)
+            print('Subtracting background {}'.format(bg))
 
         if not useErrorMap:
             ue = dat*0.0+1.
@@ -196,10 +277,10 @@ class MCMCfitter:
 
             #fit first using input best guess amplitude
             sampler = emcee.EnsembleSampler(nWalkers,nDim,lnprob,args=[dat,(ai,bi,ci,di),self.psf,ue,useLinePSF,verbose,(-1,-1,m_in)])
-            print "Executing xy burn-in... this may take a while."
+            print("Executing xy burn-in... this may take a while.")
             pos, prob, state = sampler.run_mcmc(r0, nBurn)#, 10)
             sampler.reset()
-            print "Executing xy production run... this will also take a while."
+            print("Executing xy production run... this will also take a while.")
             pos, prob, state = sampler.run_mcmc(pos, nStep, rstate0=state)
             self.samps = sampler.chain
             self.probs = sampler.lnprobability
@@ -221,11 +302,11 @@ class MCMCfitter:
             #could probably cut the nBurn and nStep numbers down by a factor of 2
             sampler = emcee.EnsembleSampler(nWalkers, nDim, lnprob,
                                             args=[dat, (ai, bi, ci, di), self.psf, ue, useLinePSF, verbose, (x, y, -1)])
-            print "Executing amplitude burn-in... this may take a while."
-            pos, prob, state = sampler.run_mcmc(r0, max(nBurn/2,10))
+            print("Executing amplitude burn-in... this may take a while.")
+            pos, prob, state = sampler.run_mcmc(r0, max(int(nBurn/2),10))
             sampler.reset()
-            print "Executing amplitude production run... this will also take a while."
-            pos, prob, state = sampler.run_mcmc(pos, max(nStep/2,10), rstate0=state)
+            print("Executing amplitude production run... this will also take a while.")
+            pos, prob, state = sampler.run_mcmc(pos, max(int(nStep/2),10), rstate0=state)
             self.samps = sampler.chain
             self.probs = sampler.lnprobability
             self.dat = np.copy(dat)
@@ -244,10 +325,10 @@ class MCMCfitter:
 
 
             sampler=emcee.EnsembleSampler(nWalkers,nDim,lnprob,args=[dat,(ai,bi,ci,di),self.psf,ue,useLinePSF,verbose])
-            print "Executing xy-amp burn-in... this may take a while."
+            print("Executing xy-amp burn-in... this may take a while.")
             pos, prob, state=sampler.run_mcmc(r0,nBurn)
             sampler.reset()
-            print "Executing xy-amp production run... this will also take a while."
+            print("Executing xy-amp production run... this will also take a while.")
             pos, prob, state = sampler.run_mcmc(pos, nStep, rstate0=state)
 
         else:
@@ -262,10 +343,10 @@ class MCMCfitter:
             sampler = emcee.EnsembleSampler(nWalkers, nDim, lnprob_varRateAngle_LSSTHACK,
                                           args=[dat, (ai,bi,ci,di), self.psf, ue, useLinePSF, exptime, pixScale, verbose])
             #dat,lims,psf,ue,useLinePSF, exptime, pixScale, verbose=False):
-            print "Executing burn-in... this may take a while."
+            print("Executing burn-in... this may take a while.")
             pos, prob, state = sampler.run_mcmc(r0, nBurn, 10)
             sampler.reset()
-            print "Executing production run... this will also take a while."
+            print("Executing production run... this will also take a while.")
             pos, prob, state = sampler.run_mcmc(pos, nStep, rstate0=state)
             self.samps = sampler.chain
             self.probs = sampler.lnprobability
@@ -288,7 +369,7 @@ class MCMCfitter:
         """
 
         if not self.fitted:
-            print "You haven't actually run a fit yet!"
+            print("You haven't actually run a fit yet!")
             return None
 
         (Y,X,b) = self.samps.shape
@@ -305,7 +386,7 @@ class MCMCfitter:
         goodSamps = goodSamps[args]
 
         bp = goodSamps[-1]
-        print 'Best point:',bp
+        print('Best point:',bp)
         if b == 3 or b == 6:
             self.residual = self.psf.remove(bp[0],bp[1],bp[2],self.dat,useLinePSF=self.useLinePSF)
         elif b == 6:
@@ -318,15 +399,15 @@ class MCMCfitter:
         for ii in range(b):
             args = np.argsort(goodSamps[:,ii])
             x = goodSamps[args][:,ii]
-            a = len(x)*(1-confidenceRange)/2
-            b = 1-a
+            a = int(len(x)*(1-confidenceRange)/2)
+            b = int(1-a)
             uncert.append([x[int(a)],
                            x[int(b)]])
 
         if len(uncert)==6:
             x=np.sort(goodSamps[:,5]/goodSamps[:,2])
-            a=len(x)*(1-confidenceRange)/2
-            b=1-a
+            a=int(len(x)*(1-confidenceRange)/2)
+            b=int(1-a)
             uncert.append([x[int(a)],
                            x[int(b)]])
             x = np.sort(goodSamps[:, 0] - goodSamps[:, 3])

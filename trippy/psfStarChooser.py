@@ -1,3 +1,7 @@
+
+from __future__ import print_function, division
+from collections import namedtuple
+
 """
 Copyright (C) 2016  Wesley Fraser
 
@@ -94,12 +98,14 @@ class starChooser:
         self._increment = 0
 
     def __call__(self,moffatWidth,moffatSNR,initAlpha=5.,initBeta=2.,repFact=5,xWidth=51,yWidth=51,
-                 includeCheesySaturationCut=False,autoTrim=False,noVisualSelection=False,verbose=False):
+                 includeCheesySaturationCut=False,autoTrim=False,noVisualSelection=False,verbose=False,
+                 bgRadius = 20.0):
         self.moffatWidth=moffatWidth
         self.moffatSNR=moffatSNR
         self.initAlpha=initAlpha
         self.initBeta=initBeta
         self.repFact=repFact
+        self.bgRadius = bgRadius
 
         self.fwhms = []
         self.points = []
@@ -111,8 +117,8 @@ class starChooser:
         self.goodStars = []
         self.starsScat = None
 
-        print 'Fitting stars with moffat profiles...'
-        print '      X         Y    chi    a     b    FWHM'
+        print('Fitting stars with moffat profiles...')
+        print('      X         Y    chi    a     b    FWHM')
 
         for j in range(len(self.XWIN_IMAGE)):
             if self.FLUX_AUTO[j]/self.FLUXERR_AUTO[j]>self.moffatSNR:
@@ -122,7 +128,7 @@ class starChooser:
                 #in the future I will adjust this for a small speed boost.
                 mpsf = psf.modelPSF(np.arange(xWidth), np.arange(yWidth), alpha=self.initAlpha, beta=self.initBeta,
                                     repFact=self.repFact)
-                mpsf.fitMoffat(self.data,self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],boxSize=self.moffatWidth,verbose=verbose)
+                mpsf.fitMoffat(self.data,self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],boxSize=self.moffatWidth,verbose=verbose,bgRadius = self.bgRadius)
 
                 fwhm = mpsf.FWHM(fromMoffatProfile=True)
 
@@ -133,7 +139,7 @@ class starChooser:
                 else:
                     norm=self.normer(mpsf.subSec)
                 if (fwhm is not None) and not (np.isnan(mpsf.beta) or np.isnan(mpsf.alpha)):
-                    print '   {: 8.2f} {: 8.2f} {:3.2f} {: 5.2f} {: 5.2f} {: 5.2f} '.format(self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],mpsf.chiFluxNorm,mpsf.alpha,mpsf.beta,fwhm)
+                    print('   {: 8.2f} {: 8.2f} {:3.2f} {: 5.2f} {: 5.2f} {: 5.2f} '.format(self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],mpsf.chiFluxNorm,mpsf.alpha,mpsf.beta,fwhm))
 
                     self.subsecs.append(norm*1.)
                     self.goodStars.append(True)
@@ -152,7 +158,7 @@ class starChooser:
         FWHM_mode_width = 1.0 #could be 0.5 just as well
         ab_std_width = 2.0
         if autoTrim:
-            print '\nDoing auto star selection.'
+            print('\nDoing auto star selection.')
             #first use Frasermode on the distribution of FWHM to get a good handle on the true FWHM of stars
             #select only those stars with FWHM of +-1 pixel of the mode.
             bg = bgFinder.bgFinder(self.points[:,0])
@@ -201,7 +207,6 @@ class starChooser:
 
             exit()
             """
-
 
 
         self.figPSF = pyl.figure('Point Source Selector')
@@ -266,7 +271,7 @@ class starChooser:
         self.psfPlotLimits=newLim[:]
         w = np.where((self.points[:,0]>=self.psfPlotLimits[0][0])&(self.points[:,0]<=self.psfPlotLimits[0][1])&(self.points[:,1]>=self.psfPlotLimits[1][0])&(self.points[:,1]<=self.psfPlotLimits[1][1]))[0]
 
-        if self.starsScat<>None:
+        if self.starsScat!=None:
             self.starsScat.remove()
             self.starsScat=None
 
@@ -337,7 +342,7 @@ class starChooser:
         arg = args[np.argsort(pointsshowing[:, 0])[self.selected_star]]
 
         ca=pyl.gca()
-        if self.starsScat<>None:
+        if self.starsScat!=None:
             self.starsScat.remove()
             self.starsScat=None
 
@@ -398,7 +403,7 @@ class starChooser:
             me=event.mouseevent
 
 
-        if self.starsScat<>None:
+        if self.starsScat!=None:
             self.starsScat.remove()
             self.starsScat=None
 
@@ -448,162 +453,3 @@ class starChooser:
     def HandleClose(self, evt):
         self._fwhm_lim = self.sp1.get_xlim()
         self._chi_lim = self.sp1.get_ylim()
-
-
-
-
-    def _testFit(self,moffatWidth,moffatSNR,initAlpha=5.,initBeta=2.,repFact=5,xWidth=51,yWidth=51,
-                 verbose=False):
-
-        self.moffatWidth=moffatWidth
-        self.moffatSNR=moffatSNR
-        self.initAlpha=initAlpha
-        self.initBeta=initBeta
-        self.repFact=repFact
-
-        self.fwhms = []
-        self.points = []
-        self.moffs = []
-        self.moffr = np.linspace(0,self.moffatWidth,self.moffatWidth*3)
-        self.starsFlatR = []
-        self.starsFlatF = []
-        self.subsecs = []
-        self.goodStars = []
-        self.starsScat = None
-
-        print 'Fitting stars with moffat profiles...'
-        print '   X        Y     Alpha  Beta  FWHM'
-
-        for j in range(25):#len(self.XWIN_IMAGE)):
-            if self.FLUX_AUTO[j]/self.FLUXERR_AUTO[j]>self.moffatSNR:
-                if self.XWIN_IMAGE[j]-1-(moffatWidth+1)<0 or self.XWIN_IMAGE[j]-1+(moffatWidth+1)>=self.data.shape[1] or self.YWIN_IMAGE[j]-1-(moffatWidth+1)<0 or self.YWIN_IMAGE[j]-1+(moffatWidth+1)>=self.data.shape[0]:
-                    continue
-                #this psf object creator has to be here. It's to do with the way PSF objects are initialized. Some time
-                #in the future I will adjust this for a small speed boost.
-                #mpsf = psf.modelPSF(np.arange(xWidth), np.arange(yWidth), alpha=self.initAlpha, beta=self.initBeta,repFact=self.repFact)
-                mpsf = psf.modelPSF(np.arange(xWidth), np.arange(yWidth), alpha=self.initAlpha, beta=self.initBeta,
-                                    repFact=self.repFact)
-                mpsf.fitMoffat(self.data,self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],boxSize=self.moffatWidth,verbose=verbose)
-
-                fwhm = mpsf.FWHM(fromMoffatProfile=True)
-                amp = mpsf.A
-
-                #norm=Im.normalise(mpsf.subsec,[self.z1,self.z2])
-                norm=self.normer(mpsf.subSec)
-                if (fwhm is not None) and not (np.isnan(mpsf.beta) or np.isnan(mpsf.alpha)):
-                    print '{: 8.2f} {: 8.2f} {: 5.2f} {: 5.2f} {: 5.2f}'.format(self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],mpsf.alpha,mpsf.beta,fwhm)
-
-                    self.subsecs.append(norm*1.)
-                    self.goodStars.append(True)
-
-                    self.moffs.append(mpsf.moffat(self.moffr)*1.)
-
-                    self.starsFlatR.append(psf.downSample2d(mpsf.repRads,mpsf.repFact))
-                    self.starsFlatF.append((mpsf.subSec-mpsf.bg)/(mpsf.moffat(0)*mpsf.A))
-
-                    self.moffs[len(self.moffs)-1] /= np.max(self.moffs[len(self.moffs)-1])
-
-                    self.points.append([fwhm,mpsf.chi,mpsf.alpha,mpsf.beta,self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],mpsf.bg,amp])
-        self.points = np.array(self.points)
-        self.goodStars = np.array(self.goodStars)
-
-
-
-        nc = 0
-
-        while nc<15:
-            cutter = np.arange(len(self.points))
-            print 'Cut ',nc
-
-            median_points = np.median(self.points, axis = 0)
-            print median_points
-
-            aa=int(2*5*median_points[0])+1
-            if aa%2==0: aa+=1
-            mpsf = psf.modelPSF(np.arange(aa), np.arange(aa), alpha=median_points[2], beta=median_points[3],
-                            repFact=self.repFact)
-            fwhm=mpsf.FWHM(fromMoffatProfile=True)
-
-            (amps,cutouts,cxs,cys,bgs) = mpsf.genLookupTable(self.data,self.points[:,4],self.points[:,5],bgRadius=5*fwhm, returnAmpsCutouts=True)
-
-
-            diffs = []
-            plants = []
-            for ii in range(len(cxs)):
-                plants.append( mpsf.plant(cxs[ii]-0.5,cys[ii]-0.5,amps[ii],cutouts[ii]*0.0,addNoise = False,returnModel = True)+bgs[ii] )
-                diffs.append(cutouts[ii] - plants[-1])
-            plants = np.array(plants)
-            diffs = np.array(diffs)
-
-            (AA,BB) = cutouts[0].shape
-            v = np.abs(diffs)/plants**0.5
-            print v.shape
-            print np.argmax(v[:,0,0])
-
-            args = np.argmax(np.abs(diffs)/plants**0.5,axis = 0)
-            #args_min = np.argmax(diffs**2/plants,axis = 0)
-
-            nBadPix = np.zeros(len(cxs))
-            for ii in range(len(cxs)):
-                w = np.where(args[int(AA/2-1.5*fwhm):int(AA/2+1.5*fwhm+1),int(BB/2-1.5*fwhm):int(BB/2+1.5*fwhm+1)] == ii)
-                nBadPix[ii] = len(w[0])
-            #figh = pyl.figure('h')
-            #pyl.hist(np.log10(nBadPix))
-
-            bigfig = pyl.figure('bigfig')
-            #print np.median(nBadPix),np.std(nBadPix),np.where(np.abs(nBadPix-np.median(nBadPix))>3*np.std(nBadPix))
-            for ii in range(len(cxs)):
-                #flux_p = np.sum(plants[ii]-bgs[ii])
-                #flux_c = np.sum(cutouts[ii]-bgs[ii])
-                #print ii,abs(flux_p-flux_c)*flux_p**-0.5
-                w = np.where(args[int(AA/2-1.5*fwhm):int(AA/2+1.5*fwhm+1),int(BB/2-1.5*fwhm):int(BB/2+1.5*fwhm+1)] == ii)
-                norm=self.normer(cutouts[ii])
-                bigfig.add_subplot(5,5,ii+1)
-                pyl.imshow(norm,interpolation = 'nearest',cmap='gray', origin='lower')
-                pyl.scatter(np.array(w[1])+int(BB/2-1.5*fwhm),np.array(w[0])+int(AA/2-1.5*fwhm),marker='.',color='r')#,s=2)
-                pyl.title(nBadPix[ii])
-            print
-            pyl.show()
-
-            arg = np.argmax(nBadPix)
-            print 'Cutting star {}'.format(arg)
-            cutter = np.delete(cutter,arg)
-            print np.median(nBadPix[cutter]),np.std(nBadPix[cutter]),np.max(nBadPix[cutter])
-            print
-
-            #now cut out all those with bad edges
-            if nc == 0:
-                for kk in range(len(cutter)-1,-1,-1):
-                    w = np.where(diffs[cutter[kk]]==0.0)
-                    if len(w[0]>5):
-                        cutter = np.delete(cutter,kk)
-                        print 'Nuked ',kk
-
-            self.points = self.points[cutter]
-            self.goodStars = self.goodStars[cutter]
-            nc+=1
-
-        exit()
-        print "Removing sources..."
-        xxx = []
-        yyy = []
-        for ii in range(len(cxs)):
-
-            d = mpsf.plant(cxs[ii]-0.5,cys[ii]-0.5,amps[ii],cutouts[ii]-bgs[ii],addNoise = False)
-            xxx.append(np.sum(cutouts[ii]-bgs[ii]))
-            yyy.append(np.sum(d))
-            continue
-            d = mpsf.remove(cxs[ii]-0.5,cys[ii]-0.5,amps[ii],cutouts[ii]-bgs[ii])
-            m, s = np.mean(cutouts[ii]-bgs[ii]), np.std(cutouts[ii]-bgs[ii])
-            rough_chi = np.sum(d**2/np.abs(cutouts[ii]))
-            xxx.append(rough_chi)
-            yyy.append(np.sum(d))
-            print cxs[ii],cys[ii],amps[ii],rough_chi
-            #pyl.imshow(d,interpolation = 'nearest',cmap='gray', vmin=m-s, vmax=m+s, origin='lower')
-            #pyl.title(np.max(np.abs(d)))
-            #pyl.show()
-        xxx=np.array(xxx)
-        yyy=np.array(yyy)
-        pyl.scatter(xxx,np.abs(yyy-xxx)/xxx)
-        pyl.show()
-        exit()
