@@ -28,7 +28,7 @@ import numpy as np
 from astropy.visualization import interval
 from matplotlib import gridspec
 from scipy import interpolate as interp
-from stsci import numdisplay
+import tzscale
 
 import bgFinder
 from trippy_utils import expand2d, line
@@ -325,7 +325,7 @@ class pillPhot:
                 im = skyImage+image
 
             if self.zscale:
-                (z1,z2) = numdisplay.zscale.zscale(im)
+                (z1,z2) = tzscale.zscale(im)
                 norm = interval.ManualInterval(z1,z2)
                 self.dispAx.imshow(norm(im),interpolation='nearest',origin='lower')
             else:

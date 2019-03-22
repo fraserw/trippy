@@ -26,11 +26,10 @@ __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>),
 import numpy as np
 import pylab as pyl
 from astropy.visualization import interval
-from stsci import numdisplay
 
 import psf
 from trippy import bgFinder
-
+import tzscale
 
 class starChooser:
     """
@@ -90,9 +89,9 @@ class starChooser:
             mask = np.zeros(self.data.shape)
             w = np.where(self.data<self.minGoodVal)
             mask[w] = 1
-            (self.z1,self.z2)=numdisplay.zscale.zscale(self.data,nsamples=zscaleNsamp,contrast=zscaleContrast,bpmask=mask)
+            (self.z1,self.z2)=tzscale.zscale(self.data,nsamples=zscaleNsamp,contrast=zscaleContrast,bpmask=mask)
         else:
-            (self.z1,self.z2)=numdisplay.zscale.zscale(self.data,nsamples=zscaleNsamp,contrast=zscaleContrast)
+            (self.z1,self.z2)=tzscale.zscale(self.data,nsamples=zscaleNsamp,contrast=zscaleContrast)
         self.normer=interval.ManualInterval(self.z1,self.z2)
 
         self._increment = 0
