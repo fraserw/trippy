@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function, division
+from collections import namedtuple
+
 """
 Copyright (C) 2016  Wesley Fraser
 
@@ -15,11 +18,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from __future__ import print_function
+
 __author__ = ('Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), '
               'Academic email: wes.fraser@qub.ac.uk')
-from collections import namedtuple
-import numpy as num
+
+import numpy as np
 import pylab as pyl
 from scipy import stats
 from astropy.io import fits as pyf
@@ -54,7 +57,7 @@ class bgFinder(object):
                 mean is returned.
     """
     def __init__(self, data):
-        self.data = num.ravel(data)
+        self.data = np.ravel(data)
         self.plotAxis = None
 
     def __call__(self, method='median', inp=None):
@@ -90,17 +93,17 @@ class bgFinder(object):
 
     def median(self, display = False):
         if display:
-            g = num.median(nbins)
+            g = np.median(nbins)
             self.background_display(g)
             return g
-        return num.median(self.data)
+        return np.median(self.data)
 
     def mean(self, display = False):
         if display:
-            g = num.mean(self.data)
+            g = np.mean(self.data)
             self.background_display(g)
             return g
-        return num.mean(self.data)
+        return np.mean(self.data)
 
     def fraserMode(self, multi=0.1, display = False):
         if display:
@@ -119,14 +122,14 @@ class bgFinder(object):
     @staticmethod
     def _ahist(data, nbins):
         # ahist and stats generously donated by JJ Kavelaars from jjkmode.py
-        b = num.sort(data)
+        b = np.sort(data)
         ## use the top and bottom octile to set the histogram bounds
-        mx = b[len(b) - max(1, len(b) / 100)]
-        mn = b[len(b) - 99 * len(b) / 100]
-        w = ((mx - mn) / nbins)
+        mx = b[len(b) - max(1, int(len(b) / 100.0))]
+        mn = b[len(b) - int(99 * len(b) / 100.0)]
+        w = (int((mx - mn) / nbins))
 
-        n = num.searchsorted(b, num.arange(mn, mx, w))
-        n = num.concatenate([n, [len(b)]])
+        n = np.searchsorted(b, np.arange(mn, mx, w))
+        n = np.concatenate([n, [len(b)]])
         retval = (n[1:] - n[:-1], w, mn)
         return retval
 
@@ -134,22 +137,29 @@ class bgFinder(object):
         (b, w, l) = self._ahist(self.data, nbins)
         b[len(b) - 1] = 0
         b[0] = 0
-        am = num.argmax(b)
-        c = b[b > (b[am] / 2)]
+        am = np.argmax(b)
+        c = b[b > int(b[am] / 2.0)]
         mode = (am * w) + l
         stddev = (len(c) * w / 2.0) / 1.41
         retval = Stats(mode, stddev)
         return retval
 
     def _fraserMode(self, multi=0.1):
-        y = num.array(self.data * multi).astype(int)
+        y = np.array(self.data * multi).astype(int)
         mode = stats.mode(y)[0]
-        w = num.where(y == mode)
-        return num.median(self.data[w[0]])
+        w = np.where(y == mode)
+        next_mode = stats.mode(y[np.where(y!=mode)])[0]
+        if next_mode<mode and abs(next_mode-mode)==1:
+            adjust = -0.5/multi
+        elif next_mode>mode and abs(next_mode-mode)==1:
+            adjust = 0.5/multi
+        else:
+            adjust = 0.0
+        return np.median(self.data[w[0]])+adjust
 
     def _gaussFit(self):
-        med = num.median(self.data)
-        std = num.std(self.data)
+        med = np.median(self.data)
+        std = np.std(self.data)
 
         res = opti.fmin(self._gaussLike, [med, std], disp=False)
         self.gauss = res
@@ -158,8 +168,8 @@ class bgFinder(object):
     def _gaussLike(self, x):
         [m, s] = x[:]
 
-        X = -num.sum((self.data - m)**2) / (2 * s * s)
-        X -= len(self.data) * num.log((2 * num.pi * s * s)**0.5)
+        X = -np.sum((self.data - m)**2) / (2.0 * s * s)
+        X -= len(self.data) * np.log((2 * np.pi * s * s)**0.5)
         return -X
 
     def smartBackground(self, gaussStdLimit=1.1, backupMode='fraserMode', inp=None, verbose=False,
@@ -191,7 +201,7 @@ class bgFinder(object):
             figHist = pyl.figure('backgroundHistogram')
             self.plotAxis = figHist.add_subplot(111)
             runShow = True
-        self.plotAxis.hist(self.data, bins=min(100, len(self.data) / 10))
+        self.plotAxis.hist(self.data, bins=min(100, int(len(self.data) / 10.0)))
         (y0, y1) = self.plotAxis.get_ylim()
         self.plotAxis.plot([g, g], [y0, y1], 'r-', lw=2)
         self.plotAxis.set_title('Background {:.3f}'.format(g))
@@ -201,8 +211,8 @@ class bgFinder(object):
 
     """
     def midBackground(self):
-        x=num.array([self._gaussFit(),self.median(),self.mean(),self.fraserMode(),self.histMode()])
-        args=num.argsort(x)
+        x=np.array([self._gaussFit(),self.median(),self.mean(),self.fraserMode(),self.histMode()])
+        args=np.argsort(x)
         if args[2]==0:
             print 'Adopting the Gaussian Fit.'
         elif args[2]==1:

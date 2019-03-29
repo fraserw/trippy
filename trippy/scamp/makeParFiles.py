@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-
+from __future__ import (absolute_import, division, print_function, unicode_literals)
 """
 Copyright (C) 2016  Wesley Fraser
 
@@ -21,16 +21,17 @@ __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>),
 
 import os.path as osp
 
-def outFile(name,strings):
-    if not osp.isfile(name):
+
+def outFile(name,strings,overwrite = False):
+    if not osp.isfile(name) or overwrite:
         han=open(name,'w+')
         for i in range(len(strings)):
-            print >>han,strings[i]
+            print(strings[i],file=han)
         han.close()
     return
 
 #write the default sextractor convolution kernel to the cwd
-def writeConv(fileName='default.conv'):
+def writeConv(fileName='default.conv',overwrite=False):
     """Write a default sextractor convolution kernel.
     """
     strArr=['CONV NORM',
@@ -39,12 +40,12 @@ def writeConv(fileName='default.conv'):
             '2 4 2',
             '1 2 1']
 
-    outFile(fileName,strArr)
+    outFile(fileName,strArr,overwrite=overwrite)
     return
 
 #write a parameter list to the cwd
 #this is a modified default.param from sextractor
-def writeParam(fileName='def.param',numAps=1):
+def writeParam(fileName='def.param',numAps=1,overwrite=False):
     """Write a sex parameter list to the current working directory.
     Default file is called def.param unless otherwise specified.
 
@@ -86,17 +87,18 @@ def writeParam(fileName='def.param',numAps=1):
             'AWIN_IMAGE',
             'BWIN_IMAGE',
             'THETA_IMAGE',
-            '']
+            '',
+            'FWHM_IMAGE']
 
     if numAps>1:
         for jj in range(len(strArr)):
             if 'MAG_APER' in strArr[jj]:
                 strArr[jj]+='['+str(int(numAps))+']'
-    outFile(fileName,strArr)
+    outFile(fileName,strArr,overwrite=overwrite)
     return
 
 #write a modified default scamp file
-def writeScamp(fileName='def.scamp',distort=2):
+def writeScamp(fileName='def.scamp',distort=2,overwrite=False):
     """Write a modified nearly-default scamp file to the current
     working directory.
 
@@ -199,12 +201,12 @@ def writeScamp(fileName='def.scamp',distort=2):
             'NTHREADS               2               # Number of simultaneous threads for',
             '                                       # the SMP version of SCAMP',
             '                                       # 0 = automatic']
-    outFile(fileName,strArr)
+    outFile(fileName,strArr,overwrite=overwrite)
     return
 
 
 #write a modified sex file for astrometry purposes in the scampe_.py scripts
-def writeSex(fileName='def.sex',paramFileName='def.param',minArea=20, threshold=8, zpt=27.4, saturate=40000.,aperture=11,catalogType='FITS_LDAC',catalogName='def.cat',kron_factor=2.5,min_radius=3.5):
+def writeSex(fileName='def.sex',paramFileName='def.param',minArea=20, threshold=8, zpt=27.4, saturate=40000.,aperture=11,catalogType='FITS_LDAC',catalogName='def.cat',kron_factor=2.5,min_radius=3.5,overwrite=False):
     """Write a modified sextractor file.
 
     Options - paramFileName -the name of the associated parameter
@@ -222,7 +224,7 @@ def writeSex(fileName='def.sex',paramFileName='def.param',minArea=20, threshold=
     """
 
     if type(aperture) not in [type(1),type([1]),type(1.)]:
-        print 'Aperture can only be an integer, floating point, or LIST of those. A Numpy array will cause a failure here.'
+        print('Aperture can only be an integer, floating point, or LIST of those. A Numpy array will cause a failure here.')
         raise TypeError
     if type(aperture)==type([1]):
         aperString=''
@@ -232,10 +234,10 @@ def writeSex(fileName='def.sex',paramFileName='def.param',minArea=20, threshold=
     else:
         aperString=str(aperture)
 
-    if catalogType<>'FITS_LDAC' and catalogType<>'ASCII':
+    if catalogType!='FITS_LDAC' and catalogType!='ASCII':
         import sys
-        print catalogType
-        print 'Error: type should be either ASCII or FITS_LDAC'
+        print(catalogType)
+        print('Error: type should be either ASCII or FITS_LDAC')
         raise TypeError
         sys.exit()
 
@@ -312,7 +314,7 @@ def writeSex(fileName='def.sex',paramFileName='def.param',minArea=20, threshold=
             'VERBOSE_TYPE    NORMAL          # can be "QUIET", "NORMAL" or "FULL"',
             '',
             '']
-    outFile(fileName,strArr)
+    outFile(fileName,strArr,overwrite)
     return
 
 #write another modified scamp config file used in the scamp_*.py scripts

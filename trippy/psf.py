@@ -1,7 +1,10 @@
 #! /usr/bin/env python
 
+from __future__ import print_function, division
+from collections import namedtuple
+
 """
-Copyright (C) 2016  Wesley Fraser
+Copyright (C) 2016  Wesley Fraser (westhefras@gmail.com, @wtfastro)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -112,13 +115,13 @@ class modelPSF:
         list[0].header['angle']=self.angle
         list[0].header['dt']=self.dt
         list[0].header['pixScale']=self.pixScale
-        list.writeto(name + '.fits', clobber = True)
+        list.writeto(name + '.fits', overwrite = True)
 
     def _fitsReStore(self,fn):
         """
         Hidden convenience function to restore a psf file.
         """
-        print '\nRestoring PSF...'
+        print('\nRestoring PSF...')
         name=fn.split('.fits')[0]
         with pyf.open(name+'.fits') as inHan:
 
@@ -139,8 +142,8 @@ class modelPSF:
             header=inHan[0].header
             self.repFact=header['REPFACT']
 
-            x=header['xSTAR*'].values()
-            y=header['ySTAR*'].values()
+            x=header['xSTAR*']#.values()
+            y=header['ySTAR*']#.values()
             for ii in range(len(x)):
                 self.psfStars.append([x[ii],y[ii]])
             self.alpha=header['alpha']
@@ -152,12 +155,12 @@ class modelPSF:
             self.pixScale=header['PIXSCALE']
 
 
-        self.boxSize=len(self.lookupTable)/self.repFact/2
+        self.boxSize=int( len(self.lookupTable)/self.repFact/2 )
 
         #now recompute the necessary parameters
-        if len(self.aperCorrs)<>1:
+        if len(self.aperCorrs)!=1:
             self.aperCorrFunc=interp.interp1d(self.aperCorrRadii*1.,self.aperCorrs*1.)
-        if len(self.lineAperCorrs)<>1:
+        if len(self.lineAperCorrs)!=1:
             self.lineAperCorrFunc=interp.interp1d(self.lineAperCorrRadii*1.,self.lineAperCorrs*1.)
 
         self.shape=self.psf.shape
@@ -193,9 +196,7 @@ class modelPSF:
         self.R=np.sqrt(np.sum((self.Coords-self.cent)**2,axis=2))
         self.genPSF()
         self.fitted=True
-
-
-        print '   PSF restored.\n'
+        print('   PSF restored.\n')
 
 
     def __init__(self,x=-1,y=-1,alpha=-1,beta=-1,repFact=10,verbose=False,restore=False):
@@ -239,7 +240,7 @@ class modelPSF:
             self.dt = None
             self.pixScale = None
 
-            if type(x)<>type(np.ones(1)):
+            if type(x)!=type(np.ones(1)):
                 self.x=np.arange(x)+0.5
                 self.y=np.arange(y)+0.5
             elif len(x)==1:
@@ -350,7 +351,7 @@ class modelPSF:
         """
 
         #more efficient version with all radii passed at once.
-        width=A/2
+        width=int(A/2)
         phot(B / 2., A / 2., radius=radii * self.repFact, l=0., a=0., skyRadius=None, zpt=0.0, width=width,
              display=displayAperture)
         aperCorrs = phot.magnitude
@@ -373,7 +374,7 @@ class modelPSF:
         computeRoundAperCorrFromPSF is used.
         """
 
-        if self.aperCorrFunc<>None:
+        if self.aperCorrFunc!=None:
             return self.aperCorrFunc(r)-np.min(self.aperCorrs)
         else:
             raise Exception('Must first fun computeRoundAperCorrFromPSF before the aperture corrections can be evaluated here.')
@@ -411,14 +412,14 @@ class modelPSF:
         """
 
         #new version where all radii are passed at once
-        width = A / 2
+        width = int(A / 2)
         phot(B / 2., A / 2., radius=radii * self.repFact, l=l * self.repFact, a=a, skyRadius=None, zpt=0.0, width=width,
              display=displayAperture)
         fluxes = phot.sourceFlux
         self.lineAperCorrs = phot.magnitude
-        print "    Radius  Flux      Magnitude"
+        print("    Radius  Flux      Magnitude")
         for ii in range(len(self.lineAperCorrRadii)):
-            print '    {:6.2f} {:10.3f}  {:8.3f}'.format(radii[ii],phot.sourceFlux[ii],phot.magnitude[ii])
+            print('    {:6.2f} {:10.3f}  {:8.3f}'.format(radii[ii],phot.sourceFlux[ii],phot.magnitude[ii]))
 
         self.lineAperCorrs=np.array(self.lineAperCorrs)
         self.lineAperCorrFunc=interp.interp1d(self.lineAperCorrRadii,self.lineAperCorrs)
@@ -438,7 +439,7 @@ class modelPSF:
         computeRoundAperCorrFromTSF is used.
         """
 
-        if self.lineAperCorrFunc<>None:
+        if self.lineAperCorrFunc!=None:
             return self.lineAperCorrFunc(r)-np.min(self.lineAperCorrs)
         else:
             raise Exception('Must first fun computeLineAperCorrFromMoffat before the aperture corrections can be evaluated here.')
@@ -529,13 +530,13 @@ class modelPSF:
 
         if useLookupTable:
             if verbose:
-                print 'Using the lookup table when generating the line PSF.'
+                print('Using the lookup table when generating the line PSF.')
             #self.longPSF=signal.convolve2d(self.moffProf+self.lookupTable*self.repFact*self.repFact, self.line2d,mode='same')
             self.longPSF=signal.fftconvolve(self.moffProf+self.lookupTable*self.repFact*self.repFact, self.line2d,mode='same')
             self.longPSF*=np.sum(self.fullPSF)/np.sum(self.longPSF)
         else:
             if verbose:
-                print 'Not using the lookup table when generating the line PSF'
+                print('Not using the lookup table when generating the line PSF')
             #self.longPSF=signal.convolve2d(self.moffProf,self.line2d,mode='same')
             self.longPSF=signal.fftconvolve(self.moffProf,self.line2d,mode='same')
             self.longPSF*=np.sum(self.moffProf)/np.sum(self.longPSF)
@@ -566,15 +567,15 @@ class modelPSF:
 
 
         #self.boxSize=len(self.lookupTable)/self.repFact/2
-        self.boxSize = len(self.R[0]) / self.repFact / 2
-
+        self.boxSize = int(len(self.R[0])/self.repFact/2)
+        (A,B) = indata.shape
+        bigIn = np.zeros((A+2*self.boxSize,B+2*self.boxSize),dtype=indata.dtype)
+        bigIn[self.boxSize:A+self.boxSize,self.boxSize:B+self.boxSize] = indata
 
         xint,yint=int(x)-self.boxSize,int(y)-self.boxSize
         cx,cy=x-int(x)+self.boxSize,y-int(y)+self.boxSize
         sx,sy=int(round((x-int(x))*self.repFact)),int(round((y-int(y))*self.repFact))
-        cut=np.copy(indata[yint:yint+2*self.boxSize+1,xint:xint+2*self.boxSize+1])
-
-        #repCut=expand2d(cut,self.repFact)
+        cut=np.copy(bigIn[self.boxSize+yint:yint+3*self.boxSize+1,self.boxSize+xint:self.boxSize+xint+3*self.boxSize+1])
 
         if self.imData is not None:
             origData=np.copy(self.imData)
@@ -589,11 +590,11 @@ class modelPSF:
             self.imData = origData
 
         if not useLinePSF:
-
+            ###original moffat profile creation
             #don't need to shift this up and right because the _flatRadial function handles the moffat sub-pixel centering.
-            moff=downSample2d(self.moffat(self.repRads),self.repFact)*amp
+            #moff=downSample2d(self.moffat(self.repRads),self.repFact)*amp
             if self.lookupTable is not None:
-                (pa,pb)=moff.shape
+                #(pa,pb)=moff.shape
 
                 #shift the lookuptable right and up to account for the off-zero centroid
                 slu=np.copy(self.lookupTable)
@@ -607,11 +608,19 @@ class modelPSF:
                     sec = slu[a-sy:,:]
                     slu[sy:,:] = slu[:a-sy,:]
                     slu[:sy,:] = sec
-                slu = downSample2d(slu,self.repFact)*amp*self.repFact*self.repFact
-                psf = slu+moff
+                ###original lookup table creation
+                #slu = downSample2d(slu,self.repFact)*amp*self.repFact*self.repFact
+
+                ###this is a merger of the original moffat and lookup table lines above.
+                ###results in a significant performance boost.
+                psf = downSample2d(slu+self.moffat(self.repRads)/float(self.repFact*self.repFact),self.repFact)*amp*self.repFact*self.repFact
+
+                ###original sum of lookup table and moffat profile.
+                ###not needed in the newer performance boosted version.
+                #psf = slu+moff
             else:
                 psf = moff
-                if verbose: print "Lookup table is none. Just using Moffat profile."
+                if verbose: print("Lookup table is none. Just using Moffat profile.")
         else:
             lpsf = np.copy(self.longPSF)
             (a,b) = lpsf.shape
@@ -641,12 +650,12 @@ class modelPSF:
         (a,b) = psf.shape
         if addNoise:
             if gain is not None:
-                psf+=sci.randn(a,b)*(psf/gain)**0.5
+                psf+=sci.randn(a,b)*(np.abs(psf)/float(gain) )**0.5
                 #old poisson experimenting
                 #psfg = (psf+bg)*gain
                 #psf = (np.random.poisson(np.clip(psfg,0,np.max(psfg))).astype('float64')/gain).astype(indata.dtype)
             else:
-                print "Please set the gain variable before trying to plant with Poisson noise."
+                print("Please set the gain variable before trying to plant with Poisson noise.")
                 raise TypeError
 
         if plantIntegerValues:
@@ -661,7 +670,12 @@ class modelPSF:
             return bigOut[self.boxSize:A+self.boxSize,self.boxSize:B+self.boxSize]
 
         if plantBoxWidth is not None:
-            indata[int(y)-plantBoxWidth:int(y)+plantBoxWidth+1,int(x)-plantBoxWidth:int(x)+plantBoxWidth] = bigOut[self.boxSize:A + self.boxSize, self.boxSize:B + self.boxSize][int(y)-plantBoxWidth:int(y)+plantBoxWidth+1,int(x)-plantBoxWidth:int(x)+plantBoxWidth]+bg
+            a = max(0,int(y)-plantBoxWidth)
+            b = min(A,int(y)+plantBoxWidth+1)
+            c = max(0,int(x)-plantBoxWidth)
+            d = min(B,int(x)+plantBoxWidth+1)
+            indata[a:b,c:d] += bigOut[self.boxSize:A + self.boxSize, self.boxSize:B + self.boxSize][a:b,c:d]
+            #indata[int(y)-plantBoxWidth:int(y)+plantBoxWidth+1,int(x)-plantBoxWidth:int(x)+plantBoxWidth] += bigOut[self.boxSize:A + self.boxSize, self.boxSize:B + self.boxSize][int(y)-plantBoxWidth:int(y)+plantBoxWidth+1,int(x)-plantBoxWidth:int(x)+plantBoxWidth]
         else:
             indata+=bigOut[self.boxSize:A+self.boxSize, self.boxSize:B+self.boxSize]
 
@@ -674,9 +688,8 @@ class modelPSF:
         The opposite of plant.
         """
 
-        mo = self.plant(x,y,amp,data,addNoise=False,returnModel=True,useLinePSF=useLinePSF)
-        self.model = mo*1.
-        return data-mo
+        self.model =  self.plant(x,y,amp,data,addNoise=False,returnModel=True,useLinePSF=useLinePSF)
+        return data-self.model
 
 
     def writeto(self,name):
@@ -733,12 +746,12 @@ class modelPSF:
 
 
         if fitXY:
-            print 'This is hacky and really slow. Not yet meant for production.'
+            print('This is hacky and really slow. Not yet meant for production.')
             self.verbose = False
             best = [1.e8,-1.,-1.,-1.]
-            print 'Fitting XYA'
-            deltaX = np.arange(-0.2,0.2+1./self.repFact,1./self.repFact/2.)
-            deltaY = np.arange(-0.2,0.2+1./self.repFact,1./self.repFact/2.)
+            print('Fitting XYA')
+            deltaX = np.arange(-0.2,0.2+1./float(self.repFact),1./float(self.repFact)/2.)
+            deltaY = np.arange(-0.2,0.2+1./float(self.repFact),1./float(self.repFact)/2.)
             for ii in range(len(deltaX)):
                 for jj in range(len(deltaY)):
                     self._flatRadial(centX+deltaX[ii],centY+deltaY[jj])
@@ -753,7 +766,7 @@ class modelPSF:
             lsqf = opti.leastsq(self._residFAB,(peakGuess),args=(self.alpha,self.beta,fitMaxRadius),maxfev=200)
         else:
             lsqf = opti.leastsq(self._resid,(peakGuess,self.alpha,self.beta),args=(fitMaxRadius),maxfev=250)
-        if self.verbose: print lsqf
+        if self.verbose: print(lsqf)
         self.A = lsqf[0][0]
         if not fixAB:
             self.alpha = lsqf[0][1]
@@ -762,8 +775,8 @@ class modelPSF:
             res=self._residFAB((self.A),self.alpha,self.beta,fitMaxRadius)
         else:
             res=self._resid((self.A,self.alpha,self.beta),fitMaxRadius)
-        self.chi = np.sqrt(np.sum(res**2)/(len(res)-1))
-        self.chiFluxNorm = np.sqrt(np.sum((res/self.A)**2)/(len(res)-1))
+        self.chi = np.sqrt(np.sum(res**2)/float(len(res)-1))
+        self.chiFluxNorm = np.sqrt(np.sum((res/self.A)**2)/float(len(res)-1))
         self.fitted = True
 
         self.PSF = self.moffat(self.R)
@@ -772,14 +785,14 @@ class modelPSF:
 
 
         if self.verbose:
-            print '   A:%s, alpha:%s, beta:%s'%(self.A,self.alpha,self.beta)
+            print('   A:%s, alpha:%s, beta:%s'%(self.A,self.alpha,self.beta))
             fig = pyl.figure('Radial Profile')
             ax = fig.add_subplot(111)
             pyl.scatter(downSample2d(self.repRads,self.repFact),self.subSec)
             r = np.linspace(0,np.max(self.rads),100)
             pyl.plot(r,self.A*self.moffat(r)+self.bg,'r--')
             fw = self.FWHM(fromMoffatProfile=True)
-            print 'FWHM: %.3f'%(fw)
+            print('FWHM: %.3f'%(fw))
             pyl.title('FWHM: {.3f} alpha: {.3f} beta: {.3f}'.format(fw,self.alpha,self.beta))
             if logRadPlot: ax.set_xscale('log')
             pyl.show()
@@ -808,12 +821,12 @@ class modelPSF:
         self.verbose=verbose
 
         self.imData=imData*1.0
-        self.boxSize=len(self.R[0])/self.repFact/2
+        self.boxSize=int(len(self.R[0])/self.repFact/2)
 
 
         self.psfStars=[]
 
-        if bpMask<>None:
+        if bpMask!=None:
             w=np.where(bpMask==0)
             imData[w]=np.median(imData)
 
@@ -837,7 +850,7 @@ class modelPSF:
             cy+=0.5
             cut=imData[yint:yint+2*self.boxSize+5,xint:xint+2*self.boxSize+5]
             (cA,cB) = cut.shape
-            if cA<>2*self.boxSize+5 or cB<>2*self.boxSize+5: continue
+            if cA!=2*self.boxSize+5 or cB!=2*self.boxSize+5: continue
 
             self.fitMoffat(cut,np.array([cx]),np.array([cy]),self.boxSize,verbose=verbose,fixAB=True,fitXY=False,fitMaxRadius=3.,bgRadius=bgRadius)
             self.imData=np.copy(imData) #this is necessary because the imdata gets set to the shifted image subsection
@@ -897,7 +910,7 @@ class modelPSF:
 
 
 
-    def genPSF(self,A=1.):
+    def genPSF(self,A=1.0):
         """
         generate the psf with lookup table. Convenience function only.
         """
@@ -911,7 +924,7 @@ class modelPSF:
         Convenience function for the fitMoffat routines.
         """
 
-        if type(centX)<>type(1.) and type(centX)<>type(np.float64(1.)):
+        if type(centX)!=type(1.) and type(centX)!=type(np.float64(1.)):
             centX=centX[0]
             centY=centY[0]
         (A,B)=self.imData.shape
@@ -929,11 +942,15 @@ class modelPSF:
         rangeY=np.arange(a*self.repFact,b*self.repFact)/float(self.repFact)
         rangeX=np.arange(c*self.repFact,d*self.repFact)/float(self.repFact)
         dx2=(centX-rangeX)**2
-        repRads=[]
-        for ii in range(len(rangeY)):
-            repRads.append((centY-rangeY[ii])**2+dx2)
-        self.repRads=np.array(repRads)**0.5
-
+        ####slow version kept for clarity
+        #repRads=[]
+        #for ii in range(len(rangeY)):
+        #    repRads.append((centY-rangeY[ii])**2+dx2)
+        #self.repRads=np.array(repRads)**0.5
+        #####
+        #this is the faster version that produces the same result
+        dy2 = (centY-rangeY)**2
+        self.repRads = (np.repeat(dy2,len(rangeY)).reshape(len(rangeY),len(rangeX)) + np.repeat(np.array([dx2]),len(rangeY),axis = 0).reshape(len(rangeY),len(rangeX)))**0.5
 
         self.dX=centX-rangeX
         self.dY=centY-rangeY
@@ -959,6 +976,7 @@ class modelPSF:
 
         #subSecFlat=self.subSec.reshape((b-a)*(c-d))
 
+        #this line seems redundant
         arrR=np.array(arrR)
         self.rads=np.copy(arrR)
         #arrR=arrR.reshape((b-a)*(d-c))
@@ -980,7 +998,7 @@ class modelPSF:
         if self.alpha<0 or self.beta<0: return err*np.inf
 
 
-        if self.verbose: print A,alpha,beta,np.sqrt(np.sum(err**2)/(self.subSec.size-1.))
+        if self.verbose: print(A,alpha,beta,np.sqrt(np.sum(err**2)/(self.subSec.size-1.)))
         return err
 
     def _residFAB(self,p,alpha,beta,maxRad):
@@ -995,7 +1013,7 @@ class modelPSF:
         #    w=np.arange(len(self.rDist))
         #err=self.fDist[w]-(self.bg+A*self.moffat(self.rDist[w]))
 
-        if self.verbose: print A,alpha,beta,np.sqrt(np.sum(err**2)/(self.subSec.size-1.))
+        if self.verbose: print(A,alpha,beta,np.sqrt(np.sum(err**2)/(self.subSec.size-1.)))
         return err
 
 
@@ -1026,20 +1044,19 @@ class modelPSF:
 
 
 
-
 if __name__=="__main__":
 
     import pylab as pyl
     psfNoLine=modelPSF(np.arange(25),np.arange(25),alpha=1.5,beta=2.0,repFact=10)
     psfNoLine.writeto('noline.fits')
-    print
+    print()
     psfLine=modelPSF(np.arange(25),np.arange(25),alpha=1.5,beta=2.0,repFact=10)
     psfLine.line(4.0,32.,0.45)
     psfLine.writeto('line.fits')
     sys.exit()
     (A,B)=psf.shape
-    for i in range(A/2,A/2+1):
+    for i in range(int(A/2),int(A/2+1)):
         pyl.plot(psf.x,psf.psf[i,:])
-    for i in range(A*10/2,A*10/2+1):
+    for i in range(int(A*10/2),int(A*10/2+1)):
         pyl.plot(psf.X,psf.PSF[i,:],linestyle=':')
     pyl.show()
