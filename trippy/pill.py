@@ -28,10 +28,8 @@ import numpy as np
 from astropy.visualization import interval
 from matplotlib import gridspec
 from scipy import interpolate as interp
-import tzscale
-
-import bgFinder
-from trippy_utils import expand2d, line
+from . import tzscale, bgFinder
+from .trippy_utils import expand2d, line
 
 import pylab as pyl
 
