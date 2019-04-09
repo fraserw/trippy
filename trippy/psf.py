@@ -33,7 +33,7 @@ import scipy as sci
 from scipy import optimize as opti, interpolate as interp
 from scipy import signal
 
-import bgFinder
+from . import bg_finder
 
 # import weightedMeanSTD
 try:
@@ -46,9 +46,9 @@ if astropyFound:
 else:
     import pyfits as pyf
 
-from pill import pillPhot
+from .pill import pillPhot
 
-from trippy_utils import *
+from .trippy_utils import *
 
 
 class modelPSF:
@@ -717,7 +717,7 @@ class modelPSF:
         - bgRadius is the radius beyond which the background is estimated.
         - verbose=True to see a lot of fittnig output and a radial plot of each fit.
         - logRadPlot=True to see the plot in log radius.
-        - mode='smart' is the background determination method used. See bgFinder for details.
+        - mode='smart' is the background determination method used. See bg_finder for details.
         - fixAB=True to fit only the amplitude.
         - fitXY=False *** this is currently not implemented***
         - fitMaxRadius ***not currently implemented***
@@ -734,9 +734,9 @@ class modelPSF:
         self._flatRadial(centX-0.5,centY-0.5)#set the radial distribution pixels
 
         #w = np.where(self.rDist>bgRadius)
-        #bgf = bgFinder.bgFinder(self.fDist[w])
+        #bgf = bg_finder.bg_finder(self.fDist[w])
         w = np.where(self.rads>bgRadius)
-        bgf = bgFinder.bgFinder(self.subSec[w])
+        bgf = bg_finder.bg_finder(self.subSec[w])
         self.bg = bgf(method=mode)
 
         #peakGuess = (np.max(self.fDist)-self.bg)/(np.max(self.moffat(self.rDist)))

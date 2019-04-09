@@ -1,6 +1,6 @@
 from __future__ import print_function, division
 
-from trippy import psf, scamp, bgFinder, pill, psfStarChooser
+from trippy import psf, scamp, bg_finder, pill, psfStarChooser
 import numpy as np,scipy as sci,pylab as pyl
 from astropy.io import fits
 import pickle
@@ -40,7 +40,7 @@ class tester(unittest.TestCase):
             exit()
         self.planted_locations = np.array(x)
 
-        self.bg = bgFinder.bgFinder(self.image)
+        self.bg = bg_finder.bg_finder(self.image)
 
         scamp.makeParFiles.writeConv()
         scamp.makeParFiles.writeParam()

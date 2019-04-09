@@ -28,15 +28,15 @@ from scipy import stats
 from astropy.io import fits as pyf
 from scipy import optimize as opti
 
-#: The class for the return-value of :meth:`bgFinder._stats`
+#: The class for the return-value of :meth:`bg_finder._stats`
 Stats = namedtuple('Stats', ('mode', 'stddev'))
 
 
-class bgFinder(object):
+class bg_finder(object):
     """
     Get the background estimate of the inputted data. eg.
 
-    bgf=trippy.bgFinder.bgFinder(dataNumpyArray)
+    bgf=trippy.bg_finder.bg_finder(dataNumpyArray)
 
     Best to call it as
     bgf(mode,n)
@@ -244,7 +244,7 @@ if __name__ == "__main__":
 
     data = data[y - w: y + w + 1, x - w: x + w + 1].reshape((2 * w + 1)**2)
 
-    bg = bgFinder(data)
+    bg = bg_finder(data)
     mean = bg.mean()
     median = bg.median()
     histo = bg.histMode()

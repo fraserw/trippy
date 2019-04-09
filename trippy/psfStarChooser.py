@@ -27,9 +27,9 @@ import numpy as np
 import pylab as pyl
 from astropy.visualization import interval
 
-import psf
-from trippy import bgFinder
-import tzscale
+from . import psf
+from . import bg_finder
+from . import tzscale
 
 class starChooser:
     """
@@ -160,7 +160,7 @@ class starChooser:
             print('\nDoing auto star selection.')
             #first use Frasermode on the distribution of FWHM to get a good handle on the true FWHM of stars
             #select only those stars with FWHM of +-1 pixel of the mode.
-            bg = bgFinder.bgFinder(self.points[:,0])
+            bg = bg_finder.bg_finder(self.points[:,0])
             mode = bg('fraserMode')
             w = np.where(np.abs(self.points[:,0]-mode)>FWHM_mode_width)
             self.goodStars[w] = False

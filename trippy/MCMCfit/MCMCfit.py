@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), Academic email: wes.fraser@qub.ac.uk'
 
 import numpy as np, scipy as sci,emcee
-from trippy import bgFinder
+from .. import bg_finder
 import pickle
 from scipy import optimize as opti
 import pylab as pyl
@@ -163,7 +163,7 @@ class LSfitter(object):
         dat = np.copy(self.imageData)
 
         if bg == None:
-            bgf = bgFinder.bgFinder(self.imageData)
+            bgf = bg_finder.bg_finder(self.imageData)
             bg = bgf.smartBackground()
             dmbg = dat - bg
             print('Subtracting background {}'.format(bg))
@@ -248,7 +248,7 @@ class MCMCfitter:
 
 
         if bg == None:
-            bgf = bgFinder.bgFinder(self.imageData)
+            bgf = bg_finder.bg_finder(self.imageData)
             bg = bgf.smartBackground()
             dat -= bg
             print('Subtracting background {}'.format(bg))
@@ -459,7 +459,7 @@ class MCMCfitter:
 
 
         if bg==None:
-            bgf = bgFinder.bgFinder(self.imageData)
+            bgf = bg_finder.bg_finder(self.imageData)
             bg = bgf.smartBackground()
             dat -= bg
 

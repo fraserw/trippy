@@ -28,10 +28,10 @@ import numpy as np
 from astropy.visualization import interval
 from matplotlib import gridspec
 from scipy import interpolate as interp
-import tzscale
+from . import tzscale
 
-import bgFinder
-from trippy_utils import expand2d, line
+from . import bg_finder
+from .trippy_utils import expand2d, line
 
 import pylab as pyl
 
@@ -51,7 +51,7 @@ class pillPhot:
     -zpt and exptime are the zeropoint and exposure time of the image in question
     -enableBGselection=True allows the user to zoom on a good background region to improve the bg esimation
     -display=True to see the aperture
-    -mode is the method of background esimaation. Best options are 'smart', 'median', or 'gauss' (see bgFinder.py)
+    -mode is the method of background esimaation. Best options are 'smart', 'median', or 'gauss' (see bg_finder.py)
     -trimBGHighPix=3.5 is a sigma clip of the background, ignoring all values above the sigma threshold provided.
 
     """
@@ -278,7 +278,7 @@ class pillPhot:
                         rebinnedSkyImage[int(ii/self.repFact),int(jj/self.repFact)] = np.sum(skyImage[ii:ii+self.repFact, jj:jj+self.repFact])
 
             w = np.where(rebinnedSkyImage!=0.0)
-            bgf = bgFinder.bgFinder(rebinnedSkyImage[w])
+            bgf = bg_finder.bg_finder(rebinnedSkyImage[w])
             if display and enableBGSelection:
                 bgf.plotAxis = self.dispFig.add_subplot(self.dispGS[1])
 
@@ -291,7 +291,7 @@ class pillPhot:
                 bgstd = np.std(rebinnedSkyImage[w])
 
                 W = np.where(rebinnedSkyImage[w]<bg+trimBGHighPix*bgstd)
-                bgf = bgFinder.bgFinder(rebinnedSkyImage[w][W])
+                bgf = bg_finder.bg_finder(rebinnedSkyImage[w][W])
                 if display and enableBGSelection:
                     bgf.plotAxis = self.dispFig.add_subplot(self.dispGS[1])
                 bg = bgf.smartBackground(display=display, backupMode=backupMode, forceBackupMode = forceBackupMode)
@@ -404,7 +404,7 @@ class pillPhot:
                 rebinnedSkyImage = rebinnedSkyImage[int(y0):int(y1), int(x0):int(x1)]
                 w = np.where(rebinnedSkyImage!=0.0)
                 W = np.where(rebinnedSkyImage[w] < bg + trimBGHighPix * bgstd)
-                bgf = bgFinder.bgFinder(rebinnedSkyImage[w][W])
+                bgf = bg_finder.bg_finder(rebinnedSkyImage[w][W])
                 bg = bgf.smartBackground(display=False, backupMode=backupMode, forceBackupMode = forceBackupMode,verbose=verbose)
                 bgstd = np.std(rebinnedSkyImage[w])
 

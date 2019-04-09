@@ -58,7 +58,7 @@ Once dependencies are installed, trippy can be installed with a simple pip invoc
 
 Accesibility can be checked with a few import commands
 
-    python -c "import trippy; from trippy import bgFinder; from trippy import psfStarChooser; from trippy import scamp"
+    python -c "import trippy; from trippy import bg_finder; from trippy import psfStarChooser; from trippy import scamp"
 
 and if the optional emcee package was installed
 

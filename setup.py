@@ -3,8 +3,8 @@
 from setuptools import setup
 import sys
 
-if sys.version_info[0] > 2:
-    print 'trippy is only compatible with Python version 2.7+, not yet 3.x'
+if sys.version_info[0] > 3:
+    print('trippy is only compatible with Python version 2.7+, not yet 3.x')
     sys.exit(-1)
 
 dependencies = ['numpy >= 1.6.1',
@@ -15,7 +15,7 @@ dependencies = ['numpy >= 1.6.1',
 
 setup(
   name = 'trippy',
-  packages = ['trippy','trippy.scamp','trippy.MCMCfit'],
+  packages = ['trippy','trippy', 'trippy.scamp','trippy.MCMCfit'],
   version = '0.5.1',
   description = 'Pill aperture photometry for trailed astronomical sources',
   author = 'Wesley Fraser',
