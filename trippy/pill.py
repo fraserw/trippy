@@ -410,14 +410,20 @@ class pillPhot:
                 if singleAperture:
                     W = np.where(mask != 0.0)
                     flux = np.sum(image) - len(W[0]) * bg / float(self.repFact * self.repFact)
+                    numPix = (np.sum(mask[jj]) /
+                              float(self.repFact * self.repFact))
                 elif multipleApertures:
                     flux = []
+                    numPix = []
                     for jj in range(len(radius)):
                         W = np.where(mask[jj] != 0.0)
                         flux.append(np.sum(image[jj]) - len(W[0]) * bg / float(self.repFact * self.repFact))
+                        numPix.append(np.sum(mask[jj]) /
+                                      float(self.repFact * self.repFact))
                     flux = np.array(flux)
+                    numPix = np.array(numPix)
 
-                self.nPix = np.sum(mask) / float(self.repFact * self.repFact)
+                self.nPix = numPix
                 self.sourceFlux = flux
                 self.bg = bg
                 self.bgstd = bgstd
