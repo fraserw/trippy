@@ -27,9 +27,7 @@ import numpy as np
 import pylab as pyl
 from astropy.visualization import interval
 
-import psf
-from trippy import bgFinder
-import tzscale
+from . import psf, tzscale, bgFinder
 
 class starChooser:
     """

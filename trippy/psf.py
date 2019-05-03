@@ -33,7 +33,7 @@ import scipy as sci
 from scipy import optimize as opti, interpolate as interp
 from scipy import signal
 
-import bgFinder
+from . import bgFinder
 
 # import weightedMeanSTD
 try:
@@ -46,9 +46,9 @@ if astropyFound:
 else:
     import pyfits as pyf
 
-from pill import pillPhot
+from .pill import pillPhot
 
-from trippy_utils import *
+from .trippy_utils import *
 
 
 class modelPSF:

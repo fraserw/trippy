@@ -27,6 +27,7 @@ from os import path
 import os,sys
 #import future
 
+pyversion = sys.version_info
 
 def runScamp(scampFile,imageName):
     """
@@ -43,6 +44,22 @@ def runScamp(scampFile,imageName):
     print(subprocess.check_output(comm.split()))
     return
 
+def checkSex(sexName):
+    """Check whether Source Extracter is installed with a given name."""
+    if (pyversion[0] == 3) & (pyversion[1] >= 6):
+        try:
+            _ = subprocess.Popen(sexName.split(), stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE, encoding='utf8')
+        except FileNotFoundError:
+            return False
+    else:
+        try:
+            _ = subprocess.Popen(sexName.split(), stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+        except OSError:
+            return False
+    return True
+
 def runSex(sexFile,imageName,options=None,verbose=False):
     """
     Execute sextractor using the input sextractor parameters file on the provided image name.
@@ -55,14 +72,26 @@ def runSex(sexFile,imageName,options=None,verbose=False):
     The full sextractor output is returned.
     """
 
-    comm='sex '+imageName+' -c '+sexFile
+    # Source Extractor is sometimes installed as sex, sometimes as sextractor.
+    sexNames = ['sex', 'sextractor']
+    try:
+        i = 0
+        while not checkSex(sexNames[i]):
+            i += 1
+    except IndexError:
+        print("Neither 'sex' nor 'sextractor' found.\n" +
+              "Is Source Extractor installed?")
+        raise
+    sexName = sexNames[i]
+    
+    comm = sexName + ' ' + imageName + ' -c ' + sexFile
 
     if options:
         for ii in options:
             comm+=' -'+ii+' '+options[ii]
-    if sys.version_info[0]==3:
+    if (pyversion[0] == 3) & (pyversion[1] >= 6):
         process = subprocess.Popen(comm.split(),stdout = subprocess.PIPE, stderr=subprocess.PIPE,encoding='utf8')
-    elif sys.version_info[0]==2:
+    else:
         process = subprocess.Popen(comm.split(),stdout = subprocess.PIPE, stderr=subprocess.PIPE)
     junk = process.communicate()
     #print(junk[1].split('\n\x1b[1M>'))
