@@ -28,10 +28,8 @@ import numpy as np
 from astropy.visualization import interval
 from matplotlib import gridspec
 from scipy import interpolate as interp
-from stsci import numdisplay
-
-import bgFinder
-from trippy_utils import expand2d, line
+from . import tzscale, bgFinder
+from .trippy_utils import expand2d, line
 
 import pylab as pyl
 
@@ -225,7 +223,7 @@ class pillPhot:
 
 #        if angle > 90 or angle < -90 or length < 0 or np.min(radius) < 0:
         if angle > 90 or angle < -90:
-            angle = angle % 180.
+            angle = (angle + 90) % 180. - 90
             if verbose:
                 print("Warning! You gave a bad angle. I'll fix it for you.")
         if length < 0:
@@ -325,7 +323,7 @@ class pillPhot:
                 im = skyImage+image
 
             if self.zscale:
-                (z1,z2) = numdisplay.zscale.zscale(im)
+                (z1,z2) = tzscale.zscale(im)
                 norm = interval.ManualInterval(z1,z2)
                 self.dispAx.imshow(norm(im),interpolation='nearest',origin='lower')
             else:
@@ -412,14 +410,20 @@ class pillPhot:
                 if singleAperture:
                     W = np.where(mask != 0.0)
                     flux = np.sum(image) - len(W[0]) * bg / float(self.repFact * self.repFact)
+                    numPix = (np.sum(mask[jj]) /
+                              float(self.repFact * self.repFact))
                 elif multipleApertures:
                     flux = []
+                    numPix = []
                     for jj in range(len(radius)):
                         W = np.where(mask[jj] != 0.0)
                         flux.append(np.sum(image[jj]) - len(W[0]) * bg / float(self.repFact * self.repFact))
+                        numPix.append(np.sum(mask[jj]) /
+                                      float(self.repFact * self.repFact))
                     flux = np.array(flux)
+                    numPix = np.array(numPix)
 
-                self.nPix = np.sum(mask) / float(self.repFact * self.repFact)
+                self.nPix = numPix
                 self.sourceFlux = flux
                 self.bg = bg
                 self.bgstd = bgstd
