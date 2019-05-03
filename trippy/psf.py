@@ -51,6 +51,7 @@ from pill import pillPhot
 from trippy_utils import *
 
 
+
 class modelPSF:
     """
     Round and moving object psf class.
@@ -115,7 +116,10 @@ class modelPSF:
         list[0].header['angle']=self.angle
         list[0].header['dt']=self.dt
         list[0].header['pixScale']=self.pixScale
-        list.writeto(name + '.fits', overwrite = True)
+        try:
+            list.writeto(name + '.fits', overwrite = True)
+        except:
+            list.writeto(name + '.fits', clobber = True)
 
     def _fitsReStore(self,fn):
         """
@@ -765,7 +769,7 @@ class modelPSF:
         elif fixAB:
             lsqf = opti.leastsq(self._residFAB,(peakGuess),args=(self.alpha,self.beta,fitMaxRadius),maxfev=200)
         else:
-            lsqf = opti.leastsq(self._resid,(peakGuess,self.alpha,self.beta),args=(fitMaxRadius),maxfev=250)
+            lsqf = opti.leastsq(self._resid,(peakGuess,self.alpha,self.beta),args=(fitMaxRadius),maxfev=250,ftol = 1.e-5)
         if self.verbose: print(lsqf)
         self.A = lsqf[0][0]
         if not fixAB:
@@ -984,17 +988,14 @@ class modelPSF:
         #self.rDist=arrR[arg]*1.
         #self.fDist=subSecFlat[arg]*1.
 
+
     def _resid(self,p,maxRad):
         (A,alpha,beta)=p
         self.alpha=alpha
         self.beta=beta
+
         err=(self.subSec-(self.bg+A*downSample2d(self.moffat(self.repRads),self.repFact))).reshape(self.subSec.size)
-        #if maxRad>0:
-        #    w=np.where(self.rDist<=maxRad)
-        #else:
-        #    w=np.arange(len(self.rDist))
-        #moff=self.moffat(self.rDist[w])
-        #err=self.fDist[w]-(self.bg+A*moff)
+
         if self.alpha<0 or self.beta<0: return err*np.inf
 
 
