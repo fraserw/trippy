@@ -712,7 +712,7 @@ class modelPSF:
     def fitMoffat(self,imData,centX,centY,
                   boxSize=25,bgRadius=20,
                   verbose=False,mode='smart',fixAB=False,
-                  fitXY=False,fitMaxRadius=-1.,logRadPlot=False):
+                  fitXY=False,fitMaxRadius=-1.,logRadPlot=False,ftol = 1.49012e-8):
 
         """
         Fit a moffat profile to the input data, imData, at point centX,centY.
@@ -769,7 +769,7 @@ class modelPSF:
         elif fixAB:
             lsqf = opti.leastsq(self._residFAB,(peakGuess),args=(self.alpha,self.beta,fitMaxRadius),maxfev=200)
         else:
-            lsqf = opti.leastsq(self._resid,(peakGuess,self.alpha,self.beta),args=(fitMaxRadius),maxfev=250,ftol = 1.e-5)
+            lsqf = opti.leastsq(self._resid,(peakGuess,self.alpha,self.beta),args=(fitMaxRadius),maxfev=250,ftol=ftol)
         if self.verbose: print(lsqf)
         self.A = lsqf[0][0]
         if not fixAB:
