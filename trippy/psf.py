@@ -81,28 +81,42 @@ class modelPSF:
 
     """
 
-    def psfStore(self,fn):
+    def psfStore(self,fn, psfV2 = False):
         """
         Store the psf into a fits file that you can view and reopen at a later point. The only option is the fits file
         name.
         """
         name=fn.split('.fits')[0]
 
-        HDU=pyf.PrimaryHDU(self.PSF)
-        hdu=pyf.ImageHDU(self.psf)
-        lookupHDU=pyf.ImageHDU(self.lookupTable)
-        lineHDU=pyf.ImageHDU(self.longPSF)
+        if not psfV2:
+            HDU=pyf.PrimaryHDU(self.PSF)
+            hdu=pyf.ImageHDU(self.psf)
+            lookupHDU=pyf.ImageHDU(self.lookupTable)
+            lineHDU=pyf.ImageHDU(self.longPSF)
 
-        if self.aperCorrs is not None:
-            aperCorrHDU=pyf.ImageHDU(np.array([self.aperCorrs,self.aperCorrRadii]))
+            if self.aperCorrs is not None:
+                aperCorrHDU=pyf.ImageHDU(np.array([self.aperCorrs,self.aperCorrRadii]))
+            else:
+                aperCorrHDU=pyf.ImageHDU(np.array([[-1],[-1]]))
+            if self.lineAperCorrs is not None:
+                lineAperCorrHDU=pyf.ImageHDU(np.array([self.lineAperCorrs,self.lineAperCorrRadii]))
+            else:
+                lineAperCorrHDU=pyf.ImageHDU(np.array([[-1],[-1]]))
+            #distHDU=pyf.ImageHDU(np.array([self.rDist,self.fDist]))
+            list=pyf.HDUList([HDU,lookupHDU,lineHDU,hdu,aperCorrHDU,lineAperCorrHDU])
         else:
-            aperCorrHDU=pyf.ImageHDU(np.array([[-1],[-1]]))
-        if self.lineAperCorrs is not None:
-            lineAperCorrHDU=pyf.ImageHDU(np.array([self.lineAperCorrs,self.lineAperCorrRadii]))
-        else:
-            lineAperCorrHDU=pyf.ImageHDU(np.array([[-1],[-1]]))
-        #distHDU=pyf.ImageHDU(np.array([self.rDist,self.fDist]))
-        list=pyf.HDUList([HDU,lookupHDU,lineHDU,hdu,aperCorrHDU,lineAperCorrHDU])
+            lookupHDU=pyf.PrimaryHDU(self.lookupTable)
+
+            if self.aperCorrs is not None:
+                aperCorrHDU=pyf.ImageHDU(np.array([self.aperCorrs,self.aperCorrRadii]))
+            else:
+                aperCorrHDU=pyf.ImageHDU(np.array([[-1],[-1]]))
+            if self.lineAperCorrs is not None:
+                lineAperCorrHDU=pyf.ImageHDU(np.array([self.lineAperCorrs,self.lineAperCorrRadii]))
+            else:
+                lineAperCorrHDU=pyf.ImageHDU(np.array([[-1],[-1]]))
+            #distHDU=pyf.ImageHDU(np.array([self.rDist,self.fDist]))
+            list=pyf.HDUList([lookupHDU,aperCorrHDU,lineAperCorrHDU])
 
 
         list[0].header.set('REPFACT',self.repFact)
@@ -128,18 +142,25 @@ class modelPSF:
         print('\nRestoring PSF...')
         name=fn.split('.fits')[0]
         with pyf.open(name+'.fits') as inHan:
-
             #load the psf file
-            self.PSF=inHan[0].data
-            self.lookupTable=inHan[1].data
-            self.longPSF=inHan[2].data
-            self.psf=inHan[3].data
-            self.aperCorrs=inHan[4].data[0]
-            self.aperCorrRadii=inHan[4].data[1]
-            self.lineAperCorrs=inHan[5].data[0]
-            self.lineAperCorrRadii=inHan[5].data[1]
-            #self.rDist=inHan[6].data[0]
-            #self.fDist=inHan[6].data[1]
+            if len(inHan) == 6:
+                psfV2 = False
+                #load the psf file
+                self.PSF=inHan[0].data
+                self.lookupTable=inHan[1].data
+                self.longPSF=inHan[2].data
+                self.psf=inHan[3].data
+                self.aperCorrs=inHan[4].data[0]
+                self.aperCorrRadii=inHan[4].data[1]
+                self.lineAperCorrs=inHan[5].data[0]
+                self.lineAperCorrRadii=inHan[5].data[1]
+            else:
+                psfV2 = True
+                self.lookupTable=inHan[0].data
+                self.aperCorrs=inHan[1].data[0]
+                self.aperCorrRadii=inHan[1].data[1]
+                self.lineAperCorrs=inHan[2].data[0]
+                self.lineAperCorrRadii=inHan[2].data[1]
 
             self.psfStars=[]
 
@@ -167,7 +188,8 @@ class modelPSF:
         if len(self.lineAperCorrs)!=1:
             self.lineAperCorrFunc=interp.interp1d(self.lineAperCorrRadii*1.,self.lineAperCorrs*1.)
 
-        self.shape=self.psf.shape
+        (A,B) = self.lookupTable.shape
+        self.shape = [A/self.repFact,B/self.repFact]
         self.x=np.arange(self.shape[0])+0.5
         self.y=np.arange(self.shape[1])+0.5
 
@@ -175,7 +197,7 @@ class modelPSF:
         self.centx=self.cent[0]
         self.centy=self.cent[1]
 
-        self.psf=np.ones([len(self.y),len(self.x)]).astype('float')
+        #self.psf=np.ones([len(self.y),len(self.x)]).astype('float')
 
         self.inds=np.zeros((len(self.y),len(self.x),2)).astype('int')
         for ii in range(len(self.y)):
@@ -198,8 +220,18 @@ class modelPSF:
         self.Coords=(self.Inds+np.array([0.5,0.5]))/float(self.repFact)
 
         self.R=np.sqrt(np.sum((self.Coords-self.cent)**2,axis=2))
+
         self.genPSF()
         self.fitted=True
+        if psfV2:
+            ###code to generate the PSF and psf
+            self.PSF=self.moffat(self.R)
+            self.PSF/=np.sum(self.PSF)
+            self.psf=downSample2d(self.PSF,self.repFact)
+            ###code to generate the line psf
+            self.longPSF = None
+            self.line(self.rate,self.angle,self.dt,pixScale = self.pixScale,display=False,useLookupTable=True, verbose=True)
+            
         print('   PSF restored.\n')
 
 
