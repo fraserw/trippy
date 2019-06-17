@@ -7,6 +7,8 @@ import sys
 #    print 'trippy is only compatible with Python version 2.7+, not yet 3.x'
 #    sys.exit(-1)
 
+print("Trippy unittests haven't been built into setup.py scripts. Please manually run tests/test.py to ensure everything works before production use.")
+
 dependencies = ['numpy >= 1.16.2',
                 'scipy',
                 'matplotlib',
