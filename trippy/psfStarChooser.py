@@ -159,7 +159,7 @@ class starChooser:
             #first use Frasermode on the distribution of FWHM to get a good handle on the true FWHM of stars
             #select only those stars with FWHM of +-1 pixel of the mode.
             bg = bgFinder.bgFinder(self.points[:,0])
-            mode = bg('fraserMode')
+            mode = bg('median')
             w = np.where(np.abs(self.points[:,0]-mode)>FWHM_mode_width)
             self.goodStars[w] = False
 
