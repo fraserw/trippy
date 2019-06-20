@@ -11,7 +11,7 @@ DOI at Zenodo: http://dx.doi.org/10.5281/zenodo.48694
 
 TRIPPy has been updated to version 1.0, which includes many changes around accuracy and performance. Performance increases are all over, and you'll see as you use it. 
 
-*A bug was found* in the github verion prior to v1.0 which lightly affected the stellar source aperture correction estimates. _This did not affect the first released version, and has been fixed for v1.0._ 
+*A bug was found* in the github verion prior to v1.0 which lightly affected the stellar source aperture correction estimates. __This did not affect the first released version, and has been fixed for v1.0.__
 
 A few notable feature improvements are the ability to pass more than one radius as an array format when calling phot, a new space-saving PSF format, and significant improvements in the interaction with the star selector panel. 
 
