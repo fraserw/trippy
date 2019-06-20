@@ -7,6 +7,13 @@ TRIPPy is a python package aimed to perform all the steps required to measure ac
 Citation: If you use TRIPPy in your science works, please cite Fraser, W. et al., 2016, To appear in AJ. 
 DOI at Zenodo: http://dx.doi.org/10.5281/zenodo.48694
 
+## Update to version 1
+
+TRIPPy has been updated to version 1.0, which includes many changes around accuracy and performance. Performance increases are all over, and you'll see as you use it. 
+
+*A bug was found* in the github verion prior to v1.0 which lightly affected the stellar source aperture correction estimates. _This did not affect the first released version, and has been fixed for v1.0._ 
+
+A few notable feature improvements are the ability to pass more than one radius as an array format when calling phot, a new space-saving PSF format, and significant improvements in the interaction with the star selector panel. 
 
 ## Installation
 
