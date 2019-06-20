@@ -1,5 +1,6 @@
 
-# TRIPPy: Python based Trailed Source Photometry (submitted to the Astrophysical Journal)
+# TRIPPy: Python based Trailed Source Photometry 
+*(published in the Astrophysical Journal)*
 
 TRIPPy is a python package aimed to perform all the steps required to measure accurate photometry of both trailed and non-trailed (stationary) astronomical sources. This includes the ability to generate stellar and trailed point source functions, and to use circular and pill shaped apertures to measure photometry and estimate appropriate aperture corrections.
 
