@@ -1,5 +1,5 @@
 
-#TRIPPy: Python based Trailed Source Photometry (submitted to the Astrophysical Journal)
+# TRIPPy: Python based Trailed Source Photometry (submitted to the Astrophysical Journal)
 
 TRIPPy is a python package aimed to perform all the steps required to measure accurate photometry of both trailed and non-trailed (stationary) astronomical sources. This includes the ability to generate stellar and trailed point source functions, and to use circular and pill shaped apertures to measure photometry and estimate appropriate aperture corrections.
 
@@ -9,6 +9,8 @@ DOI at Zenodo: http://dx.doi.org/10.5281/zenodo.48694
 
 ## Installation
 
+TRIPPy is compatible with python 2.7 and 3.5. Though some parts that require sklearn are only available in python 3.5.
+
 ### Dependencies
 
 TRIPPy depends on a few separate, equally useful python packages. These packages are:
@@ -17,6 +19,7 @@ TRIPPy depends on a few separate, equally useful python packages. These packages
 * matplotlib
 * astropy
 * stsci.numdisplay
+* sklearn (optional, only compatible with python 3)
 * emcee (optional)
 * numba -- very very useful for big speed improvements. Highly recommended!!
 
@@ -34,20 +37,21 @@ Once numpy, scipy, matplotlib, and astropy are installed, stsci-python (which pr
 installed by the two commands
 
     pip install stsci.distutils
-    pip install stscipython
+    pip install stsci-python
 
 This will compile and install all of the bits required by stsci-python.
 
-Finally, the optional package emcee (MC Hammer) can be installed. This will provide robust source fitting utilities in
+Finally, two optional packages, sklearn and emcee (MC Hammer) can be installed. This will provide robust source fitting utilities in
 the MCMCfit module.
 
 Test that these modules are available by attempting to import each one:
 
     python -c "import numpy; import scipy; import matplotlib; import astropy; import stsci.numdisplay"
 
-If the optional emcee was installed
+If the optional emcee, or sklearn packages were installed
 
     python -c "import emcee"
+    python -c "import sklearn"
 
 
 ### TRIPPy installation
