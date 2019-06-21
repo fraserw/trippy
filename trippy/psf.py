@@ -517,11 +517,11 @@ class modelPSF:
             r=0.
 
             s=np.sum(self.fullPSF)
-            while r<np.max(repRads):
+            while r<np.max(repRads) and r<max(np.max(rangeY),np.max(rangeX)):
                 if np.sum(self.fullPSF[np.where(repRads<r)])>=s*0.5:
                     return r*2.
                 r+=0.01
-
+            return r*2.0
 
     def __getitem__(self,key):
         return self.psf[key]
