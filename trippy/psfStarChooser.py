@@ -94,9 +94,11 @@ class starChooser:
 
         self._increment = 0
 
-    def __call__(self,moffatWidth,moffatSNR,initAlpha=5.,initBeta=2.,repFact=5,xWidth=51,yWidth=51,
-                 includeCheesySaturationCut=False,autoTrim=False,noVisualSelection=False,verbose=False,
-                 bgRadius = 20.0):
+    def __call__(self, moffatWidth, moffatSNR, initAlpha=5., initBeta=2.,
+                 repFact=5, xWidth=51, yWidth=51,
+                 includeCheesySaturationCut=False,
+                 autoTrim=False, noVisualSelection=False, verbose=False,
+                 bgRadius = 20.0, printStarInfo=False):
         self.moffatWidth=moffatWidth
         self.moffatSNR=moffatSNR
         self.initAlpha=initAlpha
@@ -113,6 +115,7 @@ class starChooser:
         self.subsecs = []
         self.goodStars = []
         self.starsScat = None
+        self.printStarInfo = printStarInfo
 
         print('Fitting stars with moffat profiles...')
         print('      X         Y    chi    a     b    FWHM')
@@ -314,9 +317,21 @@ class starChooser:
                     picker=True, zorder=9)
         pyl.scatter(self.points[:, 0][W], self.points[:, 1][W],
                     picker=True, color='r', zorder=10)
-        pyl.scatter(self.points[:, 0][arg], self.points[:, 1][arg],
-                    marker='d', color='m', zorder=0, s=75)
+        sparg = self.points[arg, :]
+        if self.printStarInfo:
+          pyl.scatter(sparg[0], sparg[1],
+                      marker='d', color='m', zorder=0, s=75,
+                      label='FHWM  = {0: 7.2f}, '.format(sparg[0]) +
+                      r'$\chi$' + ' = {0:7.2f}\n'.format(sparg[1]) +
+                      r'$\alpha$' + '     = {0:7.2f}, '.format(sparg[2]) +
+                      r'$\beta$' + ' = {0:7.2f}\n'.format(sparg[3]) +
+                      'x     = {0:7.2f}, '.format(sparg[4]) +
+                      'y = {0:7.2f}'.format(sparg[5]))
+        else:
+          pyl.scatter(sparg[0], sparg[1], marker='d', color='m', zorder=0, s=75)
         pyl.axis([xlim[0], xlim[1], ylim[0], ylim[1]])
+        thisLegend = pyl.legend(loc='best')
+        pyl.setp(thisLegend.texts, family='monospace')
         pyl.title(title)
         max_x = self.sp5.get_xlim()[1]
 
