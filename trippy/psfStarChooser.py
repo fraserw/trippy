@@ -98,7 +98,7 @@ class starChooser:
                  repFact=5, xWidth=51, yWidth=51,
                  includeCheesySaturationCut=False,
                  autoTrim=False, noVisualSelection=False, verbose=False,
-                 bgRadius = 20.0, printStarInfo=False):
+                 bgRadius = 20.0, printStarInfo=False, saveFigure=False):
         self.moffatWidth=moffatWidth
         self.moffatSNR=moffatSNR
         self.initAlpha=initAlpha
@@ -116,6 +116,7 @@ class starChooser:
         self.goodStars = []
         self.starsScat = None
         self.printStarInfo = printStarInfo
+        self.saveFigure = saveFigure
 
         print('Fitting stars with moffat profiles...')
         print('      X         Y    chi    a     b    FWHM')
@@ -465,3 +466,7 @@ class starChooser:
     def HandleClose(self, evt):
         self._fwhm_lim = self.sp1.get_xlim()
         self._chi_lim = self.sp1.get_ylim()
+        print('Saving psfStarChooser figure:', self.saveFigure)
+        if self.saveFigure:
+            print('Saving psfStarChooser figure:', self.saveFigure)
+            self.figPSF.savefig('psfStarChooser.png', bbox_inches='tight')
