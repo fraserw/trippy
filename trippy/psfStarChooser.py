@@ -28,6 +28,7 @@ import pylab as pyl
 from astropy.visualization import interval
 
 from . import psf, tzscale, bgFinder
+from tkinter import TclError
 
 class starChooser:
     """
@@ -468,5 +469,9 @@ class starChooser:
         self._chi_lim = self.sp1.get_ylim()
         print('Saving psfStarChooser figure:', self.saveFigure)
         if self.saveFigure:
-            print('Saving psfStarChooser figure:', self.saveFigure)
-            self.figPSF.savefig('psfStarChooser.png', bbox_inches='tight')
+            try:
+                self.figPSF.savefig('psfStarChooser.png', bbox_inches='tight')
+            except TclError:
+                print('Saving psfStarChooser figure FAILED due to TclError!')
+                print(self.figPSF)
+            
