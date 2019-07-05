@@ -94,9 +94,11 @@ class starChooser:
 
         self._increment = 0
 
-    def __call__(self,moffatWidth,moffatSNR,initAlpha=5.,initBeta=2.,repFact=5,xWidth=51,yWidth=51,
-                 includeCheesySaturationCut=False,autoTrim=False,noVisualSelection=False,verbose=False,
-                 bgRadius = 20.0,ftol=1.49012e-8):
+    def __call__(self,moffatWidth,moffatSNR,initAlpha=5.,
+                 initBeta=2.,repFact=3,xWidth=51,yWidth=51,
+                 bgRadius = 20.0,ftol=1.49012e-8,quickFit=True,
+                 autoTrim=False,noVisualSelection=False,verbose=False):
+
         self.moffatWidth=moffatWidth
         self.moffatSNR=moffatSNR
         self.initAlpha=initAlpha
@@ -125,7 +127,9 @@ class starChooser:
                 #in the future I will adjust this for a small speed boost.
                 mpsf = psf.modelPSF(np.arange(xWidth), np.arange(yWidth), alpha=self.initAlpha, beta=self.initBeta,
                                     repFact=self.repFact)
-                mpsf.fitMoffat(self.data,self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],boxSize=self.moffatWidth,verbose=verbose,bgRadius = self.bgRadius,ftol=1.49e-8)
+                mpsf.fitMoffat(self.data, self.XWIN_IMAGE[j], self.YWIN_IMAGE[j],
+                               boxSize=self.moffatWidth, verbose=verbose, bgRadius = self.bgRadius,
+                               ftol=1.49e-8, quickFit=quickFit)
 
                 fwhm = mpsf.FWHM(fromMoffatProfile=True)
 

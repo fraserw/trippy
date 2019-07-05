@@ -50,6 +50,7 @@ from .pill import pillPhot
 
 from .trippy_utils import *
 
+import time
 
 
 class modelPSF:
@@ -250,7 +251,7 @@ class modelPSF:
         self.nForFitting=0
         self.imData=None
 
-        if repFact not in [5,10]:
+        if repFact not in [3,5,10]:
             raise Warning('This has only been robustly tested with repFact=5 or 10. I encourage you to stick with those.')
 
         if not restore:
@@ -744,7 +745,8 @@ class modelPSF:
 
     def fitMoffat(self,imData,centX,centY,
                   boxSize=25,bgRadius=20,
-                  verbose=False,mode='smart',fixAB=False,
+                  verbose=False,mode='smart',
+                  quickFit = False, fixAB=False,
                   fitXY=False,fitMaxRadius=-1.,logRadPlot=False,ftol = 1.49012e-8):
 
         """
@@ -770,29 +772,28 @@ class modelPSF:
 
         self._flatRadial(centX-0.5,centY-0.5)#set the radial distribution pixels
 
-        #w = np.where(self.rDist>bgRadius)
-        #bgf = bgFinder.bgFinder(self.fDist[w])
         w = np.where(self.rads>bgRadius)
         bgf = bgFinder.bgFinder(self.subSec[w])
         self.bg = bgf(method=mode)
 
-        #peakGuess = (np.max(self.fDist)-self.bg)/(np.max(self.moffat(self.rDist)))
-        peakGuess = (np.max(self.subSec)-self.bg)/(np.max(self.moffat(self.rads)))
-
-
-
+        peakGuess_1 = (np.max(self.subSec)-self.bg)/(np.max(self.moffat(self.rads)))
+        peakGuess_2 = (np.sum(self.subSec)-self.bg*self.subSec.size)/(np.sum(self.moffat(self.rads)))
+        if (abs(peakGuess_1-peakGuess_2)/peakGuess_1)<0.5:
+            peakGuess = peakGuess_1
+        else:
+            peakGuess = peakGuess_2
 
         if fitXY:
             print('This is hacky and really slow. Not yet meant for production.')
             self.verbose = False
             best = [1.e8,-1.,-1.,-1.]
             print('Fitting XYA')
-            deltaX = np.arange(-0.2,0.2+1./float(self.repFact),1./float(self.repFact)/2.)
-            deltaY = np.arange(-0.2,0.2+1./float(self.repFact),1./float(self.repFact)/2.)
+            deltaX = np.arange(-0.3,0.3+1./float(self.repFact),1./float(self.repFact)/2.)
+            deltaY = np.arange(-0.3,0.3+1./float(self.repFact),1./float(self.repFact)/2.)
             for ii in range(len(deltaX)):
                 for jj in range(len(deltaY)):
                     self._flatRadial(centX+deltaX[ii],centY+deltaY[jj])
-                    lsqf = opti.leastsq(self._residFAB,(peakGuess),args=(self.alpha,self.beta,fitMaxRadius),maxfev=1000)
+                    lsqf = opti.leastsq(self._residFAB,(peakGuess),args=(self.alpha,self.beta,fitMaxRadius),maxfev=100)
                     res = np.sum(self._residFAB((lsqf[0][0]),self.alpha,self.beta,fitMaxRadius)**2)
                     if best[0]>= res:
                         best = [res,lsqf[0],deltaX[ii],deltaY[jj]]
@@ -801,6 +802,8 @@ class modelPSF:
 
         elif fixAB:
             lsqf = opti.leastsq(self._residFAB,(peakGuess),args=(self.alpha,self.beta,fitMaxRadius),maxfev=200)
+        elif quickFit:
+            lsqf = opti.leastsq(self._residNoRep,(peakGuess,self.alpha,self.beta),args=(fitMaxRadius),maxfev=250,ftol=ftol)
         else:
             lsqf = opti.leastsq(self._resid,(peakGuess,self.alpha,self.beta),args=(fitMaxRadius),maxfev=250,ftol=ftol)
         if self.verbose: print(lsqf)
@@ -829,8 +832,8 @@ class modelPSF:
             r = np.linspace(0,np.max(self.rads),100)
             pyl.plot(r,self.A*self.moffat(r)+self.bg,'r--')
             fw = self.FWHM(fromMoffatProfile=True)
-            print('FWHM: %.3f'%(fw))
-            pyl.title('FWHM: {.3f} alpha: {.3f} beta: {.3f}'.format(fw,self.alpha,self.beta))
+            print('FWHM: {:.3f}'.format(fw))
+            pyl.title('FWHM: {:.3f} alpha: {:.3f} beta: {:.3f}'.format(fw,self.alpha,self.beta))
             if logRadPlot: ax.set_xscale('log')
             pyl.show()
 
@@ -1013,8 +1016,6 @@ class modelPSF:
 
         #subSecFlat=self.subSec.reshape((b-a)*(c-d))
 
-        #this line seems redundant
-        arrR=np.array(arrR)
         self.rads=np.copy(arrR)
         #arrR=arrR.reshape((b-a)*(d-c))
         #arg=np.argsort(arrR)
@@ -1034,6 +1035,20 @@ class modelPSF:
 
         if self.verbose: print(A,alpha,beta,np.sqrt(np.sum(err**2)/(self.subSec.size-1.)))
         return err
+
+
+    def _residNoRep(self,p,maxRad):
+        (A,alpha,beta)=p
+        self.alpha=alpha
+        self.beta=beta
+
+        err=(self.subSec-(self.bg+A*self.moffat(self.rads))).reshape(self.subSec.size)
+
+        if self.alpha<0 or self.beta<0: return err*np.inf
+
+        if self.verbose: print(A,alpha,beta,np.sqrt(np.sum(err**2)/(self.subSec.size-1.)))
+        return err
+
 
     def _residFAB(self,p,alpha,beta,maxRad):
         (A)=p

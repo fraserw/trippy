@@ -59,7 +59,10 @@ class tester(unittest.TestCase):
         starChooser = psfStarChooser.starChooser(self.image,
                                                  self.catalog['XWIN_IMAGE'],self.catalog['YWIN_IMAGE'],
                                                  self.catalog['FLUX_AUTO'],self.catalog['FLUXERR_AUTO'])
-        (self.goodFits,self.goodMeds,self.goodSTDs) = starChooser(30,25,noVisualSelection=True,autoTrim=False)
+        (self.goodFits,self.goodMeds,self.goodSTDs) = starChooser(30, 25, noVisualSelection=True, autoTrim=False,
+                                                                  quickFit=False, repFact=5)
+        (self.goodFitsQF,self.goodMedsQF,self.goodSTDsQF) = starChooser(30, 25, noVisualSelection=True, autoTrim=False,
+                                                                        quickFit=True, repFact=5)
 
         #using manual alpha and beta because the fitting done with the star chooser results in
         #different answers with the different versions of scipy
@@ -193,8 +196,13 @@ class tester(unittest.TestCase):
         self.assertAlmostEqual(np.max(np.abs(diff)), 0.0, 1, msg = 'Generated TSF three appears to be unusual.')
 
     def test_createPSF(self):
-        diff = np.sum(self.goodFits[:,0] - np.array([11.42,11.23,11.67,12.16]))
-        self.assertAlmostEqual(diff,0.0, msg = 'Fitted FWHM not the same.')
+        diff = np.sum(self.goodFits[:,0] - np.array([11.42,11.23,11.68,12.19]))
+        self.assertAlmostEqual(diff,0.0, msg = 'Fitted FWHM not the same. ')
+
+    def test_createPSF_QF(self):
+        diff = np.sum(self.goodFitsQF[:,0] - np.array([11.49,11.37,11.77,12.26]))
+        self.assertAlmostEqual(diff,0.0, msg = 'Quick fitted FWHM not the same. ')
+
 
     def test_sextractor_coordinates(self):
 
