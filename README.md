@@ -7,17 +7,17 @@ TRIPPy is a python package aimed to perform all the steps required to measure ac
 Citation: If you use TRIPPy in your science works, please cite Fraser, W. et al., 2016, To appear in AJ. 
 DOI at Zenodo: http://dx.doi.org/10.5281/zenodo.48694
 
-## Update to version 1
+## Update to version 1.1
 
-TRIPPy has been updated to version 1.0, which includes many changes around accuracy and performance. Performance increases are all over, and you'll see as you use it. 
+TRIPPy has been updated to version 1.1, which includes many changes around accuracy and performance. Performance increases are all over, and you'll see as you use it. 
 
-*A bug was found* in the github verion prior to v1.0 which lightly affected the stellar source aperture correction estimates. __This did not affect the first released version, and has been fixed for v1.0.__
+*A bug was found* in the github verion prior to v1.0 which lightly affected the stellar source aperture correction estimates. __This did not affect the first released version, and has been fixed for v1.0 and later.__
 
 A few notable feature improvements are the ability to pass more than one radius as an array format when calling phot, a new space-saving PSF format, and significant improvements in the interaction with the star selector panel. 
 
 ## Installation
 
-TRIPPy is compatible with python 2.7 and 3.5. Though some parts that require sklearn are only available in python 3.5.
+TRIPPy is compatible with python 2.7 and 3.5. 
 
 ### Dependencies
 
@@ -26,7 +26,6 @@ TRIPPy depends on a few separate, equally useful python packages. These packages
 * scipy
 * matplotlib
 * astropy
-* sklearn (optional, only compatible with python 3)
 * emcee (optional)
 * numba (optional, very very useful for big speed improvements. Highly recommended!!)
 
@@ -42,7 +41,7 @@ hilariously. Rather, the most reliable thing to do is install these requirements
 All packages can be install using pip. eg. pip install stsci . Alternatively, the first four requirements can be
 installed (and maintained!) with an anaconda python installation. [Instructions to install anaconda are available here.](https://www.continuum.io/)
 
-Finally, optional packages, sklearn, numba, and emcee (MC Hammer) can be installed. This will provide robust source fitting utilities in
+Finally, optional packages, numba, and emcee (MC Hammer) can be installed. This will provide robust source fitting utilities in
 the MCMCfit module, clustering utilities, and MASSIVE speed improvements that are unavailable if numda isn't installed. 
 
 Test that these modules are available by attempting to import each one:
@@ -52,7 +51,6 @@ Test that these modules are available by attempting to import each one:
 If the optional emcee, or sklearn packages were installed
 
     python -c "import emcee"
-    python -c "import sklearn"
     python -c "import numba"
 
 
