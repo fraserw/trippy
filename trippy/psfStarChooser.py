@@ -129,7 +129,7 @@ class starChooser:
                                     repFact=self.repFact)
                 mpsf.fitMoffat(self.data, self.XWIN_IMAGE[j], self.YWIN_IMAGE[j],
                                boxSize=self.moffatWidth, verbose=verbose, bgRadius = self.bgRadius,
-                               ftol=1.49e-8, quickFit=quickFit)
+                               ftol=ftol, quickFit=quickFit)
 
                 fwhm = mpsf.FWHM(fromMoffatProfile=True)
 
