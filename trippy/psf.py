@@ -252,7 +252,7 @@ class modelPSF:
         self.imData=None
 
         if repFact not in [3,5,10]:
-            raise Warning('This has only been robustly tested with repFact=5 or 10. I encourage you to stick with those.')
+            raise Warning('This has only been robustly tested with repFact=3, 5, or 10. I encourage you to stick with those.')
 
         if not restore:
             if type(x)==type(np.ones(1)):
