@@ -26,14 +26,15 @@ TRIPPy depends on a few separate, equally useful python packages. These packages
 * scipy
 * matplotlib
 * astropy
-* stsci.numdisplay
 * sklearn (optional, only compatible with python 3)
 * emcee (optional)
-* numba -- very very useful for big speed improvements. Highly recommended!!
+* numba (optional, very very useful for big speed improvements. Highly recommended!!)
 
 An additional optional piece of software is the SExtractor package. This can often be installed with through standard
 linux repository systems (yum, apt-get, etc.) or can be simply downloaded and compiled. [Source is available here].(http://www.astromatic.net/software/sextractor)
 
+
+If you are using anaconda python, basically all of the above packages can be installed with conda install commands. Otherwise use pip.
 
 *Technically* pip should automatically install all of the above requirements. In practice however, pip falls over quiet
 hilariously. Rather, the most reliable thing to do is install these requirements first.
@@ -41,25 +42,18 @@ hilariously. Rather, the most reliable thing to do is install these requirements
 All packages can be install using pip. eg. pip install stsci . Alternatively, the first four requirements can be
 installed (and maintained!) with an anaconda python installation. [Instructions to install anaconda are available here.](https://www.continuum.io/)
 
-Once numpy, scipy, matplotlib, and astropy are installed, stsci-python (which provides stsci.numdisplay) can be
-installed by the two commands
-
-    pip install stsci.distutils
-    pip install stsci-python
-
-This will compile and install all of the bits required by stsci-python.
-
-Finally, two optional packages, sklearn and emcee (MC Hammer) can be installed. This will provide robust source fitting utilities in
-the MCMCfit module.
+Finally, optional packages, sklearn, numba, and emcee (MC Hammer) can be installed. This will provide robust source fitting utilities in
+the MCMCfit module, clustering utilities, and MASSIVE speed improvements that are unavailable if numda isn't installed. 
 
 Test that these modules are available by attempting to import each one:
 
-    python -c "import numpy; import scipy; import matplotlib; import astropy; import stsci.numdisplay"
+    python -c "import numpy; import scipy; import matplotlib; import astropy"
 
 If the optional emcee, or sklearn packages were installed
 
     python -c "import emcee"
     python -c "import sklearn"
+    python -c "import numba"
 
 
 ### TRIPPy installation
@@ -78,7 +72,13 @@ and if the optional emcee package was installed
     python -c "from trippy import MCMCfit"
 
 
-NOTE: Currently no internal tests have been written. This will eventually change of course.
+## Internal (unit) tests
+
+Once you have installed trippy, please run 
+   
+    python test.py
+   
+in the tests directory. This will run 23 separate tests to confirm that your install is functional. If something fails, contact Wes!
 
 
 
