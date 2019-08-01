@@ -31,11 +31,28 @@ def expand2d(a, repFact):
         for j in range(repFact):
             out[i * repFact + j, :] = r
     return out / (float(repFact) * float(repFact))
-    
+
 
 try:
     from numba import jit
+    def downSample2d(a, sampFact):
+        (A, B) = a.shape
+        o = np.zeros((int(A/sampFact),int(B/sampFact))).astype('float64')
+        return test(a,o,A,B,sampFact)
 
+    @jit
+    def test(a,o,A,B,sampFact):
+        isf2 = 1.0/(sampFact*sampFact)
+        for i in range(0,A,sampFact):
+            for j in range(0,B,sampFact):
+                s = 0.0
+                for k in range(sampFact):
+                    for l in range(sampFact):
+                        s += a[i+k,j+l]
+                o[int(i/sampFact),int(j/sampFact)] = s*isf2
+        return o
+    """
+    #old version I wish to hang onto
     @jit
     def downSample2d(a, sampFact):
         (A, B) = a.shape
@@ -48,6 +65,7 @@ try:
                         s += a[i+k,j+l]
                 o[int(i/sampFact),int(j/sampFact)] = s
         return o/float(sampFact*sampFact)
+    """
 
 
 except:
