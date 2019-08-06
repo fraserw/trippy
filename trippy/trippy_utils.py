@@ -100,7 +100,10 @@ def summer(a,o,A,B,sampFact):
 
 class line:
     def __init__(self,p1,p2):
-        self.m = (p2[1]-p1[1])/(p2[0]-p1[0])
+        if p2[0]!=p1[0]:
+            self.m = (p2[1]-p1[1])/(p2[0]-p1[0])
+        else:
+            self.m = 0.0
         self.b = p2[1]-self.m*p2[0]
         self.xlim = np.array([min(p1[0],p2[0]),max(p1[0],p2[0])])
         self.ylim = np.array([min(p1[1],p2[1]),max(p1[1],p2[1])])

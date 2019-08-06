@@ -492,13 +492,13 @@ class modelPSF:
         a2=self.alpha*self.alpha
         return (self.beta-1)*(np.pi*a2)*(1.+(rad/self.alpha)**2)**(-self.beta)
 
-    def FWHM(self,fromMoffatProfile=False):
+    def FWHM(self, fromMoffatProfile=False, fromImData = False):
         """
         Return the moffat profile of the PSF. If fromMoffatProfile=True, or if the lookupTable is not yet calculated,
         the FWHM from a pure moffat profile is returned. Otherwise the lookup table is used.
         """
 
-        if (not self.fitted) or fromMoffatProfile:
+        if ((not self.fitted) or fromMoffatProfile):
             r=np.arange(0,(2*max(self.x.shape[0]/2.,self.y.shape[0]/2.)**2)**0.5,0.005)
             m=self.moffat(r)
             m/=np.max(m)
@@ -506,22 +506,38 @@ class modelPSF:
             if k<0 or k>=len(m): return None
             return r[k]*2.
         else:
-            a=self.y.shape[0]/2.
-            b=self.x.shape[0]/2.
-            rangeY=np.arange(-a*self.repFact,a*self.repFact)/float(self.repFact)
-            rangeX=np.arange(-b*self.repFact,b*self.repFact)/float(self.repFact)
-            dx2=(0.5/self.repFact-rangeX)**2
-            repRads=[]
+            """
+            a = self.y.shape[0]/2.
+            b = self.x.shape[0]/2.
+            rangeY = np.arange(-a*self.repFact,a*self.repFact)/float(self.repFact)
+            rangeX = np.arange(-b*self.repFact,b*self.repFact)/float(self.repFact)
+            dx2 = (0.5/self.repFact-rangeX)**2
+            repRads = []
             for ii in range(len(rangeY)):
                 repRads.append((0.5/self.repFact-rangeY[ii])**2+dx2)
-            repRads=np.array(repRads)**0.5
+            repRads = np.array(repRads)**0.5
+            """
+            if fromImData:
+                im = self.repSubsec-self.bg/(self.repFact*self.repFact)
+            else:
+                im = self.fullPSF
+            (A,B) = im.shape
+            a=0
+            b=A
+            c=0
+            d=B
 
-            r=0.
+            rangeY=np.arange(a*self.repFact,b*self.repFact)/float(self.repFact)
+            rangeX=np.arange(c*self.repFact,d*self.repFact)/float(self.repFact)
+            repRads = self.repRads
 
-            s=np.sum(self.fullPSF)
+            r = 0.
+            s = np.sum(im)
             while r<np.max(repRads) and r<max(np.max(rangeY),np.max(rangeX)):
-                if np.sum(self.fullPSF[np.where(repRads<r)])>=s*0.5:
-                    return r*2.
+                w = np.where(repRads<r)
+                if len(w[0])>0:
+                    if np.sum(im[w])>=s*0.5:
+                        return r*2.0
                 r+=0.01
             return r*2.0
 
@@ -832,7 +848,7 @@ class modelPSF:
             r = np.linspace(0,np.max(self.rads),100)
             pyl.plot(r,self.A*self.moffat(r)+self.bg,'r--')
             fw = self.FWHM(fromMoffatProfile=True)
-            print('FWHM: {:.3f}'.format(fw))
+            print('FWHM: {}'.format(fw))
             pyl.title('FWHM: {:.3f} alpha: {:.3f} beta: {:.3f}'.format(fw,self.alpha,self.beta))
             if logRadPlot: ax.set_xscale('log')
             pyl.show()
@@ -1030,10 +1046,18 @@ class modelPSF:
 
         err=(self.subSec-(self.bg+A*downSample2d(self.moffat(self.repRads),self.repFact))).reshape(self.subSec.size)
 
-        if self.alpha<0 or self.beta<0: return err*np.inf
+        if self.alpha<0 or self.beta<0:
+            if maxRad is not None:
+                w = np.where(self.rads.reshape(self.subSec.size)<maxRad)
+                return err[w]
+            return err*np.inf
 
 
         if self.verbose: print(A,alpha,beta,np.sqrt(np.sum(err**2)/(self.subSec.size-1.)))
+        if maxRad is not None:
+            w = np.where(self.rads.reshape(self.subSec.size)<maxRad)
+            print(err[w].shape,maxRad,p)
+            return err[w]
         return err
 
 
@@ -1044,9 +1068,17 @@ class modelPSF:
 
         err=(self.subSec-(self.bg+A*self.moffat(self.rads))).reshape(self.subSec.size)
 
-        if self.alpha<0 or self.beta<0: return err*np.inf
+        if self.alpha<0 or self.beta<0:
+            if maxRad is not None:
+                w = np.where(self.rads.reshape(self.subSec.size)<maxRad)
+                print(err[w].shape,maxRad,p)
+                return err[w]
+            return err*np.inf
 
         if self.verbose: print(A,alpha,beta,np.sqrt(np.sum(err**2)/(self.subSec.size-1.)))
+        if maxRad is not None:
+            w = np.where(self.rads.reshape(self.subSec.size)<maxRad)
+            return err[w]
         return err
 
 
