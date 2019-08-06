@@ -2,3 +2,9 @@
 trippy.egg-info
 junk.txt
 pypi.instructions
+build/*
+dist/*
+sandbox/*
+.eggs/*
+.idea/*
+MikeTest/*
