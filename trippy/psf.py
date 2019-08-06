@@ -763,7 +763,8 @@ class modelPSF:
                   boxSize=25,bgRadius=20,
                   verbose=False,mode='smart',
                   quickFit = False, fixAB=False,
-                  fitXY=False,fitMaxRadius=-1.,logRadPlot=False,ftol = 1.49012e-8):
+                  fitXY=False,fitMaxRadius=None,logRadPlot=False,
+                  ftol = 1.49012e-8,maxfev = 250):
 
         """
         Fit a moffat profile to the input data, imData, at point centX,centY.
@@ -809,7 +810,7 @@ class modelPSF:
             for ii in range(len(deltaX)):
                 for jj in range(len(deltaY)):
                     self._flatRadial(centX+deltaX[ii],centY+deltaY[jj])
-                    lsqf = opti.leastsq(self._residFAB,(peakGuess),args=(self.alpha,self.beta,fitMaxRadius),maxfev=100)
+                    lsqf = opti.leastsq(self._residFAB,(peakGuess),args=(self.alpha,self.beta,fitMaxRadius),maxfev=maxfev)
                     res = np.sum(self._residFAB((lsqf[0][0]),self.alpha,self.beta,fitMaxRadius)**2)
                     if best[0]>= res:
                         best = [res,lsqf[0],deltaX[ii],deltaY[jj]]
@@ -817,11 +818,11 @@ class modelPSF:
             return (best[2],best[3])
 
         elif fixAB:
-            lsqf = opti.leastsq(self._residFAB,(peakGuess),args=(self.alpha,self.beta,fitMaxRadius),maxfev=200)
+            lsqf = opti.leastsq(self._residFAB,(peakGuess),args=(self.alpha,self.beta,fitMaxRadius),maxfev=maxfev)
         elif quickFit:
-            lsqf = opti.leastsq(self._residNoRep,(peakGuess,self.alpha,self.beta),args=(fitMaxRadius),maxfev=250,ftol=ftol)
+            lsqf = opti.leastsq(self._residNoRep,(peakGuess,self.alpha,self.beta),args=(fitMaxRadius),maxfev=maxfev,ftol=ftol)
         else:
-            lsqf = opti.leastsq(self._resid,(peakGuess,self.alpha,self.beta),args=(fitMaxRadius),maxfev=250,ftol=ftol)
+            lsqf = opti.leastsq(self._resid,(peakGuess,self.alpha,self.beta),args=(fitMaxRadius),maxfev=maxfev,ftol=ftol)
         if self.verbose: print(lsqf)
         self.A = lsqf[0][0]
         if not fixAB:
@@ -1056,7 +1057,6 @@ class modelPSF:
         if self.verbose: print(A,alpha,beta,np.sqrt(np.sum(err**2)/(self.subSec.size-1.)))
         if maxRad is not None:
             w = np.where(self.rads.reshape(self.subSec.size)<maxRad)
-            print(err[w].shape,maxRad,p)
             return err[w]
         return err
 
@@ -1071,7 +1071,6 @@ class modelPSF:
         if self.alpha<0 or self.beta<0:
             if maxRad is not None:
                 w = np.where(self.rads.reshape(self.subSec.size)<maxRad)
-                print(err[w].shape,maxRad,p)
                 return err[w]
             return err*np.inf
 
