@@ -228,6 +228,18 @@ class bgFinder(object):
 
 if __name__ == "__main__":
 
+    v = np.array([17.36,  3.17,  3.17,  4.78,  3.13,  3.15,  3.16,  3.12,  3.19,  4.27, 20.48,  3.2,
+  3.24,  3.12,  3.23,  8.53,  3.19,  3.22,  3.19,  3.2,   3.22,  3.18,  3.19,  3.14,
+  6.33,  5.38])
+    bg = bgFinder(v)
+    mean = bg.mean()
+    median = bg.median()
+    fmode = bg.fraserMode(0.5)
+    gauss = bg.gaussFit()
+    smart = bg.smartBackground(inp=0.1)
+    print(smart,mean,median,fmode,gauss)
+    exit()
+
     with pyf.open('junk.fits') as han:
         data = han[1].data
 

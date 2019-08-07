@@ -143,7 +143,8 @@ class pillPhot:
     def __call__(self,xi,yi,radius=4.,l=5.,a=0.01,width=20.,skyRadius=8.,zpt=27.0,exptime=1.,
                  enableBGSelection=False, display=False,
                  verbose=False, backupMode='fraserMode', forceBackupMode = False,
-                 trimBGHighPix=False, zscale=True, zoomRegion = None):
+                 trimBGHighPix=False, zscale=True, zoomRegion = None,
+                 bgSectors = False):
         """
         Perform the actual photometry.
 
@@ -275,14 +276,37 @@ class pillPhot:
                     if n==self.repFact*self.repFact:
                         rebinnedSkyImage[int(ii/self.repFact),int(jj/self.repFact)] = np.sum(skyImage[ii:ii+self.repFact, jj:jj+self.repFact])
 
+
+
             w = np.where(rebinnedSkyImage!=0.0)
             bgf = bgFinder.bgFinder(rebinnedSkyImage[w])
             if display and enableBGSelection:
                 bgf.plotAxis = self.dispFig.add_subplot(self.dispGS[1])
 
+
             if not trimBGHighPix:
                 bg = bgf.smartBackground(display=display, backupMode=backupMode, forceBackupMode = forceBackupMode)
                 bgstd = np.std(rebinnedSkyImage[w])
+            elif bgSectors:
+                #break up into 8 sectors and run bg finder on each one
+                (A,B) = rebinnedSkyImage.shape
+                (gy,gx) = np.meshgrid(np.arange(A),np.arange(B))
+                dy = gy-A/2.0+0.5
+                dx = gx-B/2.0+0.5
+                ang = (np.arctan2(dy,dx)*180.0/np.pi)%360.0
+                bgvals = []
+                bgstds = []
+                for angle in np.linspace(0.0,360.0,17)[:-1]:
+                    w_ang = np.where((ang>angle)&(ang<angle+24.0))
+                    vals = rebinnedSkyImage[w_ang]
+                    w_zero = np.where(vals!=0.0)
+                    bgvals.append(np.nanmean(vals[w_zero]))
+                    bgstds.append(np.nanstd(vals[w_zero])*len(w_zero[0])**(-0.5))
+                bgvals = np.array(bgvals)
+                bgstds = np.array(bgstds)
+                w_vals  = np.where(np.abs(np.nanmedian(bgvals)-bgvals)<3.0*bgstds)
+                bg = np.nanmean(bgvals[w_vals])
+                bgstd = np.nanstd(rebinnedSkyImage[w])
             else:
                 #trimming BG high pix
                 bg = bgf.smartBackground(backupMode=backupMode, forceBackupMode = forceBackupMode)
@@ -298,14 +322,17 @@ class pillPhot:
         if singleAperture:
             W = np.where(mask != 0.0)
             flux = np.sum(image) - len(W[0]) * bg / float(self.repFact ** 2)
+            self.nPix = np.sum(mask) / float(self.repFact ** 2)
         elif multipleApertures:
             flux = []
+            self.nPix = []
             for jj in range(len(radius)):
                 W = np.where(mask[jj] != 0.0)
                 flux.append(np.sum(image[jj]) - len(W[0]) * bg / float(self.repFact ** 2))
+                self.nPix.append(np.sum(mask[jj]) / float(self.repFact ** 2))
             flux = np.array(flux)
+            self.nPix = np.array(self.nPix)
 
-        self.nPix = np.sum(mask) / float(self.repFact ** 2)
         self.sourceFlux = flux
         self.bg = bg
         self.bgstd = bgstd
