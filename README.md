@@ -38,7 +38,7 @@ If you are using anaconda python, basically all of the above packages can be ins
 *Technically* pip should automatically install all of the above requirements. In practice however, pip falls over quiet
 hilariously. Rather, the most reliable thing to do is install these requirements first.
 
-All packages can be install using pip. eg. pip install stsci . Alternatively, the first four requirements can be
+All packages can be install using pip. eg. pip install numpy . Alternatively, the first four requirements can be
 installed (and maintained!) with an anaconda python installation. [Instructions to install anaconda are available here.](https://www.continuum.io/)
 
 Finally, optional packages, numba, and emcee (MC Hammer) can be installed. This will provide robust source fitting utilities in
