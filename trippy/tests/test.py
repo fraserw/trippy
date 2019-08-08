@@ -21,23 +21,24 @@ class tester(unittest.TestCase):
         #os.system('gunzip test_image.fits.gz')
 
         self.gened_bg = 1000.0
-        try:
-            with fits.open('test_image.fits') as han:
-                self.image = han[0].data
-            self.loadedPSF = psf.modelPSF(restore = 'test_psf.fits')
-
-            with open('planted_locations.pickle','rb') as han:
-                if sys.version_info[0]==3:
-                    x = pickle.load(han, encoding='latin1')
-                elif sys.version_info[0]==2:
-                    x = pickle.load(han)
-        except:
+        if not (os.path.isfile('test_image.fits') and os.path.isfile('planted_locations.pickle')):
             print('You may not have the necessary fits files for these tests.')
             print('Please execute the following two wget commands:')
             print('wget https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/files/vault/fraserw/test_psf.fits')
             print('wget https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/files/vault/fraserw/test_image.fits')
             print('')
             exit()
+
+        with fits.open('test_image.fits') as han:
+            self.image = han[0].data
+        self.loadedPSF = psf.modelPSF(restore = 'test_psf.fits')
+
+        with open('planted_locations.pickle','rb') as han:
+            if sys.version_info[0]==3:
+                x = pickle.load(han, encoding='latin1')
+            elif sys.version_info[0]==2:
+                x = pickle.load(han)
+
         self.planted_locations = np.array(x)
 
         self.bg = bgFinder.bgFinder(self.image)
@@ -112,7 +113,6 @@ class tester(unittest.TestCase):
         self.distances[6] = 0.8099660873
 
 
-
     def test_compSourceAper(self):
         self.assertAlmostEqual(self.pill.roundAperCorr(7.5),0.8348167541693421,msg = 'Round aperture correction from image seems to be discrepant.')
 
@@ -144,7 +144,6 @@ class tester(unittest.TestCase):
 
     def test_fwhmFromMoffat(self):
         self.assertEqual(self.loadedPSF.FWHM(fromMoffatProfile=True), self.goodPSF.FWHM(fromMoffatProfile=True),msg = 'PSF FWHM differ.')
-
 
     def test_lookupTable(self):
         diff = self.goodPSF.lookupTable - self.loadedPSF.lookupTable

@@ -506,7 +506,11 @@ class modelPSF:
             if k<0 or k>=len(m): return None
             return r[k]*2.
         else:
-            """
+            if fromImData:
+                im = self.repSubsec-self.bg/(self.repFact*self.repFact)
+            else:
+                im = self.fullPSF
+
             a = self.y.shape[0]/2.
             b = self.x.shape[0]/2.
             rangeY = np.arange(-a*self.repFact,a*self.repFact)/float(self.repFact)
@@ -516,20 +520,6 @@ class modelPSF:
             for ii in range(len(rangeY)):
                 repRads.append((0.5/self.repFact-rangeY[ii])**2+dx2)
             repRads = np.array(repRads)**0.5
-            """
-            if fromImData:
-                im = self.repSubsec-self.bg/(self.repFact*self.repFact)
-            else:
-                im = self.fullPSF
-            (A,B) = im.shape
-            a=0
-            b=A
-            c=0
-            d=B
-
-            rangeY=np.arange(a*self.repFact,b*self.repFact)/float(self.repFact)
-            rangeX=np.arange(c*self.repFact,d*self.repFact)/float(self.repFact)
-            repRads = self.repRads
 
             r = 0.
             s = np.sum(im)
@@ -539,6 +529,8 @@ class modelPSF:
                     if np.sum(im[w])>=s*0.5:
                         return r*2.0
                 r+=0.01
+            if fromImData:
+                r/=self.repFact
             return r*2.0
 
     def __getitem__(self,key):

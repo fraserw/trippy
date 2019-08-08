@@ -565,33 +565,31 @@ class pillPhot:
         p1 = (cx + self.repFact * (length / 2.) *
               np.array([np.cos(ang + np.pi), np.sin(ang + np.pi)]))
 
-        xeval=np.linspace(max(0.,p0[0]-radius*self.repFact),min(p0[0]+radius*self.repFact,B-1),radius*100*2)
+        xeval = np.linspace(max(0.,p0[0]-radius*self.repFact),min(p0[0]+radius*self.repFact,B-1),int(radius*100*2)) #100 isn't a bug, but rather just a huge number in which to sample the x coordinates when drawing the ellipse and circles
         for ii in range(len(xeval)):
-            val=(radius*self.repFact)**2-(xeval[ii]-p0[0])**2
+            val = (radius*self.repFact)**2-(xeval[ii]-p0[0])**2
             if val<0: continue
-            y=val**0.5
-            y0=-y+p0[1]+0.5
-            y1=y+p0[1]+0.5
+            y = val**0.5
+            y0 = -y+p0[1]+0.5
+            y1 = y+p0[1]+0.5
             if (y0<0) and (y1<0): continue
             if (y0<0): y0=0
             if int(y0)==int(y1): y1+=1
             map[int(y0):int(y1),int(xeval[ii]+0.5)]=1.
 
-        xeval=np.linspace(max(0.,p1[0]-radius*self.repFact),min(p1[0]+radius*self.repFact,B-1),radius*100*2)
+        xeval = np.linspace(max(0.,p1[0]-radius*self.repFact),min(p1[0]+radius*self.repFact,B-1),int(radius*100*2))
         for ii in range(len(xeval)):
-            val=(radius*self.repFact)**2-(xeval[ii]-p1[0])**2
+            val = (radius*self.repFact)**2-(xeval[ii]-p1[0])**2
             if val<0: continue
-            y=val**0.5
-            y0=-y+p1[1]+0.5
-            y1=y+p1[1]+0.5
+            y = val**0.5
+            y0 = -y+p1[1]+0.5
+            y1 = y+p1[1]+0.5
             if (y0<0) and (y1<0): continue
             if (y0<0): y0=0
             if int(y0)==int(y1): y1+=1
             map[int(y0):int(y1),int(xeval[ii]+0.5)]=1.
 
 
-        #print p0,p1,radius*self.repFact
-        #print x0,x1,x2,x3
 
         self.mask=map*1.
         if retObj:
@@ -601,15 +599,6 @@ class pillPhot:
         #pyl.imshow(omap*repData)
         #pyl.show()
         return omap*repData
-
-
-        pyl.scatter(x0[0],x0[1],marker='^')
-        pyl.scatter(x1[0],x1[1],marker='s')
-        pyl.scatter(x2[0],x2[1])
-        pyl.scatter(x3[0],x3[1])
-        pyl.scatter(cx[0],cx[1])
-        pyl.show()
-        sys.exit()
 
 
 def bgselect(event):
