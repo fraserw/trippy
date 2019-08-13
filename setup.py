@@ -11,7 +11,7 @@ print("Trippy unittests haven't been built into setup.py scripts. Please manuall
 
 dependencies = ['numpy >= 1.16.2',
                 'scipy',
-                'matplotlib',
+                'matplotlib >= 2.2.2',
                 'astropy >= 3.1']
 
 setup(
