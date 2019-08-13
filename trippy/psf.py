@@ -492,13 +492,25 @@ class modelPSF:
         a2=self.alpha*self.alpha
         return (self.beta-1)*(np.pi*a2)*(1.+(rad/self.alpha)**2)**(-self.beta)
 
-    def FWHM(self, fromMoffatProfile=False, fromImData = False):
+    def FWHM(self, fromMoffatProfile=False, fromImData = False, method = 'median'):
         """
-        Return the moffat profile of the PSF. If fromMoffatProfile=True, or if the lookupTable is not yet calculated,
-        the FWHM from a pure moffat profile is returned. Otherwise the lookup table is used.
+        Return the moffat profile of the PSF. If fromMoffatProfile=True. the FWHM from a pure
+        moffat profile is returned. Otherwise the FWHM of the combined moffat profile and lookup
+        table is used. That is, from the full PSF.
+
+        If fromImData=True, then the FWHM is estimated from the image data passed to fitMoffat
+        function. This option requires that fitMoffat has been run on the source in question
+        before the FWHM(fromImData=True) is called.
+
+        When estimating FWHM from the PSF, or from image data, a running mean/median of pixels
+        sortred by radius from the centre is used. The width of the running window is 3*repFact.
+
+        The method variable takes either "median" or "mean" as input to decide which method is
+        used in the running window. Default is median.
+
         """
 
-        if ((not self.fitted) or fromMoffatProfile):
+        if fromMoffatProfile:
             r=np.arange(0,(2*max(self.x.shape[0]/2.,self.y.shape[0]/2.)**2)**0.5,0.005)
             m=self.moffat(r)
             m/=np.max(m)
@@ -506,40 +518,66 @@ class modelPSF:
             if k<0 or k>=len(m): return None
             return r[k]*2.
         else:
-            """
-            a = self.y.shape[0]/2.
-            b = self.x.shape[0]/2.
-            rangeY = np.arange(-a*self.repFact,a*self.repFact)/float(self.repFact)
-            rangeX = np.arange(-b*self.repFact,b*self.repFact)/float(self.repFact)
-            dx2 = (0.5/self.repFact-rangeX)**2
-            repRads = []
-            for ii in range(len(rangeY)):
-                repRads.append((0.5/self.repFact-rangeY[ii])**2+dx2)
-            repRads = np.array(repRads)**0.5
-            """
             if fromImData:
+
                 im = self.repSubsec-self.bg/(self.repFact*self.repFact)
+                repRads = self.repRads
             else:
                 im = self.fullPSF
-            (A,B) = im.shape
-            a=0
-            b=A
-            c=0
-            d=B
 
-            rangeY=np.arange(a*self.repFact,b*self.repFact)/float(self.repFact)
-            rangeX=np.arange(c*self.repFact,d*self.repFact)/float(self.repFact)
-            repRads = self.repRads
+                a = self.y.shape[0]/2.
+                b = self.x.shape[0]/2.
+                rangeY = np.arange(-a*self.repFact,a*self.repFact)/float(self.repFact)
+                rangeX = np.arange(-b*self.repFact,b*self.repFact)/float(self.repFact)
+                dx2 = (0.5/self.repFact-rangeX)**2
+                repRads = []
+                for ii in range(len(rangeY)):
+                    repRads.append((0.5/self.repFact-rangeY[ii])**2+dx2)
+                repRads = np.array(repRads)**0.5
 
-            r = 0.
-            s = np.sum(im)
-            while r<np.max(repRads) and r<max(np.max(rangeY),np.max(rangeX)):
-                w = np.where(repRads<r)
-                if len(w[0])>0:
-                    if np.sum(im[w])>=s*0.5:
-                        return r*2.0
-                r+=0.01
-            return r*2.0
+            if method not in ['median','mean']:
+                raise TypeError('Method must be either median or mean.')
+
+            numMedPix = self.repFact*3
+
+            #below steps through the pixels taking numMedPix
+            (A,B) = repRads.shape
+            rr = repRads.reshape(A*B)
+            rim = im.reshape(A*B)
+            s = np.max(im)
+            args = np.argsort(rr)
+            for ii in range(len(args)-numMedPix):
+                if method == 'median':
+                    med_i = np.median(rim[args[ii:ii+numMedPix]])
+                    med_r = np.median(rr[args[ii:ii+numMedPix]])
+                else:
+                    med_i = np.mean(rim[args[ii:ii+numMedPix]])
+                    med_r = np.mean(rr[args[ii:ii+numMedPix]])
+                if med_i<=0.5*s:
+                    return med_r*2.0
+            if method == 'median':
+                return np.mean(r[-numMedPix])*2.0
+            else:
+                return np.median(r[-numMedPix])*2.0
+
+
+
+            """
+            #below cylces through a preset radius array
+            #this is probably less accurate than the above version
+            (A,B) = repRads.shape
+            r = np.arange(0.0,min(np.max(repRads[int(A/2),:]),np.max(repRads[:,int(B/2)]))+0.05,0.05)
+            s = np.max(im)
+            ind = 0
+            while  r[ind+1]<min(np.max(repRads[int(A/2),:]),np.max(repRads[:,int(B/2)])) and ind+1<len(r):
+                w = np.where((repRads<r[ind+1])&(repRads>r[ind]))
+                if len(w[0])>=numMedPix:
+                    med = np.median(im[w])
+                    if med<=0.5*s:
+                        return r[ind+1]*2.0
+                ind+=1
+            return r[len(r)-1]*2.0
+            """
 
     def __getitem__(self,key):
         return self.psf[key]
@@ -771,6 +809,8 @@ class modelPSF:
 
         - boxSize is the width around the centre used in the fitting.
         - bgRadius is the radius beyond which the background is estimated.
+          This must be smaller than the PSF width itself used when initializing
+          the modelPSF object (parameters x and y).
         - verbose=True to see a lot of fittnig output and a radial plot of each fit.
         - logRadPlot=True to see the plot in log radius.
         - mode='smart' is the background determination method used. See bgFinder for details.
@@ -834,6 +874,7 @@ class modelPSF:
             res=self._resid((self.A,self.alpha,self.beta),fitMaxRadius)
         self.chi = np.sqrt(np.sum(res**2)/float(len(res)-1))
         self.chiFluxNorm = np.sqrt(np.sum((res/self.A)**2)/float(len(res)-1))
+
         self.fitted = True
 
         self.PSF = self.moffat(self.R)

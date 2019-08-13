@@ -83,7 +83,7 @@ def runSex(sexFile,imageName,options=None,verbose=False):
               "Is Source Extractor installed?")
         raise
     sexName = sexNames[i]
-    
+
     comm = sexName + ' ' + imageName + ' -c ' + sexFile
 
     if options:
@@ -202,10 +202,9 @@ def updateHeader(fileNameBase,overWrite=True):
 
     han=pyf.open(fileNameBase+'.fits')
     header=han[0].header
-
-
     data=han[0].data
     han.close()
+
     for j in range(len(scampHead)):
         if scampHead[j][0] in header:
             header[scampHead[j][0]]=scampHead[j][1]
