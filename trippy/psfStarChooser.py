@@ -28,7 +28,10 @@ import pylab as pyl
 from astropy.visualization import interval
 
 from . import psf, tzscale, bgFinder
-from tkinter import TclError
+try:
+  from tkinter import TclError  # Python 2.x
+except ImportError:
+  from Tkinter import TclError  # Python 3.x
 
 class starChooser:
     """
