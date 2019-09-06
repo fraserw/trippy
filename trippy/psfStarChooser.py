@@ -229,6 +229,16 @@ class starChooser:
         pyl.hist(self.points[:,0],bins=bins)
         pyl.xlabel('FWHM (pix)')
         self.sp3 = pyl.subplot2grid((4,4),(0,0),rowspan=2,sharey=self.sp1)
+        print(self.points[:,1])
+        chiIsNan = np.isnan(self.points[:, 1])
+        if chiIsNan.any():
+          message = ('Bad (NaN) Chi value for star(s) at ' +
+                     '{}.\n'.format([(self.points[i, 4], self.points[i, 5])
+                                     for i in np.where(chiIsNan)[0]]) +
+                     'This is likely due to bad data nearby ' +
+                     '(edge of chip or similar).\n'
+                     'Please trim catalog to remove these sources.')
+          raise ValueError(message)
         pyl.hist(self.points[:,1],bins=30,orientation='horizontal')
         pyl.ylabel('RMS')
         self.sp4 = pyl.subplot2grid((4,4),(2,0),rowspan=2)
