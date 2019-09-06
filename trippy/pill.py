@@ -25,10 +25,10 @@ __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>),
 import sys
 
 import numpy as np
-from astropy.visualization import interval
+from astropy.visualization import interval, ZScaleInterval
 from matplotlib import gridspec
 from scipy import interpolate as interp
-from . import tzscale, bgFinder
+from . import bgFinder
 from .trippy_utils import expand2d, line
 
 import pylab as pyl
@@ -350,7 +350,8 @@ class pillPhot:
                 im = skyImage+image
 
             if self.zscale:
-                (z1,z2) = tzscale.zscale(im)
+                zscale = ZScaleInterval()
+                (z1, z2) = zscale.get_limits(im)
                 norm = interval.ManualInterval(z1,z2)
                 self.dispAx.imshow(norm(im),interpolation='nearest',origin='lower')
             else:

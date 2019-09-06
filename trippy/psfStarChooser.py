@@ -25,9 +25,9 @@ __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>),
 
 import numpy as np
 import pylab as pyl
-from astropy.visualization import interval
+from astropy.visualization import interval, ZScaleInterval
 
-from . import psf, tzscale, bgFinder
+from . import psf, bgFinder
 try:
   from tkinter import TclError  # Python 2.x
 except ImportError:
@@ -87,13 +87,12 @@ class starChooser:
         self.data=data
         self.minGoodVal = minGoodVal
 
+        mask = np.ones(self.data.shape, dtype=bool)
         if self.minGoodVal is not None:
-            mask = np.zeros(self.data.shape)
             w = np.where(self.data<self.minGoodVal)
-            mask[w] = 1
-            (self.z1,self.z2)=tzscale.zscale(self.data,nsamples=zscaleNsamp,contrast=zscaleContrast,bpmask=mask)
-        else:
-            (self.z1,self.z2)=tzscale.zscale(self.data,nsamples=zscaleNsamp,contrast=zscaleContrast)
+            mask[w] = 0
+        zscale = ZScaleInterval(nsamples=zscaleNsamp, contrast=zscaleContrast)
+        (self.z1, self.z2) = zscale.get_limits(self.data[mask])
         self.normer=interval.ManualInterval(self.z1,self.z2)
 
         self._increment = 0
