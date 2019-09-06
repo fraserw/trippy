@@ -6,6 +6,7 @@ import numpy
 MAX_REJECT = 0.5
 MIN_NPIXELS = 5
 GOOD_PIXEL = 0
+#__version__ = '0.1.1'
 BAD_PIXEL = 1
 KREJ = 2.5
 MAX_ITERATIONS = 5
@@ -75,7 +76,7 @@ def zsc_sample (image, maxpix, bpmask=None, zmask=None):
     nl = image.shape[1]
     stride = max (1.0, math.sqrt((nc - 1) * (nl - 1) / float(maxpix)))
     stride = int (stride)
-    samples = image[::stride,::stride].flatten()
+    samples = image[::stride,::stride][bpmask[::stride,::stride]].flatten()
     return samples[:maxpix]
 
 def zsc_fit_line (samples, npix, krej, ngrow, maxiter):
