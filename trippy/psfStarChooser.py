@@ -344,11 +344,11 @@ class starChooser:
                       r'$\beta$' + ' = {0:7.2f}\n'.format(sparg[3]) +
                       'x     = {0:7.2f}, '.format(sparg[4]) +
                       'y = {0:7.2f}'.format(sparg[5]))
+          thisLegend = pyl.legend(loc='best')
+          pyl.setp(thisLegend.texts, family='monospace')
         else:
           pyl.scatter(sparg[0], sparg[1], marker='d', color='m', zorder=0, s=75)
         pyl.axis([xlim[0], xlim[1], ylim[0], ylim[1]])
-        thisLegend = pyl.legend(loc='best')
-        pyl.setp(thisLegend.texts, family='monospace')
         pyl.title(title)
         max_x = self.sp5.get_xlim()[1]
 
