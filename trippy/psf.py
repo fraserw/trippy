@@ -231,7 +231,7 @@ class modelPSF:
             self.psf=downSample2d(self.PSF,self.repFact)
             ###code to generate the line psf
             self.longPSF = None
-            if self.rate != '':
+            if self.rate is not None:
                 self.line(self.rate,self.angle,self.dt,pixScale = self.pixScale,display=False,useLookupTable=True, verbose=True)
 
         print('   PSF restored.\n')
