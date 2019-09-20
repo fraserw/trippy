@@ -143,7 +143,7 @@ class pillPhot:
     def __call__(self,xi,yi,radius=4.,l=5.,a=0.01,width=20.,skyRadius=8.,zpt=27.0,exptime=1.,
                  enableBGSelection=False, display=False,
                  verbose=False, backupMode='fraserMode', forceBackupMode = False,
-                 trimBGHighPix=False, zscale=True, zoomRegion = None,
+                 trimBGHighPix=False,  zoomRegion = None,
                  bgSectors = False):
         """
         Perform the actual photometry.
@@ -349,15 +349,17 @@ class pillPhot:
             elif singleAperture:
                 im = skyImage+image
 
+            nim = np.copy(im)
+            w = np.where(im==0.0)
             if self.zscale:
-                (z1,z2) = tzscale.zscale(im)
+                nim[w] = self.bg
+                (z1,z2) = tzscale.zscale(nim)
                 norm = interval.ManualInterval(z1,z2)
                 self.dispAx.imshow(norm(im),interpolation='nearest',origin='lower')
             else:
-                w = np.where(im==0.0)
-                im[w]+=self.bg*0.7/float(self.repFact*self.repFact)
-                im = np.clip(im,np.min(im),np.max(image))
-                self.dispAx.imshow(im,interpolation='nearest',origin='lower')
+                nim[w]+=self.bg*0.7/float(self.repFact*self.repFact)
+                nim = np.clip(im,np.min(im),np.max(image))
+                self.dispAx.imshow(nim,interpolation='nearest',origin='lower')
             if self.l0 is not None:
                 self.dispAx.plot(np.linspace(l0.xlim[0], l0.xlim[1], 100),
                                  l0(np.linspace(l0.xlim[0], l0.xlim[1], 100)),
