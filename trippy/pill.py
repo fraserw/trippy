@@ -74,7 +74,7 @@ class pillPhot:
         else:
             raise Exception('Need to call computeRoundAperCorrFromSource first')
 
-    def computeRoundAperCorrFromSource(self,x,y,radii,skyRadius,width=20.,mode='smart',displayAperture=False,display=False):
+    def computeRoundAperCorrFromSource(self,x,y,radii,skyRadius,width=20.,mode='smart',displayAperture=False,display=False,forceBackupMode=False):
         """
         Compute apeture corrections at the specified star coordinates and the specified radii numpy array.
 
@@ -100,7 +100,7 @@ class pillPhot:
             self.aperMags.append(self.magnitude)
         """
         #more efficient version where apertures are all passed as an array
-        self(x, y, radii, l=0., a=0., width=width, skyRadius=skyRadius, backupMode=mode, display=displayAperture)
+        self(x, y, radii, l=0., a=0., width=width, skyRadius=skyRadius, backupMode=mode, display=displayAperture, forceBackupMode=forceBackupMode)
         self.aperMags = self.magnitude
 
 
@@ -129,7 +129,7 @@ class pillPhot:
         else:
             bg=gain*self.nPix*self.bgstd**2
             rn=0.
-        self.snr=star*(star+bg+rn)**-0.5
+        self.snr=star*(star+bg+rn)**(-0.5)
         self.dmagnitude=(2.5/np.log(10.))*(1./self.snr)
 
         if verbose:
@@ -439,7 +439,7 @@ class pillPhot:
                 if singleAperture:
                     W = np.where(mask != 0.0)
                     flux = np.sum(image) - len(W[0]) * bg / float(self.repFact * self.repFact)
-                    numPix = (np.sum(mask[jj]) /
+                    numPix = (np.sum(mask) /
                               float(self.repFact * self.repFact))
                 elif multipleApertures:
                     flux = []

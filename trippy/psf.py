@@ -979,6 +979,7 @@ class modelPSF:
                          kx-self.repFact*self.boxSize:kx+self.repFact*self.boxSize+self.repFact]
 
             shiftIms.append(shiftedImage)
+
         shiftIms=np.array(shiftIms)
         fluxes=np.array(fluxes)
 
@@ -997,6 +998,7 @@ class modelPSF:
             w=np.where( np.abs(bigMean-shiftIms)>3*stdLUT)
             shiftIms[w]=np.nan
             self.lookupTable=np.nanmean(shiftIms,axis=0)/self.maxFlux
+
         else:
             self.lookupTable=np.nanmean(shiftIms,axis=0)/self.maxFlux
         self.psfStar=np.array(self.psfStars)
