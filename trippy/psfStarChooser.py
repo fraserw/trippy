@@ -25,9 +25,13 @@ __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>),
 
 import numpy as np
 import pylab as pyl
-from astropy.visualization import interval
+from astropy.visualization import interval, ZScaleInterval
 
-from . import psf, tzscale, bgFinder
+from . import psf, bgFinder
+try:
+  from tkinter import TclError  # Python 2.x
+except ImportError:
+  from Tkinter import TclError  # Python 3.x
 
 class starChooser:
     """
@@ -83,13 +87,12 @@ class starChooser:
         self.data=data
         self.minGoodVal = minGoodVal
 
+        mask = np.ones(self.data.shape, dtype=bool)
         if self.minGoodVal is not None:
-            mask = np.zeros(self.data.shape)
             w = np.where(self.data<self.minGoodVal)
-            mask[w] = 1
-            (self.z1,self.z2)=tzscale.zscale(self.data,nsamples=zscaleNsamp,contrast=zscaleContrast,bpmask=mask)
-        else:
-            (self.z1,self.z2)=tzscale.zscale(self.data,nsamples=zscaleNsamp,contrast=zscaleContrast)
+            mask[w] = 0
+        zscale = ZScaleInterval(nsamples=zscaleNsamp, contrast=zscaleContrast)
+        (self.z1, self.z2) = zscale.get_limits(self.data[mask])
         self.normer=interval.ManualInterval(self.z1,self.z2)
 
         self._increment = 0
@@ -97,7 +100,8 @@ class starChooser:
     def __call__(self,moffatWidth,moffatSNR,initAlpha=5.,
                  initBeta=2.,repFact=3,xWidth=51,yWidth=51,
                  bgRadius = 20.0,ftol=1.49012e-8,quickFit=True,
-                 autoTrim=False,noVisualSelection=False,verbose=False):
+                 autoTrim=False,noVisualSelection=False,verbose=False,
+                 printStarInfo=False, saveFigure=False):
 
         self.moffatWidth=moffatWidth
         self.moffatSNR=moffatSNR
@@ -115,6 +119,8 @@ class starChooser:
         self.subsecs = []
         self.goodStars = []
         self.starsScat = None
+        self.printStarInfo = printStarInfo
+        self.saveFigure = saveFigure
 
         print('Fitting stars with moffat profiles...')
         print('      X         Y    chi    a     b    FWHM')
@@ -222,6 +228,16 @@ class starChooser:
         pyl.hist(self.points[:,0],bins=bins)
         pyl.xlabel('FWHM (pix)')
         self.sp3 = pyl.subplot2grid((4,4),(0,0),rowspan=2,sharey=self.sp1)
+        print(self.points[:,1])
+        chiIsNan = np.isnan(self.points[:, 1])
+        if chiIsNan.any():
+          message = ('Bad (NaN) Chi value for star(s) at ' +
+                     '{}.\n'.format([(self.points[i, 4], self.points[i, 5])
+                                     for i in np.where(chiIsNan)[0]]) +
+                     'This is likely due to bad data nearby ' +
+                     '(edge of chip or similar).\n'
+                     'Please trim catalog to remove these sources.')
+          raise ValueError(message)
         pyl.hist(self.points[:,1],bins=30,orientation='horizontal')
         pyl.ylabel('RMS')
         self.sp4 = pyl.subplot2grid((4,4),(2,0),rowspan=2)
@@ -318,8 +334,20 @@ class starChooser:
                     picker=True, zorder=9)
         pyl.scatter(self.points[:, 0][W], self.points[:, 1][W],
                     picker=True, color='r', zorder=10)
-        pyl.scatter(self.points[:, 0][arg], self.points[:, 1][arg],
-                    marker='d', color='m', zorder=0, s=75)
+        sparg = self.points[arg, :]
+        if self.printStarInfo:
+          pyl.scatter(sparg[0], sparg[1],
+                      marker='d', color='m', zorder=0, s=75,
+                      label='FHWM  = {0: 7.2f}, '.format(sparg[0]) +
+                      r'$\chi$' + ' = {0:7.2f}\n'.format(sparg[1]) +
+                      r'$\alpha$' + '     = {0:7.2f}, '.format(sparg[2]) +
+                      r'$\beta$' + ' = {0:7.2f}\n'.format(sparg[3]) +
+                      'x     = {0:7.2f}, '.format(sparg[4]) +
+                      'y = {0:7.2f}'.format(sparg[5]))
+          thisLegend = pyl.legend(loc='best')
+          pyl.setp(thisLegend.texts, family='monospace')
+        else:
+          pyl.scatter(sparg[0], sparg[1], marker='d', color='m', zorder=0, s=75)
         pyl.axis([xlim[0], xlim[1], ylim[0], ylim[1]])
         pyl.title(title)
         max_x = self.sp5.get_xlim()[1]
@@ -454,3 +482,11 @@ class starChooser:
     def HandleClose(self, evt):
         self._fwhm_lim = self.sp1.get_xlim()
         self._chi_lim = self.sp1.get_ylim()
+        print('Saving psfStarChooser figure:', self.saveFigure)
+        if self.saveFigure:
+            try:
+                self.figPSF.savefig('psfStarChooser.png', bbox_inches='tight')
+            except TclError:
+                print('Saving psfStarChooser figure FAILED due to TclError!')
+                print(self.figPSF)
+            
