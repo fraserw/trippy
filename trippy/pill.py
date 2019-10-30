@@ -372,8 +372,9 @@ class pillPhot:
             nim = np.copy(im)
             w = np.where(im==0.0)
             if self.zscale:
+                nim[w] = self.bg
                 zscale = ZScaleInterval()
-                (z1, z2) = zscale.get_limits(im)
+                (z1, z2) = zscale.get_limits(nim)
                 norm = interval.ManualInterval(z1,z2)
                 self.dispAx.imshow(norm(im),interpolation='nearest',origin='lower')
             else:
