@@ -34,6 +34,7 @@ from .trippy_utils import expand2d, line
 import pylab as pyl
 
 
+
 class pillPhot:
     """
     The pill aperture photometry. Intialized with the image data, and repFact subsampling factor.
@@ -154,6 +155,9 @@ class pillPhot:
             forceBackupMode is set to true, the backup mode background value is returned. Otherwise, the peak of the
             gaussian fit is returned.
 
+        Can set bg to be zero for already background removed images. This is done by setting
+        forceBackupMode = True and backupMode = None.
+
         angle in degrees clockwise +-90 degrees from +x
         Length in pixels.
         Coordinates are in iraf coordinates, not numpy.
@@ -178,12 +182,18 @@ class pillPhot:
         length = l
         del(a, l)
 
+        orig_bgMode = backupMode
+        if backupMode is None and forceBackupMode:
+            orig_bgMode = None
+            backupMode = 'mean'
+
         #Set up some of the True/False statements that gets used repeatedly:
         singleAperture = isinstance(radius, (float, np.float64))
         multipleApertures = isinstance(radius, np.ndarray)
         if not singleAperture | multipleApertures:
           raise Exception('Aperture size not understood. ' +
                           'It seems to be neither an array or a single value')
+
         if enableBGSelection:
             if zoomRegion is not None:
                 if isinstance(zoomRegion, (list,np.float64)):
@@ -281,7 +291,7 @@ class pillPhot:
             w = np.where(rebinnedSkyImage!=0.0)
             bgf = bgFinder.bgFinder(rebinnedSkyImage[w])
             if display and enableBGSelection:
-                bgf.plotAxis = self.dispFig.add_subplot(self.dispGS[1])
+                bgf.plotAxis = self.dispFig.add_subplot(self.dispGS[1],label='First')
 
 
             if not trimBGHighPix:
@@ -315,20 +325,30 @@ class pillPhot:
                 W = np.where(rebinnedSkyImage[w]<bg+trimBGHighPix*bgstd)
                 bgf = bgFinder.bgFinder(rebinnedSkyImage[w][W])
                 if display and enableBGSelection:
-                    bgf.plotAxis = self.dispFig.add_subplot(self.dispGS[1])
+                    bgf.plotAxis = self.dispFig.add_subplot(self.dispGS[1],label='Second')
                 bg = bgf.smartBackground(display=display, backupMode=backupMode, forceBackupMode = forceBackupMode)
                 bgstd = np.std(rebinnedSkyImage[w][W])
 
+
+        if orig_bgMode is None and forceBackupMode:
+            print('Adopting 0 background value.\n')
+
         if singleAperture:
             W = np.where(mask != 0.0)
-            flux = np.sum(image) - len(W[0]) * bg / float(self.repFact ** 2)
+            if orig_bgMode is None and forceBackupMode:
+                flux = np.sum(image)
+            else:
+                flux = np.sum(image) - len(W[0]) * bg / float(self.repFact ** 2)
             self.nPix = np.sum(mask) / float(self.repFact ** 2)
         elif multipleApertures:
             flux = []
             self.nPix = []
             for jj in range(len(radius)):
                 W = np.where(mask[jj] != 0.0)
-                flux.append(np.sum(image[jj]) - len(W[0]) * bg / float(self.repFact ** 2))
+                if orig_bgMode is None and forceBackupMode:
+                    flux.append(np.sum(image[jj]))
+                else:
+                    flux.append(np.sum(image[jj]) - len(W[0]) * bg / float(self.repFact ** 2))
                 self.nPix.append(np.sum(mask[jj]) / float(self.repFact ** 2))
             flux = np.array(flux)
             self.nPix = np.array(self.nPix)
@@ -438,7 +458,10 @@ class pillPhot:
 
                 if singleAperture:
                     W = np.where(mask != 0.0)
-                    flux = np.sum(image) - len(W[0]) * bg / float(self.repFact * self.repFact)
+                    if orig_bgMode is None and forceBackupMode:
+                        flux = np.sum(image)
+                    else:
+                        flux = np.sum(image) - len(W[0]) * bg / float(self.repFact * self.repFact)
                     numPix = (np.sum(mask) /
                               float(self.repFact * self.repFact))
                 elif multipleApertures:
@@ -446,7 +469,10 @@ class pillPhot:
                     numPix = []
                     for jj in range(len(radius)):
                         W = np.where(mask[jj] != 0.0)
-                        flux.append(np.sum(image[jj]) - len(W[0]) * bg / float(self.repFact * self.repFact))
+                        if orig_bgMode is None and forceBackupMode:
+                            flux.append(np.sum(image[jj]))
+                        else:
+                            flux.append(np.sum(image[jj]) - len(W[0]) * bg / float(self.repFact * self.repFact))
                         numPix.append(np.sum(mask[jj]) /
                                       float(self.repFact * self.repFact))
                     flux = np.array(flux)
