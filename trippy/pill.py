@@ -25,13 +25,14 @@ __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>),
 import sys
 
 import numpy as np
-from astropy.visualization import interval
+from astropy.visualization import interval, ZScaleInterval
 from matplotlib import gridspec
 from scipy import interpolate as interp
-from . import tzscale, bgFinder
+from . import bgFinder
 from .trippy_utils import expand2d, line
 
 import pylab as pyl
+
 
 
 class pillPhot:
@@ -74,7 +75,7 @@ class pillPhot:
         else:
             raise Exception('Need to call computeRoundAperCorrFromSource first')
 
-    def computeRoundAperCorrFromSource(self,x,y,radii,skyRadius,width=20.,mode='smart',displayAperture=False,display=False):
+    def computeRoundAperCorrFromSource(self,x,y,radii,skyRadius,width=20.,mode='smart',displayAperture=False,display=False,forceBackupMode=False):
         """
         Compute apeture corrections at the specified star coordinates and the specified radii numpy array.
 
@@ -100,7 +101,7 @@ class pillPhot:
             self.aperMags.append(self.magnitude)
         """
         #more efficient version where apertures are all passed as an array
-        self(x, y, radii, l=0., a=0., width=width, skyRadius=skyRadius, backupMode=mode, display=displayAperture)
+        self(x, y, radii, l=0., a=0., width=width, skyRadius=skyRadius, backupMode=mode, display=displayAperture, forceBackupMode=forceBackupMode)
         self.aperMags = self.magnitude
 
 
@@ -129,7 +130,7 @@ class pillPhot:
         else:
             bg=gain*self.nPix*self.bgstd**2
             rn=0.
-        self.snr=star*(star+bg+rn)**-0.5
+        self.snr=star*(star+bg+rn)**(-0.5)
         self.dmagnitude=(2.5/np.log(10.))*(1./self.snr)
 
         if verbose:
@@ -143,7 +144,7 @@ class pillPhot:
     def __call__(self,xi,yi,radius=4.,l=5.,a=0.01,width=20.,skyRadius=8.,zpt=27.0,exptime=1.,
                  enableBGSelection=False, display=False,
                  verbose=False, backupMode='fraserMode', forceBackupMode = False,
-                 trimBGHighPix=False, zscale=True, zoomRegion = None,
+                 trimBGHighPix=False,  zoomRegion = None,
                  bgSectors = False):
         """
         Perform the actual photometry.
@@ -153,6 +154,9 @@ class pillPhot:
             If the gaussian standard deviation / gaussian peak is larger than the variable gaussSTDlimit, or if
             forceBackupMode is set to true, the backup mode background value is returned. Otherwise, the peak of the
             gaussian fit is returned.
+
+        Can set bg to be zero for already background removed images. This is done by setting
+        forceBackupMode = True and backupMode = None.
 
         angle in degrees clockwise +-90 degrees from +x
         Length in pixels.
@@ -178,12 +182,18 @@ class pillPhot:
         length = l
         del(a, l)
 
+        orig_bgMode = backupMode
+        if backupMode is None and forceBackupMode:
+            orig_bgMode = None
+            backupMode = 'mean'
+
         #Set up some of the True/False statements that gets used repeatedly:
         singleAperture = isinstance(radius, (float, np.float64))
         multipleApertures = isinstance(radius, np.ndarray)
         if not singleAperture | multipleApertures:
           raise Exception('Aperture size not understood. ' +
                           'It seems to be neither an array or a single value')
+
         if enableBGSelection:
             if zoomRegion is not None:
                 if isinstance(zoomRegion, (list,np.float64)):
@@ -281,7 +291,7 @@ class pillPhot:
             w = np.where(rebinnedSkyImage!=0.0)
             bgf = bgFinder.bgFinder(rebinnedSkyImage[w])
             if display and enableBGSelection:
-                bgf.plotAxis = self.dispFig.add_subplot(self.dispGS[1])
+                bgf.plotAxis = self.dispFig.add_subplot(self.dispGS[1],label='First')
 
 
             if not trimBGHighPix:
@@ -315,20 +325,30 @@ class pillPhot:
                 W = np.where(rebinnedSkyImage[w]<bg+trimBGHighPix*bgstd)
                 bgf = bgFinder.bgFinder(rebinnedSkyImage[w][W])
                 if display and enableBGSelection:
-                    bgf.plotAxis = self.dispFig.add_subplot(self.dispGS[1])
+                    bgf.plotAxis = self.dispFig.add_subplot(self.dispGS[1],label='Second')
                 bg = bgf.smartBackground(display=display, backupMode=backupMode, forceBackupMode = forceBackupMode)
                 bgstd = np.std(rebinnedSkyImage[w][W])
 
+
+        if orig_bgMode is None and forceBackupMode:
+            print('Adopting 0 background value.\n')
+
         if singleAperture:
             W = np.where(mask != 0.0)
-            flux = np.sum(image) - len(W[0]) * bg / float(self.repFact ** 2)
+            if orig_bgMode is None and forceBackupMode:
+                flux = np.sum(image)
+            else:
+                flux = np.sum(image) - len(W[0]) * bg / float(self.repFact ** 2)
             self.nPix = np.sum(mask) / float(self.repFact ** 2)
         elif multipleApertures:
             flux = []
             self.nPix = []
             for jj in range(len(radius)):
                 W = np.where(mask[jj] != 0.0)
-                flux.append(np.sum(image[jj]) - len(W[0]) * bg / float(self.repFact ** 2))
+                if orig_bgMode is None and forceBackupMode:
+                    flux.append(np.sum(image[jj]))
+                else:
+                    flux.append(np.sum(image[jj]) - len(W[0]) * bg / float(self.repFact ** 2))
                 self.nPix.append(np.sum(mask[jj]) / float(self.repFact ** 2))
             flux = np.array(flux)
             self.nPix = np.array(self.nPix)
@@ -349,15 +369,18 @@ class pillPhot:
             elif singleAperture:
                 im = skyImage+image
 
+            nim = np.copy(im)
+            w = np.where(im==0.0)
             if self.zscale:
-                (z1,z2) = tzscale.zscale(im)
+                nim[w] = self.bg
+                zscale = ZScaleInterval()
+                (z1, z2) = zscale.get_limits(nim)
                 norm = interval.ManualInterval(z1,z2)
                 self.dispAx.imshow(norm(im),interpolation='nearest',origin='lower')
             else:
-                w = np.where(im==0.0)
-                im[w]+=self.bg*0.7/float(self.repFact*self.repFact)
-                im = np.clip(im,np.min(im),np.max(image))
-                self.dispAx.imshow(im,interpolation='nearest',origin='lower')
+                nim[w]+=self.bg*0.7/float(self.repFact*self.repFact)
+                nim = np.clip(im,np.min(im),np.max(image))
+                self.dispAx.imshow(nim,interpolation='nearest',origin='lower')
             if self.l0 is not None:
                 self.dispAx.plot(np.linspace(l0.xlim[0], l0.xlim[1], 100),
                                  l0(np.linspace(l0.xlim[0], l0.xlim[1], 100)),
@@ -436,15 +459,21 @@ class pillPhot:
 
                 if singleAperture:
                     W = np.where(mask != 0.0)
-                    flux = np.sum(image) - len(W[0]) * bg / float(self.repFact * self.repFact)
-                    numPix = (np.sum(mask[jj]) /
+                    if orig_bgMode is None and forceBackupMode:
+                        flux = np.sum(image)
+                    else:
+                        flux = np.sum(image) - len(W[0]) * bg / float(self.repFact * self.repFact)
+                    numPix = (np.sum(mask) /
                               float(self.repFact * self.repFact))
                 elif multipleApertures:
                     flux = []
                     numPix = []
                     for jj in range(len(radius)):
                         W = np.where(mask[jj] != 0.0)
-                        flux.append(np.sum(image[jj]) - len(W[0]) * bg / float(self.repFact * self.repFact))
+                        if orig_bgMode is None and forceBackupMode:
+                            flux.append(np.sum(image[jj]))
+                        else:
+                            flux.append(np.sum(image[jj]) - len(W[0]) * bg / float(self.repFact * self.repFact))
                         numPix.append(np.sum(mask[jj]) /
                                       float(self.repFact * self.repFact))
                     flux = np.array(flux)

@@ -172,6 +172,7 @@ class modelPSF:
             y=header['ySTAR*']#.values()
             for ii in range(len(x)):
                 self.psfStars.append([x[ii],y[ii]])
+            self.psfStars = np.array(self.psfStars)
             self.alpha=header['alpha']
             self.beta=header['beta']
             self.A=header['A']
@@ -492,7 +493,7 @@ class modelPSF:
         a2=self.alpha*self.alpha
         return (self.beta-1)*(np.pi*a2)*(1.+(rad/self.alpha)**2)**(-self.beta)
 
-    def FWHM(self, fromMoffatProfile=False, fromImData = False, method = 'median'):
+    def FWHM(self, fromMoffatProfile=False, fromImData = False, method = 'median',frac = 0.5):
         """
         Return the moffat profile of the PSF. If fromMoffatProfile=True. the FWHM from a pure
         moffat profile is returned. Otherwise the FWHM of the combined moffat profile and lookup
@@ -514,7 +515,7 @@ class modelPSF:
             r=np.arange(0,(2*max(self.x.shape[0]/2.,self.y.shape[0]/2.)**2)**0.5,0.005)
             m=self.moffat(r)
             m/=np.max(m)
-            k=np.sum(np.greater(m,0.5))
+            k=np.sum(np.greater(m,frac))
             if k<0 or k>=len(m): return None
             return r[k]*2.
         else:
@@ -553,7 +554,7 @@ class modelPSF:
                 else:
                     med_i = np.mean(rim[args[ii:ii+numMedPix]])
                     med_r = np.mean(rr[args[ii:ii+numMedPix]])
-                if med_i<=0.5*s:
+                if med_i<=frac*s:
                     return med_r*2.0
             if method == 'median':
                 return np.mean(r[-numMedPix])*2.0
@@ -979,6 +980,7 @@ class modelPSF:
                          kx-self.repFact*self.boxSize:kx+self.repFact*self.boxSize+self.repFact]
 
             shiftIms.append(shiftedImage)
+
         shiftIms=np.array(shiftIms)
         fluxes=np.array(fluxes)
 
@@ -997,6 +999,7 @@ class modelPSF:
             w=np.where( np.abs(bigMean-shiftIms)>3*stdLUT)
             shiftIms[w]=np.nan
             self.lookupTable=np.nanmean(shiftIms,axis=0)/self.maxFlux
+
         else:
             self.lookupTable=np.nanmean(shiftIms,axis=0)/self.maxFlux
         self.psfStar=np.array(self.psfStars)
@@ -1034,8 +1037,6 @@ class modelPSF:
 
         self.subSec=self.imData[a:b,c:d]
         self.repSubsec=expand2d(self.subSec,self.repFact)
-
-
 
 
         rangeY=np.arange(a*self.repFact,b*self.repFact)/float(self.repFact)
@@ -1089,7 +1090,7 @@ class modelPSF:
 
         err=(self.subSec-(self.bg+A*downSample2d(self.moffat(self.repRads),self.repFact))).reshape(self.subSec.size)
 
-        if self.alpha<0 or self.beta<0:
+        if self.alpha<=0 or self.beta<=0:
             if maxRad is not None:
                 w = np.where(self.rads.reshape(self.subSec.size)<maxRad)
                 return err[w]
