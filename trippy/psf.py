@@ -748,6 +748,7 @@ class modelPSF:
                 #psf = (np.random.poisson(np.clip(psfg,0,np.max(psfg))).astype('float64')/gain).astype(indata.dtype)
             else:
                 print("Please set the gain variable before trying to plant with Poisson noise.")
+                
                 raise TypeError
 
         if plantIntegerValues:
