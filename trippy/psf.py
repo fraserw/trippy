@@ -642,19 +642,11 @@ class modelPSF:
 
 
 
-    def plant(self, x, y, amp, indata,
+    def plant_old(self, x, y, amp, indata,
               useLinePSF=False, returnModel=False, verbose=False,
               addNoise=True, plantIntegerValues=False, gain=None, plantBoxWidth = None):
         """
-        Plant a star at coordinates x,y with amplitude amp.
-
-        indata is the array in which you want to plant the source.
-        addNoise=True to add gaussian noise. gain variable must be set.
-        useLinePSF=True to use the TSF rather than the circular PSF.
-        returnModel=True to not actually plant in the data, but return an array of the same size containing the TSF or
-        PSF without noise added.
-        plantBoxWidth is the width of the planting region in pixels centred on the source location. If this is set to a
-        value, then the planted source pixels will only be within a box of width 2*plantBoxWidth+1.
+        keeping this for testing purposes only.
         """
 
 
@@ -784,19 +776,24 @@ class modelPSF:
         return indata
 
 
-    def plant2(self, x_in, y_in, amp_in, indata,
+    def plant(self, x_in, y_in, amp_in, indata,
               useLinePSF=False, returnModel=False, verbose=False,
               addNoise=True, plantIntegerValues=False, gain=None, plantBoxWidth = None):
         """
-        Plant a star at coordinates x,y with amplitude amp.
+        Plant a star at coordinates x_in,y_in with amplitude amp_in.
 
-        indata is the array in which you want to plant the source.
-        addNoise=True to add gaussian noise. gain variable must be set.
-        useLinePSF=True to use the TSF rather than the circular PSF.
-        returnModel=True to not actually plant in the data, but return an array of the same size containing the TSF or
+        --x_in, y_in, and amp_in can be individual values, or 1D arrays of values.
+
+        -indata is the array in which you want to plant the source. Recommend passing as np.copy(indata)
+        -addNoise=True to add gaussian noise. gain variable must be set.
+        -gain must be manually set if adding noise.
+        -useLinePSF=True to use the TSF rather than the circular PSF.
+        -returnModel=True to not actually plant in the data, but return an array of the same size containing the TSF or
         PSF without noise added.
-        plantBoxWidth is the width of the planting region in pixels centred on the source location. If this is set to a
+        -plantBoxWidth is the width of the planting region in pixels centred on the source location. If this is set to a
         value, then the planted source pixels will only be within a box of width 2*plantBoxWidth+1.
+        -plant integer values will round all float values before adding to input data.
+        -verbose will do this all verboselly. 
         """
 
 
