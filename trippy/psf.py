@@ -657,13 +657,13 @@ class modelPSF:
         value, then the planted source pixels will only be within a box of width 2*plantBoxWidth+1.
         """
 
-
-
         #self.boxSize=len(self.lookupTable)/self.repFact/2
         self.boxSize = int(len(self.R[0])/self.repFact/2)
         (A,B) = indata.shape
         bigIn = np.zeros((A+2*self.boxSize,B+2*self.boxSize),dtype=indata.dtype)
         bigIn[self.boxSize:A+self.boxSize,self.boxSize:B+self.boxSize] = indata
+        #bigIn = np.pad(indata,(self.boxSize,self.boxSize),'constant')
+
 
         xint,yint=int(x)-self.boxSize,int(y)-self.boxSize
         cx,cy=x-int(x)+self.boxSize,y-int(y)+self.boxSize
@@ -707,7 +707,6 @@ class modelPSF:
                 ###this is a merger of the original moffat and lookup table lines above.
                 ###results in a significant performance boost.
                 psf = downSample2d(slu+self.moffat(self.repRads)/float(self.repFact*self.repFact),self.repFact)*amp*self.repFact*self.repFact
-
                 ###original sum of lookup table and moffat profile.
                 ###not needed in the newer performance boosted version.
                 #psf = slu+moff
@@ -757,7 +756,6 @@ class modelPSF:
         (A,B) = indata.shape
         bigOut = np.zeros((A+2*self.boxSize,B+2*self.boxSize),dtype=indata.dtype)
         bigOut[yint+self.boxSize:yint+3*self.boxSize+1,xint+self.boxSize:xint+3*self.boxSize+1]+=psf
-
 
         if returnModel:
             return bigOut[self.boxSize:A+self.boxSize,self.boxSize:B+self.boxSize]
