@@ -791,11 +791,14 @@ class modelPSF:
         -returnModel=True to not actually plant in the data, but return an array of the same size containing the TSF or
         PSF without noise added.
         -plantBoxWidth is the width of the planting region in pixels centred on the source location. If this is set to a
-        value, then the planted source pixels will only be within a box of width 2*plantBoxWidth+1.
+        value, then the planted source pixels will only be within a box of width 2*plantBoxWidth+1. Only applies to a
+        single plant location. If more than one plant location is assigned, the entire image is altered.
         -plant integer values will round all float values before adding to input data.
-        -verbose will do this all verboselly. 
+        -verbose will do this all verboselly.
         """
 
+        if type(x_in) == type(1.0):
+            x_in,y_in,amp_in = [x_in],[y_in],[amp_in]
 
         rf2 = float(self.repFact*self.repFact)
 
@@ -914,16 +917,15 @@ class modelPSF:
         if returnModel:
             return bigOut[self.boxSize:A+self.boxSize,self.boxSize:B+self.boxSize]
 
-        if plantBoxWidth is not None:
-            for ii in range(len(x_in)):
-                x,y,amp = x_in[ii],y_in[ii],amp_in[ii]
+        if plantBoxWidth is not None and len(x_in) == 1:
+            x,y,amp = x_in,y_in,amp_in
 
-                a = max(0,int(y)-plantBoxWidth)
-                b = min(A,int(y)+plantBoxWidth+1)
-                c = max(0,int(x)-plantBoxWidth)
-                d = min(B,int(x)+plantBoxWidth+1)
-                indata[a:b,c:d] += bigOut[self.boxSize:A + self.boxSize, self.boxSize:B + self.boxSize][a:b,c:d]
-                #indata[int(y)-plantBoxWidth:int(y)+plantBoxWidth+1,int(x)-plantBoxWidth:int(x)+plantBoxWidth] += bigOut[self.boxSize:A + self.boxSize, self.boxSize:B + self.boxSize][int(y)-plantBoxWidth:int(y)+plantBoxWidth+1,int(x)-plantBoxWidth:int(x)+plantBoxWidth]
+            a = max(0,int(y)-plantBoxWidth)
+            b = min(A,int(y)+plantBoxWidth+1)
+            c = max(0,int(x)-plantBoxWidth)
+            d = min(B,int(x)+plantBoxWidth+1)
+            indata[a:b,c:d] += bigOut[self.boxSize:A + self.boxSize, self.boxSize:B + self.boxSize][a:b,c:d]
+            #indata[int(y)-plantBoxWidth:int(y)+plantBoxWidth+1,int(x)-plantBoxWidth:int(x)+plantBoxWidth] += bigOut[self.boxSize:A + self.boxSize, self.boxSize:B + self.boxSize][int(y)-plantBoxWidth:int(y)+plantBoxWidth+1,int(x)-plantBoxWidth:int(x)+plantBoxWidth]
         else:
             indata+=bigOut[self.boxSize:A+self.boxSize, self.boxSize:B+self.boxSize]
         #t5 = time.time()

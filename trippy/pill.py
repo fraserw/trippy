@@ -173,7 +173,10 @@ class pillPhot:
         -the bg is then restimated.
 
         -when zoomRegion is set [x_low,x_high,y_low,y_high], a 4 int/float array, and enableBGSelection = True, the
-        aperture panel will automatically zoom to the region of the image specified by the box coordinates in zoomRegion
+        aperture panel will automatically zoom to the region of the image specified by the box coordinates in zoomRegion.
+        The coordinates are in super-sampled coordinates, with limits 0 to 2xwidth*repFact in both dimensions.
+
+        Note - the selected background region can be saved after __call__ through the pillPhot.bgSamplingRegion variable.
         """
         #Single-letter variables = super painful debugging
         #I'll leave them in the function call for backwards compatibility,
