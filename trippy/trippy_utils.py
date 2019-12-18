@@ -1,5 +1,5 @@
 import numpy as np
-
+from skimage.util.shape import view_as_windows
 
 def extent(r1,r2,n):
     lr1=np.log10(r1)
@@ -32,42 +32,29 @@ def expand2d(a, repFact):
             out[i * repFact + j, :] = r
     return out / (float(repFact) * float(repFact))
 
+def downSample2d(arr,sf):
+    isf2 = 1.0/(sf*sf)
+    (A,B) = arr.shape
+    windows = view_as_windows(arr, (sf,sf), step = sf)
+    return windows.sum(3).sum(2)*isf2
+
 
 try:
     from numba import jit
-    def downSample2d(a, sampFact):
-        (A, B) = a.shape
-        o = np.zeros((int(A/sampFact),int(B/sampFact))).astype('float64')
-        return test(a,o,A,B,sampFact)
 
-    @jit
-    def test(a,o,A,B,sampFact):
+    def downSample2dold(a, sampFact):
+        (A, B) = a.shape
+        o = np.zeros((int(A/sampFact),int(B/sampFact)),dtype='float64')
+        return ds2d_func(a,o,A,B,sampFact)
+
+    @jit(nopython=True)
+    def ds2d_func(a,o,A,B,sampFact):
         isf2 = 1.0/(sampFact*sampFact)
         for i in range(0,A,sampFact):
             for j in range(0,B,sampFact):
-                s = 0.0
-                for k in range(sampFact):
-                    for l in range(sampFact):
-                        s += a[i+k,j+l]
-                o[int(i/sampFact),int(j/sampFact)] = s*isf2
-        return o
+                o[int(i/sampFact),int(j/sampFact)] = np.sum(a[i:i+sampFact,j:j+sampFact])
+        return o*isf2
 
-
-    """
-    #old version I wish to hold onto
-    @jit
-    def downSample2d(a, sampFact):
-        (A, B) = a.shape
-        o = np.zeros((int(A/sampFact),int(B/sampFact))).astype('float64')
-        for i in range(0,A,sampFact):
-            for j in range(0,B,sampFact):
-                s = 0.0
-                for k in range(sampFact):
-                    for l in range(sampFact):
-                        s += a[i+k,j+l]
-                o[int(i/sampFact),int(j/sampFact)] = s
-        return o/float(sampFact*sampFact)
-    """
 
 except:
     def downSample2d(a,sampFact):

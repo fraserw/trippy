@@ -658,23 +658,29 @@ class modelPSF:
         """
 
 
+        rf2 = float(self.repFact*self.repFact)
 
         #self.boxSize=len(self.lookupTable)/self.repFact/2
         self.boxSize = int(len(self.R[0])/self.repFact/2)
+
+        #t1 = time.time()
         (A,B) = indata.shape
         bigIn = np.zeros((A+2*self.boxSize,B+2*self.boxSize),dtype=indata.dtype)
+        bigOut = np.zeros((A+2*self.boxSize,B+2*self.boxSize),dtype=indata.dtype)
+
         bigIn[self.boxSize:A+self.boxSize,self.boxSize:B+self.boxSize] = indata
 
-        xint,yint=int(x)-self.boxSize,int(y)-self.boxSize
-        cx,cy=x-int(x)+self.boxSize,y-int(y)+self.boxSize
-        sx,sy=int(round((x-int(x))*self.repFact)),int(round((y-int(y))*self.repFact))
-        cut=np.copy(bigIn[self.boxSize+yint:yint+3*self.boxSize+1,self.boxSize+xint:self.boxSize+xint+3*self.boxSize+1])
+        #t2 = time.time()
+        xint,yint = int(x)-self.boxSize,int(y)-self.boxSize
+        cx,cy = x-int(x)+self.boxSize,y-int(y)+self.boxSize
+        sx,sy = int(round((x-int(x))*self.repFact)),int(round((y-int(y))*self.repFact))
+        cut = np.copy(bigIn[self.boxSize+yint:yint+3*self.boxSize+1,self.boxSize+xint:self.boxSize+xint+3*self.boxSize+1])
 
         if self.imData is not None:
-            origData=np.copy(self.imData)
+            origData = np.copy(self.imData)
         else: origData = None
 
-        self.imData=cut
+        self.imData = cut
         if type(cx)==type(1.0):
             self._flatRadial(np.array([cx]),np.array([cy]))
         else:
@@ -682,6 +688,7 @@ class modelPSF:
         if origData is not None:
             self.imData = origData
 
+        #t2a = time.time()
         if not useLinePSF:
             ###original moffat profile creation
             #don't need to shift this up and right because the _flatRadial function handles the moffat sub-pixel centering.
@@ -690,7 +697,7 @@ class modelPSF:
                 #(pa,pb)=moff.shape
 
                 #shift the lookuptable right and up to account for the off-zero centroid
-                slu=np.copy(self.lookupTable)
+                slu = np.copy(self.lookupTable)
                 (a,b) = slu.shape
 
                 if sx>0:
@@ -706,7 +713,8 @@ class modelPSF:
 
                 ###this is a merger of the original moffat and lookup table lines above.
                 ###results in a significant performance boost.
-                psf = downSample2d(slu+self.moffat(self.repRads)/float(self.repFact*self.repFact),self.repFact)*amp*self.repFact*self.repFact
+
+                psf = downSample2d(slu+self.moffat(self.repRads)/rf2,self.repFact)*amp*rf2
 
                 ###original sum of lookup table and moffat profile.
                 ###not needed in the newer performance boosted version.
@@ -740,23 +748,22 @@ class modelPSF:
 
         self.fitFluxCorr=1. #HACK! Could get rid of this in the future...
 
+        #t3 = time.time()
         (a,b) = psf.shape
         if addNoise:
             if gain is not None:
-                psf+=sci.randn(a,b)*(np.abs(psf)/float(gain) )**0.5
+                psf+=sci.randn(a,b)*np.sqrt(np.abs(psf)/float(gain) )
                 #old poisson experimenting
                 #psfg = (psf+bg)*gain
                 #psf = (np.random.poisson(np.clip(psfg,0,np.max(psfg))).astype('float64')/gain).astype(indata.dtype)
             else:
                 print("Please set the gain variable before trying to plant with Poisson noise.")
-                
                 raise TypeError
 
         if plantIntegerValues:
             psf = np.round(psf)
 
-        (A,B) = indata.shape
-        bigOut = np.zeros((A+2*self.boxSize,B+2*self.boxSize),dtype=indata.dtype)
+        #t4 = time.time()
         bigOut[yint+self.boxSize:yint+3*self.boxSize+1,xint+self.boxSize:xint+3*self.boxSize+1]+=psf
 
 
@@ -772,7 +779,158 @@ class modelPSF:
             #indata[int(y)-plantBoxWidth:int(y)+plantBoxWidth+1,int(x)-plantBoxWidth:int(x)+plantBoxWidth] += bigOut[self.boxSize:A + self.boxSize, self.boxSize:B + self.boxSize][int(y)-plantBoxWidth:int(y)+plantBoxWidth+1,int(x)-plantBoxWidth:int(x)+plantBoxWidth]
         else:
             indata+=bigOut[self.boxSize:A+self.boxSize, self.boxSize:B+self.boxSize]
+        #t5 = time.time()
+        #print(t5-t4,t4-t3,t3-t2a,t2a-t2,t2-t1)
+        return indata
 
+
+    def plant2(self, x_in, y_in, amp_in, indata,
+              useLinePSF=False, returnModel=False, verbose=False,
+              addNoise=True, plantIntegerValues=False, gain=None, plantBoxWidth = None):
+        """
+        Plant a star at coordinates x,y with amplitude amp.
+
+        indata is the array in which you want to plant the source.
+        addNoise=True to add gaussian noise. gain variable must be set.
+        useLinePSF=True to use the TSF rather than the circular PSF.
+        returnModel=True to not actually plant in the data, but return an array of the same size containing the TSF or
+        PSF without noise added.
+        plantBoxWidth is the width of the planting region in pixels centred on the source location. If this is set to a
+        value, then the planted source pixels will only be within a box of width 2*plantBoxWidth+1.
+        """
+
+
+        rf2 = float(self.repFact*self.repFact)
+
+        #self.boxSize=len(self.lookupTable)/self.repFact/2
+        self.boxSize = int(len(self.R[0])/self.repFact/2)
+
+        #t1 = time.time()
+        (A,B) = indata.shape
+        bigIn = np.zeros((A+2*self.boxSize,B+2*self.boxSize),dtype=indata.dtype)
+        bigOut = np.zeros((A+2*self.boxSize,B+2*self.boxSize),dtype=indata.dtype)
+
+        bigIn[self.boxSize:A+self.boxSize,self.boxSize:B+self.boxSize] = indata
+
+        if self.imData is not None:
+            origData = np.copy(self.imData)
+        else: origData = None
+
+        for ii in range(len(x_in)):
+            x,y,amp = x_in[ii],y_in[ii],amp_in[ii]
+            #t2 = time.time()
+            xint,yint = int(x)-self.boxSize,int(y)-self.boxSize
+            cx,cy = x-int(x)+self.boxSize,y-int(y)+self.boxSize
+            sx,sy = int(round((x-int(x))*self.repFact)),int(round((y-int(y))*self.repFact))
+            cut = np.copy(bigIn[self.boxSize+yint:yint+3*self.boxSize+1,self.boxSize+xint:self.boxSize+xint+3*self.boxSize+1])
+
+
+            self.imData = cut
+            if type(cx)==type(1.0):
+                self._flatRadial(np.array([cx]),np.array([cy]))
+            else:
+                self._flatRadial(cx,cy)
+            if origData is not None:
+                self.imData = origData
+
+            #t2a = time.time()
+            if not useLinePSF:
+                ###original moffat profile creation
+                #don't need to shift this up and right because the _flatRadial function handles the moffat sub-pixel centering.
+                #moff=downSample2d(self.moffat(self.repRads),self.repFact)*amp
+                if self.lookupTable is not None:
+                    #(pa,pb)=moff.shape
+
+                    #shift the lookuptable right and up to account for the off-zero centroid
+                    slu = np.copy(self.lookupTable)
+                    (a,b) = slu.shape
+
+                    if sx>0:
+                        sec = slu[:,b-sx:]
+                        slu[:,sx:] = slu[:,:b-sx]
+                        slu[:,:sx] = sec
+                    if sy>0:
+                        sec = slu[a-sy:,:]
+                        slu[sy:,:] = slu[:a-sy,:]
+                        slu[:sy,:] = sec
+                    ###original lookup table creation
+                    #slu = downSample2d(slu,self.repFact)*amp*self.repFact*self.repFact
+
+                    ###this is a merger of the original moffat and lookup table lines above.
+                    ###results in a significant performance boost.
+
+                    psf = downSample2d(slu+self.moffat(self.repRads)/rf2,self.repFact)*amp*rf2
+
+                    ###original sum of lookup table and moffat profile.
+                    ###not needed in the newer performance boosted version.
+                    #psf = slu+moff
+                else:
+                    psf = moff
+                    if verbose: print("Lookup table is none. Just using Moffat profile.")
+            else:
+                lpsf = np.copy(self.longPSF)
+                (a,b) = lpsf.shape
+
+                #cubic interpolation doesn't do as good as the x10 subsampling
+                #quintic does just about as well, linear sucks
+                #f=sci.interpolate.interp2d(self.dx,self.dy,downSample2d(lpsf,self.repFact),kind='linear')
+                #psf=f(self.dx-float(sx)/self.repFact,self.dy-float(sy)/self.repFact)*amp
+
+
+                if sx>0:
+                    sec = lpsf[:,b-sx:]
+                    lpsf[:,sx:] = lpsf[:,:b-sx]
+                    lpsf[:,:sx] = sec
+                if sy>0:
+                    sec = lpsf[a-sy:,:]
+                    lpsf[sy:,:] = lpsf[:a-sy,:]
+                    lpsf[:sy,:] = sec
+                psf=downSample2d(lpsf,self.repFact)*amp
+
+                #this is a cheat to handle the outer edges that can go negative after convolution
+                w=np.where(psf<0)
+                psf[w]=0.0
+
+            bigOut[yint+self.boxSize:yint+3*self.boxSize+1,xint+self.boxSize:xint+3*self.boxSize+1]+=psf
+
+        self.fitFluxCorr=1. #HACK! Could get rid of this in the future...
+
+        #t3 = time.time()
+        (a,b) = psf.shape
+        if addNoise:
+            if gain is not None:
+
+                bigOut+=sci.randn(bigOut.shape[0],bigOut.shape[1])*np.sqrt(np.abs(bigOut)/float(gain) )
+                #old poisson experimenting
+                #psfg = (psf+bg)*gain
+                #psf = (np.random.poisson(np.clip(psfg,0,np.max(psfg))).astype('float64')/gain).astype(indata.dtype)
+            else:
+                print("Please set the gain variable before trying to plant with Poisson noise.")
+                raise TypeError
+
+        if plantIntegerValues:
+            bigOut = np.round(bigOut)
+
+        #t4 = time.time()
+
+
+        if returnModel:
+            return bigOut[self.boxSize:A+self.boxSize,self.boxSize:B+self.boxSize]
+
+        if plantBoxWidth is not None:
+            for ii in range(len(x_in)):
+                x,y,amp = x_in[ii],y_in[ii],amp_in[ii]
+
+                a = max(0,int(y)-plantBoxWidth)
+                b = min(A,int(y)+plantBoxWidth+1)
+                c = max(0,int(x)-plantBoxWidth)
+                d = min(B,int(x)+plantBoxWidth+1)
+                indata[a:b,c:d] += bigOut[self.boxSize:A + self.boxSize, self.boxSize:B + self.boxSize][a:b,c:d]
+                #indata[int(y)-plantBoxWidth:int(y)+plantBoxWidth+1,int(x)-plantBoxWidth:int(x)+plantBoxWidth] += bigOut[self.boxSize:A + self.boxSize, self.boxSize:B + self.boxSize][int(y)-plantBoxWidth:int(y)+plantBoxWidth+1,int(x)-plantBoxWidth:int(x)+plantBoxWidth]
+        else:
+            indata+=bigOut[self.boxSize:A+self.boxSize, self.boxSize:B+self.boxSize]
+        #t5 = time.time()
+        #print(t5-t4,t4-t3,t3-t2a,t2a-t2,t2-t1)
         return indata
 
 
