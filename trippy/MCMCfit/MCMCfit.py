@@ -38,9 +38,30 @@ def resid(p,cutout,psf,boxWidth = 7,useLinePSF = False,verbose=False):
         print(np.sum(res**2)**0.5,x,y,m)
     return np.array(res).astype('float').reshape((boxWidth*2+1)**2)
 
+def resid2(p,cutout,psf,boxWidth = 7,useLinePSF = False,verbose=False):
+    (x,y,m,X,Y,M) = p
+    #print(x,y,m,X,Y,M)
+    xt,yt = int((x+X)/2.0),int((y+Y)/2.0)
+    #print(X-(xt-boxWidth),Y-(yt-boxWidth))
+    (a,b) = cutout.shape
+    Res = psf.remove(x,y,m,cutout,useLinePSF=useLinePSF)
+    res = psf.remove(X,Y,M,Res,useLinePSF=useLinePSF)[yt-boxWidth:yt+boxWidth+1,xt-boxWidth:xt+boxWidth+1]
+    #pyl.imshow(res)
+    #pyl.show()
+    #exit()
+    if verbose:
+        print(np.sum(res**2)**0.5,x,y,m,X,Y,M)
+    return np.array(res).astype('float').reshape((boxWidth*2+1)**2)
+
 def likelihood_for_LS(p,cutout,bg,psf,boxWidth = 7,useLinePSF = False,verbose=False):
     (x,y,m) = p
     res = resid(p,cutout-bg,psf,boxWidth = boxWidth,verbose=verbose,useLinePSF = useLinePSF)
+    xt,yt = int(x),int(y)
+    ue2 = np.abs(cutout[yt-boxWidth:yt+boxWidth+1,xt-boxWidth:xt+boxWidth+1].reshape((boxWidth*2+1)**2))
+    return -0.5*np.sum(res**2/ue2)
+def likelihood_for_LS2(p,cutout,bg,psf,boxWidth = 7,useLinePSF = False,verbose=False):
+    (x,y,m,X,Y,M) = p
+    res = resid2(p,cutout-bg,psf,boxWidth = boxWidth,verbose=verbose,useLinePSF = useLinePSF)
     xt,yt = int(x),int(y)
     ue2 = np.abs(cutout[yt-boxWidth:yt+boxWidth+1,xt-boxWidth:xt+boxWidth+1].reshape((boxWidth*2+1)**2))
     return -0.5*np.sum(res**2/ue2)
@@ -113,6 +134,7 @@ def lnprobDouble(r,dat,lims,psf,ue,useLinePSF,verbose=False):
     (A,B) = dat.shape
     (X,Y,AMP,x,y,amp) = r
     if amp<=0 or AMP<=0 or X<0 or X>B or x<0 or x>B or Y<0 or Y>A or y<0 or y>A: return -np.inf
+    #if x>X: return -np.inf
 
     diff = psf.remove(X,Y,AMP,dat,useLinePSF=useLinePSF)
     diff = psf.remove(x,y,amp,diff,useLinePSF=useLinePSF)
@@ -133,8 +155,6 @@ class LSfitter(object):
         Input:
         psf is the trippy model psf object
         imageData is the data on which the fit will be performed.
-
-        Use restore=fileName to import a dump fit file saved by saveState.
 
         """
         self.psf = psf
@@ -179,6 +199,50 @@ class LSfitter(object):
         lsqf = opti.leastsq(resid,(x_in,y_in,m_in),args=(dmbg,self.psf,fitWidth,useLinePSF,verbose),maxfev=1000,ftol=ftol)
         fitPars = lsqf[0]
         l = likelihood_for_LS(fitPars,dat,bg,self.psf,boxWidth = fitWidth,useLinePSF=useLinePSF)
+        fitPars = np.concatenate([fitPars,np.array([l])])
+
+        return fitPars
+
+    def fitDoubleWithModelPSF(self,x_in,y_in,X_in,Y_in,
+                               bRat_in,m_in = -1.,fitWidth = 7,
+                               bg = None,ftol=1.e-8,
+                               useLinePSF = False,
+                               verbose=False):
+        """
+        This is still experimental and hasn't been fully vetted yet.
+
+        Use at your own risk.
+        """
+
+        self.useLinePSF = useLinePSF
+        if fitWidth>self.psf.boxSize:
+            raise NotImplementedError('Need to keep the fitWidth <= boxSize.')
+
+        (A,B) = self.imageData.shape
+        #ai = max(0,int(y_in)-fitWidth)
+        #bi = min(A,int(y_in)+fitWidth+1)
+        #ci = max(0,int(x_in)-fitWidth)
+        #di = min(B,int(x_in)+fitWidth+1)
+        dat = np.copy(self.imageData)
+
+        if bg == None:
+            bgf = bgFinder.bgFinder(self.imageData)
+            bg = bgf.smartBackground()
+            dmbg = dat - bg
+            print('Subtracting background {}'.format(bg))
+        else:
+            dmbg = dat - bg
+        if m_in==-1.:
+            if useLinePSF:
+                m_in = self.psf.repFact*self.psf.repFact*np.sum(dat)/np.sum(self.psf.longPSF)
+            else:
+                m_in = self.psf.repFact*self.psf.repFact*np.sum(dat)/np.sum(self.psf.fullPSF)
+
+
+        lsqf = opti.leastsq(resid2,(x_in,y_in,m_in,X_in,Y_in,m_in*bRat_in),args=(dmbg,self.psf,fitWidth,useLinePSF,verbose),maxfev=1000,ftol=ftol)
+        fitPars = lsqf[0]
+        print(fitPars)
+        l = likelihood_for_LS2(fitPars,dat,bg,self.psf,boxWidth = fitWidth,useLinePSF=useLinePSF)
         fitPars = np.concatenate([fitPars,np.array([l])])
 
         return fitPars
@@ -500,10 +564,10 @@ class MCMCfitter:
         Save the fitted state to the provided filename.
         """
         if not self.fitted: raise Exception('You must run a fit before you can save the fit results.')
-        with open(fn,'w+') as han:
+        with open(fn,'bw+') as han:
             pickle.dump([self.samps,self.probs,self.dat,self.useLinePSF],han)
 
     def _restoreState(self,fn='MCState.pickle'):
-        with open(fn) as han:
+        with open(fn,'rb') as han:
             (self.samps,self.probs,self.dat,self.useLinePSF)=pickle.load(han)
         self.fitted=True
