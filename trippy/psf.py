@@ -797,9 +797,8 @@ class modelPSF:
         -verbose will do this all verboselly.
         """
 
-        if type(x_in) == type(1.0):
-            x_in,y_in,amp_in = [x_in],[y_in],[amp_in]
-
+        if not hasattr(x_in,'__len__'):
+            x_in,y_in,amp_in = np.array([x_in]),np.array([y_in]),np.array([amp_in])
         rf2 = float(self.repFact*self.repFact)
 
         #self.boxSize=len(self.lookupTable)/self.repFact/2
