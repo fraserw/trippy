@@ -12,7 +12,8 @@ print("Trippy unittests haven't been built into setup.py scripts. Please manuall
 dependencies = ['numpy >= 1.16.2',
                 'scipy',
                 'matplotlib >= 2.2.2',
-                'astropy >= 3.1']
+                "astropy >= 3.2.1; python_version > '3.0'",
+                "astropy == 2.0.9; python_version <'3.0'"]
 
 setup(
   name = 'trippy',
