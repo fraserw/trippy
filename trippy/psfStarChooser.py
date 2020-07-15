@@ -79,7 +79,8 @@ class starChooser:
     (goodStars,meds,stds)=starChooser(40, 5. 2.)
     """
 
-    def __init__(self,data,XWIN_IMAGE,YWIN_IMAGE,FLUX_AUTO,FLUXERR_AUTO,zscaleNsamp=200,zscaleContrast=1.,minGoodVal=None):
+    def __init__(self, data, XWIN_IMAGE, YWIN_IMAGE, FLUX_AUTO, FLUXERR_AUTO,
+                 zscaleNsamp=200, zscaleContrast=1., minGoodVal=None):
         self.XWIN_IMAGE=XWIN_IMAGE
         self.YWIN_IMAGE=YWIN_IMAGE
         self.FLUX_AUTO=FLUX_AUTO
@@ -97,11 +98,11 @@ class starChooser:
 
         self._increment = 0
 
-    def __call__(self,moffatWidth,moffatSNR,initAlpha=5.,
-                 initBeta=2.,repFact=3,xWidth=51,yWidth=51,
-                 bgRadius = 20.0,ftol=1.49012e-8,quickFit=True,
-                 autoTrim=False,noVisualSelection=False,verbose=False,
-                 printStarInfo=False, saveFigure=False):
+    def __call__(self, moffatWidth, moffatSNR, initAlpha=5.,
+                 initBeta=2., repFact=3, xWidth=51, yWidth=51,
+                 bgRadius = 20.0, ftol=1.49012e-8, quickFit=True,
+                 autoTrim=False, noVisualSelection=False, verbose=False,
+                 printStarInfo=False, saveFigure=False, bgMode = 'smart'):
 
         self.moffatWidth = moffatWidth
         self.moffatSNR = moffatSNR
@@ -109,6 +110,7 @@ class starChooser:
         self.initBeta = initBeta
         self.repFact = repFact
         self.bgRadius = bgRadius
+        self.bgMode = bgMode
 
         self.fwhms = []
         self.points = []
@@ -135,7 +137,7 @@ class starChooser:
                                     repFact=self.repFact)
                 mpsf.fitMoffat(self.data, self.XWIN_IMAGE[j], self.YWIN_IMAGE[j],
                                boxSize=self.moffatWidth, verbose=verbose, bgRadius = self.bgRadius,
-                               ftol=ftol, quickFit=quickFit)
+                               ftol=ftol, quickFit=quickFit, mode = self.bgMode)
 
                 fwhm = mpsf.FWHM(fromMoffatProfile=True)
 
