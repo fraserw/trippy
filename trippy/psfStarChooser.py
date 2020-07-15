@@ -103,11 +103,11 @@ class starChooser:
                  autoTrim=False,noVisualSelection=False,verbose=False,
                  printStarInfo=False, saveFigure=False):
 
-        self.moffatWidth=moffatWidth
-        self.moffatSNR=moffatSNR
-        self.initAlpha=initAlpha
-        self.initBeta=initBeta
-        self.repFact=repFact
+        self.moffatWidth = moffatWidth
+        self.moffatSNR = moffatSNR
+        self.initAlpha = initAlpha
+        self.initBeta = initBeta
+        self.repFact = repFact
         self.bgRadius = bgRadius
 
         self.fwhms = []
@@ -489,4 +489,3 @@ class starChooser:
             except TclError:
                 print('Saving psfStarChooser figure FAILED due to TclError!')
                 print(self.figPSF)
-            
