@@ -238,7 +238,7 @@ class modelPSF:
         print('   PSF restored.\n')
 
 
-    def __init__(self,x=-1,y=-1,alpha=-1,beta=-1,repFact=10,verbose=False,restore=False,ignoreRepFactWarning=False):
+    def __init__(self,x=-1,y=-1,alpha=-1,beta=-1,repFact=10,verbose=False,restore=False):
         """
         Initialize the PSF.
 
@@ -252,7 +252,7 @@ class modelPSF:
         self.nForFitting=0
         self.imData=None
 
-        if repFact not in [3,5,10] and not ignoreRepFactWarning:
+        if repFact not in [3,5,10]:
             raise Warning('This has only been robustly tested with repFact=3, 5, or 10. I encourage you to stick with those.')
 
         if not restore:
@@ -904,9 +904,7 @@ class modelPSF:
                 #psfg = (psf+bg)*gain
                 #psf = (np.random.poisson(np.clip(psfg,0,np.max(psfg))).astype('float64')/gain).astype(indata.dtype)
             else:
-                print()
                 print("Please set the gain variable before trying to plant with Poisson noise.")
-                print()
                 raise TypeError
 
         if plantIntegerValues:
@@ -957,12 +955,12 @@ class modelPSF:
         List=pyf.HDUList([HDU])
         List.writeto(name)
 
-    def fitMoffat(self, imData, centX, centY,
-                  boxSize=25, bgRadius=20,
-                  verbose=False, mode='smart',
+    def fitMoffat(self,imData,centX,centY,
+                  boxSize=25,bgRadius=20,
+                  verbose=False,mode='smart',
                   quickFit = False, fixAB=False,
-                  fitXY=False, fitMaxRadius=None, logRadPlot=False,
-                  ftol = 1.49012e-8, maxfev = 250):
+                  fitXY=False,fitMaxRadius=None,logRadPlot=False,
+                  ftol = 1.49012e-8,maxfev = 250):
 
         """
         Fit a moffat profile to the input data, imData, at point centX,centY.
@@ -974,8 +972,6 @@ class modelPSF:
         - verbose=True to see a lot of fittnig output and a radial plot of each fit.
         - logRadPlot=True to see the plot in log radius.
         - mode='smart' is the background determination method used. See bgFinder for details.
-          if mode is set to a floating point number, the background will be fixed to that
-          value during the fitting procedure.
         - fixAB=True to fit only the amplitude.
         - fitXY=False *** this is currently not implemented***
         - fitMaxRadius ***not currently implemented***
@@ -992,11 +988,8 @@ class modelPSF:
         self._flatRadial(centX-0.5,centY-0.5)#set the radial distribution pixels
 
         w = np.where(self.rads>bgRadius)
-        if not (isinstance(mode, float) or isinstance(mode, int)):
-            bgf = bgFinder.bgFinder(self.subSec[w])
-            self.bg = bgf(method=mode)
-        else:
-            self.bg = float(mode) # doing this for safety
+        bgf = bgFinder.bgFinder(self.subSec[w])
+        self.bg = bgf(method=mode)
 
         peakGuess_1 = (np.max(self.subSec)-self.bg)/(np.max(self.moffat(self.rads)))
         peakGuess_2 = (np.sum(self.subSec)-self.bg*self.subSec.size)/(np.sum(self.moffat(self.rads)))
@@ -1086,6 +1079,7 @@ class modelPSF:
         self.imData=imData*1.0
         self.boxSize=int(len(self.R[0])/self.repFact/2)
 
+
         self.psfStars=[]
 
         if bpMask!=None:
@@ -1103,6 +1097,7 @@ class modelPSF:
 
             #store the psf star location
             self.psfStars.append([centXs[ii],centYs[ii]])
+
 
             xint,yint=int(adjCentXs[ii])-self.boxSize-2,int(adjCentYs[ii])-self.boxSize-2
             #if xint<=0 or yint<=0 or xint+2*self.boxSize+5>=BD or yint+2*self.boxSize+5>=BD: continue
@@ -1144,7 +1139,7 @@ class modelPSF:
 
         shiftIms=np.array(shiftIms)
         fluxes=np.array(fluxes)
-        print(fluxes)
+
 
         self.maxFlux=1.0
         invFluxes=self.maxFlux/fluxes
