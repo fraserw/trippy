@@ -28,6 +28,7 @@ from trippy import bgFinder
 import pickle
 from scipy import optimize as opti
 import pylab as pyl
+import sys
 
 def resid(p,cutout,psf,boxWidth = 7,useLinePSF = False,verbose=False):
     (x,y,m) = p
@@ -134,6 +135,7 @@ def lnprobDouble(r,dat,lims,psf,ue,useLinePSF,verbose=False):
     (A,B) = dat.shape
     (X,Y,AMP,x,y,amp) = r
     if amp<=0 or AMP<=0 or X<0 or X>B or x<0 or x>B or Y<0 or Y>A or y<0 or y>A: return -np.inf
+    if amp>AMP: return -np.inf
     #if x>X: return -np.inf
 
     diff = psf.remove(X,Y,AMP,dat,useLinePSF=useLinePSF)
@@ -436,35 +438,37 @@ class MCMCfitter:
             print("You haven't actually run a fit yet!")
             return None
 
-        (Y,X,b) = self.samps.shape
+        (Y,X,B) = self.samps.shape
         goodSamps=[]
         for ii in range(Y):
             for jj in range(X):
                 g = []
-                for kk in range(b):
+                for kk in range(B):
                     g.append(self.samps[ii,jj][kk])
                 g.append(self.probs[ii,jj])
                 goodSamps.append(g)
         goodSamps = np.array(goodSamps)
-        args = np.argsort(goodSamps[:,b])
+        args = np.argsort(goodSamps[:,B])
         goodSamps = goodSamps[args]
 
         bp = goodSamps[-1]
         print('Best point:',bp)
-        if b == 3 or b == 6:
+        if B == 3 or B == 6:
             self.residual = self.psf.remove(bp[0],bp[1],bp[2],self.dat,useLinePSF=self.useLinePSF)
-        elif b == 6:
+        elif B == 6:
             self.residual = self.psf.remove(bp[3],bp[4],bp[5],self.residual,useLinePSF=self.useLinePSF)
-        elif b == 1:
+        elif B == 1:
             self.residual = None
         self.fitFlux = np.sum(self.psf.model)*self.psf.fitFluxCorr
 
         uncert=[]
-        for ii in range(b):
+        for ii in range(B):
             args = np.argsort(goodSamps[:,ii])
             x = goodSamps[args][:,ii]
+            #print(len(x),confidenceRange,(1-confidenceRange)/2,(1-(1-confidenceRange)/2))
             a = int(len(x)*(1-confidenceRange)/2)
-            b = int(1-a)
+            b = int(len(x)*(1-(1-confidenceRange)/2))
+            #print(a,b)
             uncert.append([x[int(a)],
                            x[int(b)]])
 
@@ -488,6 +492,7 @@ class MCMCfitter:
 
 
     def fitDoubleWithModelPSF(self,x_in,y_in,X_in,Y_in,bRat_in,m_in=-1.,bg=None,
+                              posWidthInit=1.0, fluxWidthInit=0.4,
                               fitWidth=20,nWalkers=30,nBurn=50,nStep=100,
                               useErrorMap=False,
                               useLinePSF=False,verbose=False):
@@ -496,8 +501,15 @@ class MCMCfitter:
         the provided psf to find the best x,y and amplitude, and confidence
         range on the fitted parameters.
 
-        x_in, y_in, m_in, X_in, Y_in, bRat - initial guesses on the true centroids, the amplitude and brightness ratio
-                                             of the two sources
+        x_in, y_in, m_in, X_in, Y_in, bRat - initial guesses on the true centroids,
+             the amplitude and brightness ratio of the two sources
+        posWidthInit - the standard deviation in pixels of the gaussian used to
+             initialize the primary and secondary position distributions of the
+             walkers
+        fluxWidthInit - the multiplier that determines the standard deviation of
+             the gaussian used to initialize the brightness distribution of the
+             walkers. sigma_primary = m_in*fluxWidthInit, and
+             sigma_secondary = m_in*bRat_in*fluxWidthInit
         fitWidth - the width +- of x_in/y_in of the data used in the fit
         nWalkers, nBurn, nStep - emcee fitting paramters. If you don't know what these are RTFM
         bg - the background of the image. Needed for the uncertainty table.
@@ -520,7 +532,6 @@ class MCMCfitter:
         ci = max(0,int((x_in+X_in)/2)-fitWidth)
         di = min(B,int((x_in+X_in)/2)+fitWidth+1)
         dat = np.copy(self.imageData)
-
 
         if bg==None:
             bgf = bgFinder.bgFinder(self.imageData)
@@ -545,8 +556,8 @@ class MCMCfitter:
         r0=[]
         for ii in range(nWalkers):
             r0.append(np.array([x_in,y_in,m_in,X_in,Y_in,m_in*bRat_in])+sci.randn(6)*np.array([1.,1.,
-                                                                                                          m_in*0.4,
-                                                                                                    1.,1.,
+                                                                                                m_in*0.4,
+                                                                                                1.,1.,
                                                                                                m_in*0.4*bRat_in]))
         r0=np.array(r0)
 
@@ -564,8 +575,13 @@ class MCMCfitter:
         Save the fitted state to the provided filename.
         """
         if not self.fitted: raise Exception('You must run a fit before you can save the fit results.')
-        with open(fn,'bw+') as han:
-            pickle.dump([self.samps,self.probs,self.dat,self.useLinePSF],han)
+        if sys.version_info[0]<3:
+            with open(fn,'w+') as han:
+                pickle.dump([self.samps,self.probs,self.dat,self.useLinePSF],han)
+        else:
+            with open(fn,'bw+') as han:
+                pickle.dump([self.samps,self.probs,self.dat,self.useLinePSF],han)
+
 
     def _restoreState(self,fn='MCState.pickle'):
         with open(fn,'rb') as han:
