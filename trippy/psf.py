@@ -1,8 +1,4 @@
 #! /usr/bin/env python
-
-from __future__ import print_function, division
-from collections import namedtuple
-
 """
 Copyright (C) 2016  Wesley Fraser (westhefras@gmail.com, @wtfastro)
 
@@ -20,6 +16,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from __future__ import print_function, division
+from collections import namedtuple
+import logging
 
 __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), Academic email: wes.fraser@qub.ac.uk'
 
@@ -140,7 +139,7 @@ class modelPSF:
         """
         Hidden convenience function to restore a psf file.
         """
-        print('\nRestoring PSF...')
+        logging.info("\Restoring PSF...")
         name=fn.split('.fits')[0]
         with pyf.open(name+'.fits') as inHan:
             #load the psf file
@@ -235,7 +234,7 @@ class modelPSF:
             if self.rate is not None:
                 self.line(self.rate,self.angle,self.dt,pixScale = self.pixScale,display=False,useLookupTable=True, verbose=True)
 
-        print('   PSF restored.\n')
+        logging.info('   PSF restored.\n')
 
 
     def __init__(self,x=-1,y=-1,alpha=-1,beta=-1,repFact=10,verbose=False,restore=False,ignoreRepFactWarning=False):
@@ -456,9 +455,9 @@ class modelPSF:
              display=displayAperture)
         fluxes = phot.sourceFlux
         self.lineAperCorrs = phot.magnitude
-        print("    Radius  Flux      Magnitude")
+        logging.info("    Radius  Flux      Magnitude")
         for ii in range(len(self.lineAperCorrRadii)):
-            print('    {:6.2f} {:10.3f}  {:8.3f}'.format(radii[ii],phot.sourceFlux[ii],phot.magnitude[ii]))
+            logging.info('    {:6.2f} {:10.3f}  {:8.3f}'.format(radii[ii],phot.sourceFlux[ii],phot.magnitude[ii]))
 
         self.lineAperCorrs=np.array(self.lineAperCorrs)
         self.lineAperCorrFunc=interp.interp1d(self.lineAperCorrRadii,self.lineAperCorrs)
@@ -622,14 +621,12 @@ class modelPSF:
             self.line2d=np.array([[1.0]])
 
         if useLookupTable:
-            if verbose:
-                print('Using the lookup table when generating the line PSF.')
+            loggin.info('Using the lookup table when generating the line PSF.')
             #self.longPSF=signal.convolve2d(self.moffProf+self.lookupTable*self.repFact*self.repFact, self.line2d,mode='same')
             self.longPSF=signal.fftconvolve(self.moffProf+self.lookupTable*self.repFact*self.repFact, self.line2d,mode='same')
             self.longPSF*=np.sum(self.fullPSF)/np.sum(self.longPSF)
         else:
-            if verbose:
-                print('Not using the lookup table when generating the line PSF')
+            logging.info('Not using the lookup table when generating the line PSF')
             #self.longPSF=signal.convolve2d(self.moffProf,self.line2d,mode='same')
             self.longPSF=signal.fftconvolve(self.moffProf,self.line2d,mode='same')
             self.longPSF*=np.sum(self.moffProf)/np.sum(self.longPSF)
@@ -713,7 +710,7 @@ class modelPSF:
                 #psf = slu+moff
             else:
                 psf = moff
-                if verbose: print("Lookup table is none. Just using Moffat profile.")
+                logging.info("Lookup table is none. Just using Moffat profile.")
         else:
             lpsf = np.copy(self.longPSF)
             (a,b) = lpsf.shape
@@ -749,9 +746,7 @@ class modelPSF:
                 #psfg = (psf+bg)*gain
                 #psf = (np.random.poisson(np.clip(psfg,0,np.max(psfg))).astype('float64')/gain).astype(indata.dtype)
             else:
-                print()
-                print("Please set the gain variable before trying to plant with Poisson noise.")
-                print()
+                TypeError("Need to set the gain variable before trying to plant with Poisson noise.")
                 raise TypeError
 
         if plantIntegerValues:
@@ -906,8 +901,7 @@ class modelPSF:
                 #psfg = (psf+bg)*gain
                 #psf = (np.random.poisson(np.clip(psfg,0,np.max(psfg))).astype('float64')/gain).astype(indata.dtype)
             else:
-                print("Please set the gain variable before trying to plant with Poisson noise.")
-                raise TypeError
+                TypeError("Need to  set the gain variable before trying to plant with Poisson noise.")
 
         if plantIntegerValues:
             bigOut = np.round(bigOut)
@@ -1008,10 +1002,10 @@ class modelPSF:
             peakGuess = peakGuess_2
 
         if fitXY:
-            print('This is hacky and really slow. Not yet meant for production.')
+            logging.warn('This is hacky and really slow. Not yet meant for production.')
             self.verbose = False
             best = [1.e8,-1.,-1.,-1.]
-            print('Fitting XYA')
+            logging.info('Fitting XYA')
             deltaX = np.arange(-0.3,0.3+1./float(self.repFact),1./float(self.repFact)/2.)
             deltaY = np.arange(-0.3,0.3+1./float(self.repFact),1./float(self.repFact)/2.)
             for ii in range(len(deltaX)):
@@ -1030,7 +1024,7 @@ class modelPSF:
             lsqf = opti.leastsq(self._residNoRep,(peakGuess,self.alpha,self.beta),args=(fitMaxRadius),maxfev=maxfev,ftol=ftol)
         else:
             lsqf = opti.leastsq(self._resid,(peakGuess,self.alpha,self.beta),args=(fitMaxRadius),maxfev=maxfev,ftol=ftol)
-        if self.verbose: print(lsqf)
+        logging.info(lsqf)
         self.A = lsqf[0][0]
         if not fixAB:
             self.alpha = lsqf[0][1]
@@ -1050,14 +1044,14 @@ class modelPSF:
 
 
         if self.verbose:
-            print('   A:%s, alpha:%s, beta:%s'%(self.A,self.alpha,self.beta))
+            logging.info('   A:%s, alpha:%s, beta:%s'%(self.A,self.alpha,self.beta))
             fig = pyl.figure('Radial Profile')
             ax = fig.add_subplot(111)
             pyl.scatter(downSample2d(self.repRads,self.repFact),self.subSec)
             r = np.linspace(0,np.max(self.rads),100)
             pyl.plot(r,self.A*self.moffat(r)+self.bg,'r--')
             fw = self.FWHM(fromMoffatProfile=True)
-            print('FWHM: {}'.format(fw))
+            logging.info('FWHM: {}'.format(fw))
             pyl.title('FWHM: {:.3f} alpha: {:.3f} beta: {:.3f}'.format(fw,self.alpha,self.beta))
             if logRadPlot: ax.set_xscale('log')
             pyl.show()
@@ -1265,7 +1259,7 @@ class modelPSF:
             return err*np.inf
 
 
-        if self.verbose: print(A,alpha,beta,np.sqrt(np.sum(err**2)/(self.subSec.size-1.)))
+        logging.info(A,alpha,beta,np.sqrt(np.sum(err**2)/(self.subSec.size-1.)))
         if maxRad is not None:
             w = np.where(self.rads.reshape(self.subSec.size)<maxRad)
             return err[w]
@@ -1285,7 +1279,7 @@ class modelPSF:
                 return err[w]
             return err*np.inf
 
-        if self.verbose: print(A,alpha,beta,np.sqrt(np.sum(err**2)/(self.subSec.size-1.)))
+        logging.info(A,alpha,beta,np.sqrt(np.sum(err**2)/(self.subSec.size-1.)))
         if maxRad is not None:
             w = np.where(self.rads.reshape(self.subSec.size)<maxRad)
             return err[w]
@@ -1304,7 +1298,7 @@ class modelPSF:
         #    w=np.arange(len(self.rDist))
         #err=self.fDist[w]-(self.bg+A*self.moffat(self.rDist[w]))
 
-        if self.verbose: print(A,alpha,beta,np.sqrt(np.sum(err**2)/(self.subSec.size-1.)))
+        logging.info(A,alpha,beta,np.sqrt(np.sum(err**2)/(self.subSec.size-1.)))
         return err
 
 
@@ -1340,7 +1334,6 @@ if __name__=="__main__":
     import pylab as pyl
     psfNoLine=modelPSF(np.arange(25),np.arange(25),alpha=1.5,beta=2.0,repFact=10)
     psfNoLine.writeto('noline.fits')
-    print()
     psfLine=modelPSF(np.arange(25),np.arange(25),alpha=1.5,beta=2.0,repFact=10)
     psfLine.line(4.0,32.,0.45)
     psfLine.writeto('line.fits')
