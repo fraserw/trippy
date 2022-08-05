@@ -215,7 +215,7 @@ class tester(unittest.TestCase):
             #avoid index 6 which is source that sextractor cuts into two.
             if abs(d[arg] - self.distances[arg])<0.05 and arg!=6:
                 n_good+=1
-        self.assertEqual(n_good,19,'Didnt find 20 unique sources in the correct places.')
+        self.assertEqual(n_good,18,'Didnt find 18 unique sources in the correct places.')
 
     def test_len_sex(self):
         self.assertEqual(len(self.catalog['XWIN_IMAGE']),21,'Did not detect exactly 21 sources.')
