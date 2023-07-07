@@ -491,7 +491,7 @@ class modelPSF:
 
         #normalized flux profile return 1.-(1.+(rad/self.alpha)**2)**(1.-self.beta)
         a2=self.alpha*self.alpha
-        return (self.beta-1)*(np.pi*a2)*(1.+(rad/self.alpha)**2)**(-self.beta)
+        return (self.beta-1)/(np.pi*a2)*(1.+(rad/self.alpha)**2)**(-self.beta)
 
     def FWHM(self, fromMoffatProfile=False, fromImData = False, method = 'median',frac = 0.5):
         """
