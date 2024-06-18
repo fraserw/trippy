@@ -21,7 +21,7 @@ from collections import namedtuple
 
 __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), Academic email: wes.fraser@qub.ac.uk'
 
-
+import logging
 import numpy as np
 import pylab as pyl
 from astropy.visualization import interval, ZScaleInterval
@@ -365,7 +365,7 @@ class starChooser:
 
         key = event.key
         npoints = len(self.points[:, 0])
-        showingbool = np.array(self.showing).astype(np.bool)
+        showingbool = np.array(self.showing).astype(bool)
         pointsshowing = self.points[showingbool]
         npointsshowing = len(pointsshowing[:, 0])
         args = np.arange(npoints)[showingbool]
@@ -438,7 +438,7 @@ class starChooser:
             self.starsScat=None
 
         npoints = len(self.points[:, 0])
-        showingbool = np.array(self.showing).astype(np.bool)
+        showingbool = np.array(self.showing).astype(bool)
         pointsshowing = self.points[showingbool,:]
         ranks = np.zeros(len(pointsshowing[:,0]))
         if event is not None:
