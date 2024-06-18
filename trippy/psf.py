@@ -621,7 +621,7 @@ class modelPSF:
             self.line2d=np.array([[1.0]])
 
         if useLookupTable:
-            loggin.info('Using the lookup table when generating the line PSF.')
+            logging.info('Using the lookup table when generating the line PSF.')
             #self.longPSF=signal.convolve2d(self.moffProf+self.lookupTable*self.repFact*self.repFact, self.line2d,mode='same')
             self.longPSF=signal.fftconvolve(self.moffProf+self.lookupTable*self.repFact*self.repFact, self.line2d,mode='same')
             self.longPSF*=np.sum(self.fullPSF)/np.sum(self.longPSF)

@@ -14,6 +14,7 @@ COPY src/nofiles.conf /etc/security/limits.d/
 RUN touch /etc/sudo.conf && echo "Set disable_coredump false" > /etc/sudo.conf
 
 RUN dnf install -y python3-notebook
+RUN pip install jupyterlab
 RUN dnf -y groupinstall "Development Tools"
 RUN dnf install -y tcsh
 RUN dnf -y install pip
