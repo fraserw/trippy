@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, division
-from collections import namedtuple
-
 """
 Copyright (C) 2016  Wesley Fraser
 
@@ -19,11 +16,14 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from __future__ import print_function, division
+
 __author__ = ('Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), '
               'Academic email: wes.fraser@qub.ac.uk')
 
+from collections import namedtuple
 import numpy as np
-import pylab as pyl
+from matplotlib import pylab as pyl
 from scipy import stats
 from astropy.io import fits as pyf
 from scipy import optimize as opti
@@ -91,7 +91,7 @@ class bgFinder(object):
             return g
         return self._stats(nbins)[0]
 
-    def median(self, display = False):
+    def median(self, nbins=50, display = False):
         if display:
             g = np.median(nbins)
             self.background_display(g)
@@ -243,13 +243,13 @@ if __name__ == "__main__":
     with pyf.open('junk.fits') as han:
         data = han[1].data
 
-    #near source
+    # near source
     x, y = 3275, 2266
-    #cosmic ray
+    # cosmic ray
     x, y = 3179, 2314
-    #out of source
+    # out of source
     x, y = 3205, 2260
-    #funny place
+    # funny place
     x, y = 3093, 2422
 
     w = 15
