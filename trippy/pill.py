@@ -454,8 +454,11 @@ class pillPhot:
 
                 rebinnedSkyImage = rebinnedSkyImage[int(y0):int(y1), int(x0):int(x1)]
                 w = np.where(rebinnedSkyImage!=0.0)
-                W = np.where(rebinnedSkyImage[w] < bg + trimBGHighPix * bgstd)
-                bgf = bgFinder.bgFinder(rebinnedSkyImage[w][W])
+                if trimBGHighPix:
+                    W = np.where(rebinnedSkyImage[w] < bg + trimBGHighPix * bgstd)
+                    bgf = bgFinder.bgFinder(rebinnedSkyImage[w][W])
+                else:
+                    bgf = bgFinder.bgFinder(rebinnedSkyImage[w])
                 bg = bgf.smartBackground(display=False, backupMode=backupMode, forceBackupMode = forceBackupMode,verbose=verbose)
                 bgstd = np.std(rebinnedSkyImage[w])
 
