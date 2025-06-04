@@ -23,7 +23,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), Academic email: wes.fraser@qub.ac.uk'
 
-import imp
 import os
 import sys
 
@@ -35,16 +34,7 @@ from scipy import signal
 
 from . import bgFinder
 
-# import weightedMeanSTD
-try:
-    imp.find_module('astropy')
-    astropyFound = True
-except ImportError:
-    astropyFound = False
-if astropyFound:
-    from astropy.io import fits as pyf
-else:
-    import pyfits as pyf
+from astropy.io import fits as pyf
 
 from .pill import pillPhot
 
@@ -90,34 +80,34 @@ class modelPSF:
         name=fn.split('.fits')[0]
 
         if not psfV2:
-            HDU=pyf.PrimaryHDU(self.PSF)
-            hdu=pyf.ImageHDU(self.psf)
-            lookupHDU=pyf.ImageHDU(self.lookupTable)
-            lineHDU=pyf.ImageHDU(self.longPSF)
+            HDU = fits.PrimaryHDU(self.PSF)
+            hdu = fits.ImageHDU(self.psf)
+            lookupHDU = fits.ImageHDU(self.lookupTable)
+            lineHDU = fits.ImageHDU(self.longPSF)
 
             if self.aperCorrs is not None:
-                aperCorrHDU=pyf.ImageHDU(np.array([self.aperCorrs,self.aperCorrRadii]))
+                aperCorrHDU = fits.ImageHDU(np.array([self.aperCorrs,self.aperCorrRadii]))
             else:
-                aperCorrHDU=pyf.ImageHDU(np.array([[-1],[-1]]))
+                aperCorrHDU = fits.ImageHDU(np.array([[-1],[-1]]))
             if self.lineAperCorrs is not None:
-                lineAperCorrHDU=pyf.ImageHDU(np.array([self.lineAperCorrs,self.lineAperCorrRadii]))
+                lineAperCorrHDU = fits.ImageHDU(np.array([self.lineAperCorrs,self.lineAperCorrRadii]))
             else:
-                lineAperCorrHDU=pyf.ImageHDU(np.array([[-1],[-1]]))
+                lineAperCorrHDU = fits.ImageHDU(np.array([[-1],[-1]]))
             #distHDU=pyf.ImageHDU(np.array([self.rDist,self.fDist]))
-            list=pyf.HDUList([HDU,lookupHDU,lineHDU,hdu,aperCorrHDU,lineAperCorrHDU])
+            list = fits.HDUList([HDU,lookupHDU,lineHDU,hdu,aperCorrHDU,lineAperCorrHDU])
         else:
-            lookupHDU=pyf.PrimaryHDU(self.lookupTable)
+            lookupHDU = fits.PrimaryHDU(self.lookupTable)
 
             if self.aperCorrs is not None:
-                aperCorrHDU=pyf.ImageHDU(np.array([self.aperCorrs,self.aperCorrRadii]))
+                aperCorrHDU = fits.ImageHDU(np.array([self.aperCorrs,self.aperCorrRadii]))
             else:
-                aperCorrHDU=pyf.ImageHDU(np.array([[-1],[-1]]))
+                aperCorrHDU = fits.ImageHDU(np.array([[-1],[-1]]))
             if self.lineAperCorrs is not None:
-                lineAperCorrHDU=pyf.ImageHDU(np.array([self.lineAperCorrs,self.lineAperCorrRadii]))
+                lineAperCorrHDU = fits.ImageHDU(np.array([self.lineAperCorrs,self.lineAperCorrRadii]))
             else:
-                lineAperCorrHDU=pyf.ImageHDU(np.array([[-1],[-1]]))
+                lineAperCorrHDU = fits.ImageHDU(np.array([[-1],[-1]]))
             #distHDU=pyf.ImageHDU(np.array([self.rDist,self.fDist]))
-            list=pyf.HDUList([lookupHDU,aperCorrHDU,lineAperCorrHDU])
+            list = fits.HDUList([lookupHDU,aperCorrHDU,lineAperCorrHDU])
 
 
         list[0].header.set('REPFACT',self.repFact)
@@ -953,8 +943,8 @@ class modelPSF:
         try:
             os.remove(name)
         except: pass
-        HDU=pyf.PrimaryHDU(self.psf)
-        List=pyf.HDUList([HDU])
+        HDU = fits.PrimaryHDU(self.psf)
+        List = fits.HDUList([HDU])
         List.writeto(name)
 
     def fitMoffat(self, imData, centX, centY,
