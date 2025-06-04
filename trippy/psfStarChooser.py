@@ -48,7 +48,7 @@ class starChooser:
     Further sources can be exlcuded by zooming the main panel. Only the  blue sources within the zoom window are considered.
 
     It takes as input:
-    -data: the image data loaded up through pyfits or astropy.io.fits
+    -data: the image data loaded up through astropy.io.fits
     -XWIN_IMAGE, YWIN_IMAGE, FLUX_AUTO, FLUXERR_AUTO are numpy arrays of the x,y coordinates, flux, and flux uncertainty of a user
      provided list of candidate stars. I used the names of sextractor parameters because these can be easily extracted
      from sextractor output usig those names.
