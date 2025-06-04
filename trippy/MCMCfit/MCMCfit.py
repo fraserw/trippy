@@ -273,7 +273,8 @@ class MCMCfitter:
                         bg = None, useErrorMap = False,
                         useLinePSF = False, fitRateAngle = False,
                         rate_in = None, angle_in = None, exptime = None, pixScale = None,
-                        verbose=False, rand_pos = 0.1):
+                        verbose=False, rand_pos = 0.1, 
+                        fitXY=True, fitM=True, fitXYM=True):
 
         """
         Using emcee (It's hammer time!) the provided image is fit using
@@ -292,6 +293,10 @@ class MCMCfitter:
                       is only honest if useErrorMap=True.
         useLinePSF - use the TSF? If not, use the PSF
         verbose - if set to true, lots of information printed to screen
+        fitXY - XY coordinate should be fitted in a seperate loop
+        fitM - m should be fitted in a seperate loop
+        fitXYM - XY coordinate and m should all be fit together
+                 (after previous loops or as only fitting)
         """
 
         print("Initializing sampler")
@@ -332,15 +337,20 @@ class MCMCfitter:
                 m_in = self.psf.repFact*self.psf.repFact*np.sum(dat)/np.sum(self.psf.fullPSF)
 
         if not fitRateAngle:
-
+          x, y, amp = x_in, y_in, m_in
+          dx, dy = np.array([rand_pos, rand_pos])
+          damp = amp * 0.25
+          if fitXY:
+            #fit first using input best guess amplitude
             nDim = 2
             r0 = []
             for ii in range(nWalkers):
-                r0.append(np.array([x_in,y_in])+sci.randn(2)*np.array([rand_pos,rand_pos]))
+                r0.append(np.array([x, y]) + sci.randn(2) * np.array([dx, dy]))
             r0 = np.array(r0)
-
-            #fit first using input best guess amplitude
-            sampler = emcee.EnsembleSampler(nWalkers,nDim,lnprob,args=[dat,(ai,bi,ci,di),self.psf,ue,useLinePSF,verbose,(-1,-1,m_in)])
+            sampler = emcee.EnsembleSampler(nWalkers, nDim, lnprob,
+                                            args=[dat, (ai, bi, ci, di),
+                                                  self.psf, ue, useLinePSF,
+                                                  verbose, (-1, -1, amp)])
             print("Executing xy burn-in... this may take a while.")
             pos, prob, state = sampler.run_mcmc(r0, nBurn)#, 10)
             sampler.reset()
@@ -354,15 +364,13 @@ class MCMCfitter:
             (x,y,junk) = out[0]
             dx = (out[1][0][1] - out[1][0][0])/2.0
             dy = (out[1][1][1] - out[1][1][0])/2.0
-
+          if fitM:
+            #now fit the amplitude using the best-fit x,y from above
             nDim = 1 # need to put two here rather than one because the fitresults code does a residual subtraction
             r0 = []
             for ii in range(nWalkers):
-                r0.append(np.array([m_in]) + sci.randn(1) * np.array([m_in*0.25]))
+                r0.append(np.array([amp]) + sci.randn(1) * np.array([damp]))
             r0 = np.array(r0)
-
-
-            #now fit the amplitude using the best-fit x,y from above
             #could probably cut the nBurn and nStep numbers down by a factor of 2
             sampler = emcee.EnsembleSampler(nWalkers, nDim, lnprob,
                                             args=[dat, (ai, bi, ci, di), self.psf, ue, useLinePSF, verbose, (x, y, -1)])
@@ -378,16 +386,13 @@ class MCMCfitter:
             out = self.fitResults()
             amp = out[0][0]
             damp = (out[1][0][1]-out[1][0][0])/2.0
-
-
+          if fitXYM:
             #now do a full 3D fit using a small number of burn and steps.
             nDim=3
             r0=[]
             for ii in range(nWalkers):
                 r0.append(np.array([x,y,amp])+sci.randn(3)*np.array([dx,dy,damp]))
             r0=np.array(r0)
-
-
             sampler=emcee.EnsembleSampler(nWalkers,nDim,lnprob,args=[dat,(ai,bi,ci,di),self.psf,ue,useLinePSF,verbose])
             print("Executing xy-amp burn-in... this may take a while.")
             pos, prob, state=sampler.run_mcmc(r0,nBurn)
