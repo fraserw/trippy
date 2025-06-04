@@ -34,7 +34,7 @@ from scipy import signal
 
 from . import bgFinder
 
-from astropy.io import fits as pyf
+from astropy.io import fits
 
 from .pill import pillPhot
 
@@ -132,7 +132,7 @@ class modelPSF:
         """
         print('\nRestoring PSF...')
         name=fn.split('.fits')[0]
-        with pyf.open(name+'.fits') as inHan:
+        with fits.open(name+'.fits') as inHan:
             #load the psf file
             if len(inHan) == 6:
                 psfV2 = False
