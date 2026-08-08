@@ -226,7 +226,7 @@ class bgFinder(object):
     """
 
 if __name__ == "__main__":
-  from astropy.io import fits
+    from astropy.io import fits
 
     v = np.array([17.36,  3.17,  3.17,  4.78,  3.13,  3.15,  3.16,  3.12,  3.19,  4.27, 20.48,  3.2,
   3.24,  3.12,  3.23,  8.53,  3.19,  3.22,  3.19,  3.2,   3.22,  3.18,  3.19,  3.14,

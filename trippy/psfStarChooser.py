@@ -92,7 +92,7 @@ class starChooser:
         if self.minGoodVal is not None:
             w = np.where(self.data<self.minGoodVal)
             mask[w] = 0
-        zscale = ZScaleInterval(nsamples=zscaleNsamp, contrast=zscaleContrast)
+        zscale = ZScaleInterval(n_samples=zscaleNsamp, contrast=zscaleContrast)
         (self.z1, self.z2) = zscale.get_limits(self.data[mask])
         self.normer=interval.ManualInterval(self.z1,self.z2)
 
