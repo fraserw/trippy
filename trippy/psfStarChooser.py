@@ -1,7 +1,3 @@
-
-from __future__ import print_function, division
-from collections import namedtuple
-
 """
 Copyright (C) 2016  Wesley Fraser
 
@@ -19,10 +15,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from __future__ import print_function, division
+from collections import namedtuple
+
 
 __author__ = 'Wesley Fraser (@wtfastro, github: fraserw <westhefras@gmail.com>), Academic email: wes.fraser@qub.ac.uk'
 
-
+import logging
 import numpy as np
 import pylab as pyl
 from astropy.visualization import interval, ZScaleInterval
@@ -124,8 +123,8 @@ class starChooser:
         self.printStarInfo = printStarInfo
         self.saveFigure = saveFigure
 
-        print('Fitting stars with moffat profiles...')
-        print('      X         Y    chi    a     b    FWHM')
+        logging.info('Fitting stars with moffat profiles...')
+        logging.info('      X         Y    chi    a     b    FWHM')
 
         for j in range(len(self.XWIN_IMAGE)):
             if self.FLUX_AUTO[j]/self.FLUXERR_AUTO[j]>self.moffatSNR:
@@ -148,7 +147,7 @@ class starChooser:
                 else:
                     norm=self.normer(mpsf.subSec)
                 if (fwhm is not None) and not (np.isnan(mpsf.beta) or np.isnan(mpsf.alpha)):
-                    print('   {: 8.2f} {: 8.2f} {:3.2f} {: 5.2f} {: 5.2f} {: 5.2f} '.format(self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],mpsf.chiFluxNorm,mpsf.alpha,mpsf.beta,fwhm))
+                    logging.info('   {: 8.2f} {: 8.2f} {:3.2f} {: 5.2f} {: 5.2f} {: 5.2f} '.format(self.XWIN_IMAGE[j],self.YWIN_IMAGE[j],mpsf.chiFluxNorm,mpsf.alpha,mpsf.beta,fwhm))
 
                     self.subsecs.append(norm*1.)
                     self.goodStars.append(True)
@@ -167,7 +166,7 @@ class starChooser:
         FWHM_mode_width = 1.0 #could be 0.5 just as well
         ab_std_width = 2.0
         if autoTrim:
-            print('\nDoing auto star selection.')
+            logging.info('\nDoing auto star selection.')
             #first use Frasermode on the distribution of FWHM to get a good handle on the true FWHM of stars
             #select only those stars with FWHM of +-1 pixel of the mode.
             bg = bgFinder.bgFinder(self.points[:,0])
@@ -366,7 +365,7 @@ class starChooser:
 
         key = event.key
         npoints = len(self.points[:, 0])
-        showingbool = np.array(self.showing).astype(np.bool)
+        showingbool = np.array(self.showing).astype(bool)
         pointsshowing = self.points[showingbool]
         npointsshowing = len(pointsshowing[:, 0])
         args = np.arange(npoints)[showingbool]
@@ -439,7 +438,7 @@ class starChooser:
             self.starsScat=None
 
         npoints = len(self.points[:, 0])
-        showingbool = np.array(self.showing).astype(np.bool)
+        showingbool = np.array(self.showing).astype(bool)
         pointsshowing = self.points[showingbool,:]
         ranks = np.zeros(len(pointsshowing[:,0]))
         if event is not None:
@@ -484,10 +483,10 @@ class starChooser:
     def HandleClose(self, evt):
         self._fwhm_lim = self.sp1.get_xlim()
         self._chi_lim = self.sp1.get_ylim()
-        print('Saving psfStarChooser figure:', self.saveFigure)
+        logging.info('Saving psfStarChooser figure:', self.saveFigure)
         if self.saveFigure:
             try:
                 self.figPSF.savefig('psfStarChooser.png', bbox_inches='tight')
             except TclError:
-                print('Saving psfStarChooser figure FAILED due to TclError!')
-                print(self.figPSF)
+                logging.error('Saving psfStarChooser figure FAILED due to TclError!')
+                logging.error(self.figPSF)
