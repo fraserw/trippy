@@ -2,7 +2,7 @@
 REPO = images.canfar.net
 PROJECT = uvickbos
 DEVNAME = trippy
-VERSION = 1.2
+VERSION = 1.3
 
 NAME = $(REPO)/$(PROJECT)/$(DEVNAME)
 

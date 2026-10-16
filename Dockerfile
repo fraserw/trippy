@@ -1,4 +1,4 @@
-FROM fedora:34 as deploy
+FROM fedora:42 as deploy
 
 # install required software
 RUN dnf makecache -y \
@@ -15,7 +15,8 @@ RUN touch /etc/sudo.conf && echo "Set disable_coredump false" > /etc/sudo.conf
 
 RUN dnf install -y python3-notebook
 RUN pip install jupyterlab
-RUN dnf -y groupinstall "Development Tools"
+# RUN dnf -y group install development_tools
+RUN dnf -y group install "development-tools"
 RUN dnf install -y tcsh
 RUN dnf -y install pip
 RUN dnf install -y python3-tkinter
